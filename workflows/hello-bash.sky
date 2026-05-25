@@ -1,0 +1,10 @@
+⊕meta⊕
+name = "hello-bash"
+description = "Pure bash starter — prints hostname and date. No LLM tokens. Fire via: sky emit hello"
+trigger.sky_event.event = "hello"
+output_style = "terse"
+⊕⊕
+
+§greet§
+bash = "echo \"Hello from sky on $(hostname)\"\ndate -u\necho \"GREETED=true\""
+§§

@@ -1,0 +1,90 @@
+※※
+# multi-agent-investigation
+
+Demonstrates the multi-agent orchestration primitives that shipped in Phases 2 and 3:
+
+  run_doc = true        — shared coordination scratchpad for all agents
+  acquire_lock          — serialise concurrent investigation runs per codebase
+  spawn                 — fan-out 3 parallel investigators with boundary: read_only
+  spawn.continue_prompt — orchestrator synthesis turn after all workers finish
+  release_lock          — clean release after the report is written
+
+Scenario: an incident has been reported against a service. Three agents run in
+parallel, each examining one angle of the failure:
+
+  • error-paths  — traces the reported error through the call stack
+  • recent-code  — reviews code changed in the last 48 hours near the failure
+  • config-deps  — audits configuration and dependency versions for regressions
+
+All three record findings in the shared run-doc. When they finish, a
+continue_prompt synthesis turn produces the final investigation summary. A lock
+on "investigate:<codebase>" ensures two concurrent runs cannot write to the same
+run-doc at the same time.
+
+Trigger: sky emit incident.reported
+※※
+
+⊕meta⊕
+name = "multi-agent-investigation"
+description = "Multi-agent incident investigation — spawn 3 parallel analysts with a shared run-doc, lock, and synthesis. Fire via: sky emit incident.reported"
+trigger.sky_event.event = "incident.reported"
+run_doc = true
+⊕⊕
+
+※※
+Step 1: acquire a lock keyed on the codebase so concurrent runs don't race on
+the same run-doc. The lock is released after the report step completes.
+※※
+
+§lock-investigation§
+acquire_lock = {"key": "investigate:codebase", "ttl": "30m"}
+§§
+
+※※
+Step 2: three investigators run in parallel. Each reads the codebase (read-only
+boundary) and writes its findings to $run_doc_path via the scratchpad tools.
+When all three are done (on_idle = "all"), the continue_prompt synthesis turn
+runs in the same session context and produces the incident report.
+※※
+
+§investigate§
+depends_on = ["lock-investigation"]
+spawn.workers = [{"id": "error-paths", "prompt": "You are investigating an incident. Trace the reported error through the codebase call stack. Identify the originating function, the propagation path, and any swallowed errors. Record your full findings under the Findings section of the run-doc at $run_doc_path. Do not edit source files."}, {"id": "recent-code", "prompt": "You are investigating an incident. Review code changed in the last 48 hours (git log --since=48.hours.ago --stat). Identify changes near the failure site that could explain the regression. Record your full findings under the Findings section of the run-doc at $run_doc_path. Do not edit source files."}, {"id": "config-deps", "prompt": "You are investigating an incident. Audit the service configuration files and dependency versions (lock files, go.mod, package.json). Look for recently bumped dependencies or misconfigured environment values that correlate with the failure window. Record your full findings under the Findings section of the run-doc at $run_doc_path. Do not edit source files."}]
+spawn.on_idle = "all"
+spawn.max_wait = "25m"
+spawn.continue_prompt = "All three investigators have reported their findings. Read the Findings section of the run-doc and produce a concise incident summary: confirmed root cause, contributing factors, affected paths, and immediate mitigation steps. Write the summary to the Final State section of the run-doc at $run_doc_path."
+spawn.boundary = {"read_only": true}
+model = "sonnet"
+§§
+
+※※
+Step 3: a final report node creates a human-readable incident report from the
+completed run-doc. This is a separate Claude turn so it can be skimmed
+independently of the raw investigator notes.
+※※
+
+§report§
+depends_on = ["investigate"]
+model = "sonnet"
+§§
+
+∆report∆
+Read the run-doc at $run_doc_path. Using the Final State section as the source of truth,
+write a short incident report suitable for a post-mortem ticket:
+
+- One-sentence summary of what failed and why
+- Root cause (3–5 bullets)
+- Immediate mitigation (what to do now)
+- Follow-up actions (what to prevent recurrence)
+
+Output only the report text. Do not edit any source files.
+∆∆
+
+※※
+Step 4: release the investigation lock so subsequent runs can proceed.
+※※
+
+§unlock-investigation§
+release_lock = {"key": "investigate:codebase"}
+depends_on = ["report"]
+§§

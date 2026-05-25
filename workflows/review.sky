@@ -1,0 +1,19 @@
+⊕meta⊕
+name = "review"
+description = "Read-only code review of a branch against main. Fire via: sky emit pr.opened"
+trigger.sky_event.event = "pr.opened"
+⊕⊕
+
+※※
+Run a high-signal code review when a PR is opened.
+The review node diffs against review.base (default: main), loads CLAUDE.md/AGENTS.md
+scoped to the changed files, and sends everything to Claude with the built-in review prompt.
+No files are written — the node denies all write tools automatically.
+Use {{pr.head_ref}} to pass the branch name from the webhook payload.
+※※
+
+§review§
+review.base = "main"
+review.target = "{{pr.head_ref}}"
+model = "sonnet"
+§§

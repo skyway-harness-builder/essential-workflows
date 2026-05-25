@@ -1,0 +1,15 @@
+⊕meta⊕
+name = "hello-claude"
+description = "Single Claude step — describes what the current directory contains. Fire via: sky emit explain"
+trigger.sky_event.event = "explain"
+output_style = "terse"
+⊕⊕
+
+§explain§
+model = "sonnet"
+§§
+
+∆explain∆
+List the files in the current directory. Read README.md if it exists.
+In 2–3 sentences, describe what this project appears to do. Only what the files tell you — no speculation.
+∆∆

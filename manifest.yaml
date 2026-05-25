@@ -1,0 +1,33 @@
+apiVersion: skylence.io/v1
+version: 1.0.0
+updated_at: "2026-05-26"
+entries:
+  - kind: workflow
+    path: workflows/hello-bash.sky
+    description: "Pure bash starter — prints hostname and date. No LLM tokens. Fire via: sky emit hello"
+    tags: [bash, starter]
+
+  - kind: workflow
+    path: workflows/hello-claude.sky
+    description: "Single Claude step — describes what the current directory contains. Fire via: sky emit explain"
+    tags: [claude, starter]
+
+  - kind: workflow
+    path: workflows/review.sky
+    description: "Read-only code review of a branch against main. Fire via: sky emit pr.opened"
+    tags: [review, github]
+
+  - kind: workflow
+    path: workflows/manual-gate.sky
+    description: "Bash step gated by manual approval — demonstrates the wait primitive. Fire via: sky emit review-gate"
+    tags: [approval, wait]
+
+  - kind: workflow
+    path: workflows/ci-autofix.sky
+    description: "CI autofix — triggers on failed GitHub check runs, fetches logs, applies a code fix, and pushes to the PR branch."
+    tags: [ci, github, autofix]
+
+  - kind: workflow
+    path: workflows/multi-agent-investigation.sky
+    description: "Multi-agent incident investigation — spawn 3 parallel analysts with a shared run-doc, lock, and synthesis. Fire via: sky emit incident.reported"
+    tags: [multi-agent, incident]
