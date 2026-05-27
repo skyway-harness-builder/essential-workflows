@@ -10,6 +10,5 @@ model = "sonnet"
 §§
 
 ∆explain∆
-List the files in the current directory. Read README.md if it exists.
-In 2–3 sentences, describe what this project appears to do. Only what the files tell you — no speculation.
+List files in current directory and read README.md if present. In 2–3 sentences, describe what this project appears to do — only what files tell you, no speculation.
 ∆∆

@@ -52,14 +52,9 @@ max_budget_usd = 0.80
 §§
 
 ∆fix∆
-A CI check run named "{{check_run.name}}" failed on commit {{check_run.head_sha}} in {{repo.full_name}}.
-
-Failed job log:
+CI check run "{{check_run.name}}" failed on commit {{check_run.head_sha}} in {{repo.full_name}}. Failed job log:
 $SKY_OUTPUT_fetch
-
-Diagnose the root cause of the failure from the log above. Then apply the minimal code fix that makes the check pass. Do not refactor unrelated code. Run the relevant tests locally if you can to verify the fix before finishing.
-
-When done, output a brief summary: what failed, why, and what you changed.
+From log, diagnose root cause and apply minimal code fix that makes check pass; don't refactor unrelated code; run relevant tests locally to verify if you can. Then output brief summary: what failed, why, what you changed.
 ∆∆
 
 ※※

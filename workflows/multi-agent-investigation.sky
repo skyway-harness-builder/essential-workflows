@@ -69,15 +69,7 @@ model = "sonnet"
 §§
 
 ∆report∆
-Read the run-doc at $run_doc_path. Using the Final State section as the source of truth,
-write a short incident report suitable for a post-mortem ticket:
-
-- One-sentence summary of what failed and why
-- Root cause (3–5 bullets)
-- Immediate mitigation (what to do now)
-- Follow-up actions (what to prevent recurrence)
-
-Output only the report text. Do not edit any source files.
+Read run-doc at $run_doc_path. Using Final State section as source of truth, write short incident report for post-mortem ticket: one-sentence summary of what failed and why; root cause (3–5 bullets); immediate mitigation (what to do now); follow-up actions (prevent recurrence). Output only report text. Don't edit source files.
 ∆∆
 
 ※※
