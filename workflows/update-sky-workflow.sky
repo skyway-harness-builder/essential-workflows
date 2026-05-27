@@ -4,15 +4,23 @@
 Manually-run meta-workflow that applies a change to an existing `.sky` workflow,
 then lints it until clean. Two stages:
 
-  update — reads .sky/workflows/<name>.sky, applies {{request}}, writes it back (sky-workflow-authoring skill)
+  update — reads <dir>/<name>.sky, applies {{request}}, writes it back (sky-workflow-authoring skill)
   lint   — runs `sky lint` and fixes every error, looping until clean (max 6 passes)
 
-Run it:
+Run it (state where the workflow lives with --var dir):
 
-  sky run update-sky-workflow --var name="ci-autofix" --var request="add a Slack notification step after the fix"
+  sky run update-sky-workflow \
+    --var dir=".sky/workflows" \
+    --var name="ci-autofix" \
+    --var request="add a Slack notification step after the fix"
 
+  - dir     directory the workflow lives in — STATE THIS before running (e.g. .sky/workflows)
   - name    kebab-case filename of the existing workflow (no .sky extension)
   - request the change to apply, in plain English
+
+Language: the change in {{request}} may be in any language. The workflow stays
+written in English (name, keys, node ids, prompt bodies); only the ※※ comment
+blocks may be in the request's language.
 
 Required skill — install before first run (no marketplace plugin needed):
 
@@ -21,7 +29,7 @@ Required skill — install before first run (no marketplace plugin needed):
 
 ⊕meta⊕
 name = "update-sky-workflow"
-description = "Apply a change to an existing .sky workflow and lint it until clean. Fire via: sky run update-sky-workflow --var name=<file> --var request=<change>"
+description = "Apply a change to an existing .sky workflow and lint it until clean. Fire via: sky run update-sky-workflow --var dir=<dir> --var name=<file> --var request=<change>"
 trigger.manual = true
 output_style = "terse"
 max_budget_usd = 2.00
@@ -38,9 +46,11 @@ skills = ["sky-workflow-authoring"]
 §§
 
 ∆update∆
-Update the existing Skylence workflow at .sky/workflows/{{name}}.sky.
+Update the existing Skylence workflow at {{dir}}/{{name}}.sky.
 
 Change to apply: {{request}}
+
+Language rule: the change above may be written in any language. Keep the workflow itself entirely in English — `name`, all config keys, node ids, and every ∆ prompt body. Only the ※※ comment blocks may be written in the request's language.
 
 Read the file first. Apply only the requested change and preserve everything else. Follow the sky-workflow-authoring skill: keep the four delimiter blocks valid, keep `name = "{{name}}"`, keep exactly one trigger, and keep node ids and references consistent. Write the updated file — do not lint it yet.
 ∆∆
@@ -54,10 +64,10 @@ every error. loop.until.bash re-runs until lint exits 0 (max 6 passes).
 model = "sonnet"
 depends_on = ["update"]
 skills = ["sky-workflow-authoring"]
-loop.until.bash = "sky lint \".sky/workflows/$SKY_NAME.sky\""
+loop.until.bash = "sky lint \"$SKY_DIR/$SKY_NAME.sky\""
 loop.max = 6
 §§
 
 ∆lint∆
-Read .sky/workflows/{{name}}.sky, then run `sky lint .sky/workflows/{{name}}.sky` and read its output. Fix every reported error and warning in the file, using the sky-workflow-authoring skill's error-code table (SKY-WF-*) to map each code to its fix. Common ones: quote the RHS of `when`; add `chain_from` targets to `depends_on`; quote `$SKY_*` in bash; declare every env-var reference in the `secrets` array. Re-run lint after editing. This node loops until lint passes — make concrete fixes each pass. When clean, output the final lint result and the file path.
+Read {{dir}}/{{name}}.sky, then run `sky lint {{dir}}/{{name}}.sky` and read its output. Fix every reported error and warning in the file, using the sky-workflow-authoring skill's error-code table (SKY-WF-*) to map each code to its fix. Common ones: quote the RHS of `when`; add `chain_from` targets to `depends_on`; quote `$SKY_*` in bash; declare every env-var reference in the `secrets` array. Keep the workflow body in English. Re-run lint after editing. This node loops until lint passes — make concrete fixes each pass. When clean, output the final lint result and the file path.
 ∆∆

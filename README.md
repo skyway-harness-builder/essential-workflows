@@ -15,9 +15,11 @@ These are meta-workflows for managing your own `.sky` library — create, update
 
 | Name | Description |
 |------|-------------|
-| `scaffold-sky-workflow` | Author a new `.sky` workflow from a plain-English brief, then lint it until clean. `--var name=<file> --var request=<what it should do>` |
-| `update-sky-workflow` | Apply a change to an existing `.sky` workflow, then lint it until clean. `--var name=<file> --var request=<change>` |
-| `delete-sky-workflow` | Find a `.sky` workflow by name and delete it behind a manual approval gate. `--var name=<file>` |
+| `scaffold-sky-workflow` | Author a new `.sky` workflow from a plain-English brief, then lint it until clean. `--var dir=<dir> --var name=<file> --var request=<what it should do>` |
+| `update-sky-workflow` | Apply a change to an existing `.sky` workflow, then lint it until clean. `--var dir=<dir> --var name=<file> --var request=<change>` |
+| `delete-sky-workflow` | Find a `.sky` workflow by name and delete it behind a manual approval gate. `--var dir=<dir> --var name=<file>` |
+
+State **where** the workflow lives with `--var dir=` before running. The brief in `--var request=` may be in any language; the generated workflow is always written in English (only `※※` comments may be localized).
 
 ```sh
 sky examples install scaffold-sky-workflow
@@ -25,6 +27,7 @@ sky examples install update-sky-workflow
 sky examples install delete-sky-workflow
 sky examples install sky-workflow-authoring   # the skill scaffold + update depend on
 sky run scaffold-sky-workflow \
+  --var dir=".sky/workflows" \
   --var name="deploy-on-tag" \
   --var request="on a GitHub release, run the deploy script and post the result to Slack"
 ```

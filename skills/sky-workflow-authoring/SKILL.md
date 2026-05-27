@@ -96,9 +96,13 @@ Plain markdown sent to the Claude CLI for the node. `{{var}}` template expansion
 | Abort conditionally | `cancel` + `when` |
 | Trigger another workflow | `emit` |
 
+## Language
+
+The workflow file is always written in **English** — `name`, every config key, all node ids, and every `∆` prompt body. A user's brief may arrive in any language; translate the intent, not the syntax. Only the `※※` comment blocks may be written in the user's spoken language, to document the workflow for its author.
+
 ## MUST
 
-- **Lint before done:** `sky lint .sky/workflows/<file>.sky` must pass. Errors are blocking.
+- **Lint before done:** `sky lint <dir>/<file>.sky` must pass. Errors are blocking.
 - **Quote the RHS of every `when`:** `when = "$x.output == 'value'"` — a bareword silently never fires.
 - **`chain_from` must appear in `depends_on`** or the validator rejects the workflow (SKY-WF-040).
 - **Shell-quote every `$SKY_*` in bash:** `"$SKY_ISSUE_NUMBER"`, never bare — values may contain spaces/metacharacters.

@@ -4,29 +4,32 @@
 Manually-run meta-workflow that authors a brand-new `.sky` workflow from a
 plain-English brief, then lints it until it passes. Two stages:
 
-  author  — writes .sky/workflows/<name>.sky from {{request}}, following the bundled sky-workflow-authoring skill
+  author  — writes <dir>/<name>.sky from {{request}}, following the bundled sky-workflow-authoring skill
   lint    — runs `sky lint` on the new file and fixes every error, looping until lint is clean (max 6 passes)
 
-Run it:
+Run it (you choose where the file lands with --var dir):
 
-  sky run scaffold-sky-workflow --var name="deploy-on-tag" --var request="on a GitHub release, run the deploy script and post the result to Slack"
+  sky run scaffold-sky-workflow \
+    --var dir=".sky/workflows" \
+    --var name="deploy-on-tag" \
+    --var request="on a GitHub release, run the deploy script and post the result to Slack"
 
+  - dir     directory the file is written to — STATE THIS before running (e.g. .sky/workflows)
   - name    kebab-case filename + workflow name for the generated file (no .sky extension)
   - request what the workflow should do, in plain English
 
-Output: .sky/workflows/<name>.sky, lint-clean and ready to run.
+Language: the brief in {{request}} may be in any language. The generated
+workflow is always written in English (name, keys, node ids, prompt bodies);
+only the ※※ comment blocks may be in the brief's language.
 
 Required skill — install before first run (no marketplace plugin needed):
 
   sky examples install sky-workflow-authoring
-
-The skill resolves from .claude/skills/sky-workflow-authoring/SKILL.md in the
-target repo or ~/.claude and is injected into both nodes' system prompts.
 ※※
 
 ⊕meta⊕
 name = "scaffold-sky-workflow"
-description = "Author a new .sky workflow from a plain-English brief and lint it until clean. Fire via: sky run scaffold-sky-workflow --var name=<file> --var request=<what it should do>"
+description = "Author a new .sky workflow from a plain-English brief and lint it until clean. Fire via: sky run scaffold-sky-workflow --var dir=<dir> --var name=<file> --var request=<what it should do>"
 trigger.manual = true
 output_style = "terse"
 max_budget_usd = 2.00
@@ -44,11 +47,13 @@ skills = ["sky-workflow-authoring"]
 §§
 
 ∆author∆
-Author a new Skylence `.sky` workflow at .sky/workflows/{{name}}.sky.
+Author a new Skylence `.sky` workflow at {{dir}}/{{name}}.sky.
 
 What it must do: {{request}}
 
-Follow the sky-workflow-authoring skill exactly: the four Unicode delimiter blocks (⊕meta⊕, §id§, ∆id∆, ※※), `name = "{{name}}"` matching the filename, exactly one trigger, and a sensible node DAG. Pick node types (claude / bash / script / http / loop) that fit the brief; keep prompts terse. Create the .sky/workflows/ directory if absent. Write the file — do not lint it yet.
+Language rule: the brief above may be written in any language. Write the workflow itself entirely in English — `name`, all config keys, node ids, and every ∆ prompt body. Only the ※※ comment blocks may be written in the brief's language, to document the workflow for its author.
+
+Follow the sky-workflow-authoring skill exactly: the four Unicode delimiter blocks (⊕meta⊕, §id§, ∆id∆, ※※), `name = "{{name}}"` matching the filename, exactly one trigger, and a sensible node DAG. Pick node types (claude / bash / script / http / loop) that fit the brief; keep prompts terse. Create the {{dir}} directory if absent. Write the file — do not lint it yet.
 ∆∆
 
 ※※
@@ -62,10 +67,10 @@ session, so the prompt reads the file fresh each pass.
 model = "sonnet"
 depends_on = ["author"]
 skills = ["sky-workflow-authoring"]
-loop.until.bash = "sky lint \".sky/workflows/$SKY_NAME.sky\""
+loop.until.bash = "sky lint \"$SKY_DIR/$SKY_NAME.sky\""
 loop.max = 6
 §§
 
 ∆lint∆
-Read .sky/workflows/{{name}}.sky, then run `sky lint .sky/workflows/{{name}}.sky` and read its output. Fix every reported error and warning in the file, using the sky-workflow-authoring skill's error-code table (SKY-WF-*) to map each code to its fix. Common ones: quote the RHS of `when`; add `chain_from` targets to `depends_on`; quote `$SKY_*` in bash; declare every env-var reference in the `secrets` array. Re-run lint after editing. This node loops until lint passes — make concrete fixes each pass. When clean, output the final lint result and the file path.
+Read {{dir}}/{{name}}.sky, then run `sky lint {{dir}}/{{name}}.sky` and read its output. Fix every reported error and warning in the file, using the sky-workflow-authoring skill's error-code table (SKY-WF-*) to map each code to its fix. Common ones: quote the RHS of `when`; add `chain_from` targets to `depends_on`; quote `$SKY_*` in bash; declare every env-var reference in the `secrets` array. Keep the workflow body in English. Re-run lint after editing. This node loops until lint passes — make concrete fixes each pass. When clean, output the final lint result and the file path.
 ∆∆
