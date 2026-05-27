@@ -2,10 +2,23 @@
 # scaffold-sky-workflow
 
 Manually-run meta-workflow that authors a brand-new `.sky` workflow from a
-plain-English brief, then lints it until it passes. Two stages:
+plain-English brief, then lints it until it passes. Flow:
 
-  author  — writes <dir>/<name>.sky from {{request}}, following the bundled sky-workflow-authoring skill
-  lint    — runs `sky lint` on the new file and fixes every error, looping until lint is clean (max 6 passes)
+  (manual run: --var dir, name, request)
+       │
+       ▼
+   ┌────────┐   writes from {{request}}   ┌──────────────────┐
+   │ author │ ──────────────────────────▶ │ <dir>/<name>.sky  │
+   └────────┘   (sky-workflow-authoring)  └──────────────────┘
+       │                                          ▲
+       ▼                                          │ edits to fix errors
+   ┌────────┐                                     │
+   │  lint  │ ─── sky lint ──▶ errors? ──yes──▶ fix┘   (loop, max 6 passes)
+   └────────┘                     │
+                                  no (clean)
+                                   │
+                                   ▼
+                                 done
 
 Run it (you choose where the file lands with --var dir):
 

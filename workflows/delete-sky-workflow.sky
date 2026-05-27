@@ -2,11 +2,27 @@
 # delete-sky-workflow
 
 Manually-run workflow that finds a `.sky` workflow by name and deletes it,
-behind a manual approval gate. Pure bash + a wait — no LLM tokens. Three stages:
+behind a manual approval gate. Pure bash + a wait — no LLM tokens. Flow:
 
-  find    — locate <dir>/<name>.sky; fail (and list what's there) if absent
-  confirm — manual gate: approve to delete, reject to keep
-  remove  — delete the file
+  (manual run: --var dir, name)
+       │
+       ▼
+   ┌────────┐  not found ──▶ list <dir> + stop
+   │  find  │
+   └────────┘
+       │ found
+       ▼
+   ┌─────────┐  reject ──▶ stop (file kept)
+   │ confirm │  ⏸ manual approval gate (timeout 1h)
+   └─────────┘
+       │ approve
+       ▼
+   ┌────────┐
+   │ remove │ ── rm <dir>/<name>.sky
+   └────────┘
+       │
+       ▼
+     done
 
 Run it (state where the workflow lives with --var dir):
 
