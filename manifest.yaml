@@ -7,6 +7,16 @@ entries:
     description: "Author a new .sky workflow from a plain-English brief and lint it until clean. Fire via: sky run scaffold-sky-workflow --var name=<file> --var request=<what it should do>"
     tags: [meta, scaffold, lint, manual]
 
+  - kind: workflow
+    path: workflows/update-sky-workflow.sky
+    description: "Apply a change to an existing .sky workflow and lint it until clean. Fire via: sky run update-sky-workflow --var name=<file> --var request=<change>"
+    tags: [meta, update, lint, manual]
+
+  - kind: workflow
+    path: workflows/delete-sky-workflow.sky
+    description: "Find a .sky workflow by name and delete it behind a manual approval gate. Fire via: sky run delete-sky-workflow --var name=<file>"
+    tags: [meta, delete, manual]
+
   - kind: skill
     path: skills/sky-workflow-authoring/SKILL.md
     name: sky-workflow-authoring

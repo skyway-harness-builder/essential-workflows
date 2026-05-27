@@ -11,13 +11,19 @@ This repo is the default remote source bundled with `sky`. Run `sky examples upd
 
 ## Workflows
 
+These are meta-workflows for managing your own `.sky` library — create, update, and delete workflows.
+
 | Name | Description |
 |------|-------------|
-| `scaffold-sky-workflow` | Author a new `.sky` workflow from a plain-English brief, then lint it until clean. Run manually with `--var name=<file> --var request=<what it should do>`. |
+| `scaffold-sky-workflow` | Author a new `.sky` workflow from a plain-English brief, then lint it until clean. `--var name=<file> --var request=<what it should do>` |
+| `update-sky-workflow` | Apply a change to an existing `.sky` workflow, then lint it until clean. `--var name=<file> --var request=<change>` |
+| `delete-sky-workflow` | Find a `.sky` workflow by name and delete it behind a manual approval gate. `--var name=<file>` |
 
 ```sh
 sky examples install scaffold-sky-workflow
-sky examples install sky-workflow-authoring   # the skill it depends on
+sky examples install update-sky-workflow
+sky examples install delete-sky-workflow
+sky examples install sky-workflow-authoring   # the skill scaffold + update depend on
 sky run scaffold-sky-workflow \
   --var name="deploy-on-tag" \
   --var request="on a GitHub release, run the deploy script and post the result to Slack"
@@ -33,7 +39,7 @@ sky examples install sky-workflow-authoring
 
 | Name | Description |
 |------|-------------|
-| `sky-workflow-authoring` | Self-contained reference for authoring a valid `.sky` workflow: four-delimiter format, trigger routing, node types, variable references, MUST/MUST NOT rules, and lint error-code fixes. Used by `scaffold-sky-workflow`. |
+| `sky-workflow-authoring` | Self-contained reference for authoring a valid `.sky` workflow: four-delimiter format, trigger routing, node types, variable references, MUST/MUST NOT rules, and lint error-code fixes. Used by `scaffold-sky-workflow` and `update-sky-workflow`. |
 
 ## Adding a custom source
 
