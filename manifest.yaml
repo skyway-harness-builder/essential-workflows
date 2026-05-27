@@ -1,44 +1,24 @@
 apiVersion: skylence.io/v1
-version: 1.1.0
+version: 2.0.0
 updated_at: "2026-05-27"
 entries:
   - kind: workflow
-    path: workflows/hello-bash.sky
-    description: "Pure bash starter — prints hostname and date. No LLM tokens. Fire via: sky emit hello"
-    tags: [bash, starter]
+    path: workflows/scaffold-sky-workflow.sky
+    description: "Author a new .sky workflow from a plain-English brief and lint it until clean. Fire via: sky run scaffold-sky-workflow --var name=<file> --var request=<what it should do>"
+    tags: [meta, scaffold, lint, manual]
 
   - kind: workflow
-    path: workflows/hello-claude.sky
-    description: "Single Claude step — describes what the current directory contains. Fire via: sky emit explain"
-    tags: [claude, starter]
+    path: workflows/update-sky-workflow.sky
+    description: "Apply a change to an existing .sky workflow and lint it until clean. Fire via: sky run update-sky-workflow --var name=<file> --var request=<change>"
+    tags: [meta, update, lint, manual]
 
   - kind: workflow
-    path: workflows/review.sky
-    description: "Read-only code review of a branch against main. Fire via: sky emit pr.opened"
-    tags: [review, github]
-
-  - kind: workflow
-    path: workflows/manual-gate.sky
-    description: "Bash step gated by manual approval — demonstrates the wait primitive. Fire via: sky emit review-gate"
-    tags: [approval, wait]
-
-  - kind: workflow
-    path: workflows/ci-autofix.sky
-    description: "CI autofix — triggers on failed GitHub check runs, fetches logs, applies a code fix, and pushes to the PR branch."
-    tags: [ci, github, autofix]
-
-  - kind: workflow
-    path: workflows/multi-agent-investigation.sky
-    description: "Multi-agent incident investigation — spawn 3 parallel analysts with a shared run-doc, lock, and synthesis. Fire via: sky emit incident.reported"
-    tags: [multi-agent, incident]
-
-  - kind: workflow
-    path: workflows/pure-laravel-new-feature-planning-to-prd-execution-to-pr.sky
-    description: "Brownfield-aware Laravel feature pipeline — classify → package research → Blueprint PRD → manual approval → worktree execution → PR. Fire via: GitHub issues.labeled with label sky-feature"
-    tags: [laravel, planning, prd, github, multi-step]
+    path: workflows/delete-sky-workflow.sky
+    description: "Find a .sky workflow by name and delete it behind a manual approval gate. Fire via: sky run delete-sky-workflow --var name=<file>"
+    tags: [meta, delete, manual]
 
   - kind: skill
-    path: skills/laravel-package-selection/SKILL.md
-    name: laravel-package-selection
-    description: "Pick the most compatible Laravel package for a capability by walking vendor tiers (Laravel first-party → skylence-be org → Spatie → reputable vendors → lesser-known) and gating on compatibility, maintenance, and license."
-    tags: [laravel, packages, planning]
+    path: skills/sky-workflow-authoring/SKILL.md
+    name: sky-workflow-authoring
+    description: "Author a valid Skylence .sky workflow — four-delimiter format, trigger routing, node types, variable references, and lint error-code fixes. Self-contained; no marketplace plugin needed."
+    tags: [skylence, sky, authoring, lint]

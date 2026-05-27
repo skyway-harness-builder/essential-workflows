@@ -1,0 +1,53 @@
+※※
+# delete-sky-workflow
+
+Manually-run workflow that finds a `.sky` workflow by name and deletes it,
+behind a manual approval gate. Pure bash + a wait — no LLM tokens. Three stages:
+
+  find    — locate .sky/workflows/<name>.sky; fail (and list what's there) if absent
+  confirm — manual gate: approve to delete, reject to keep
+  remove  — delete the file
+
+Run it:
+
+  sky run delete-sky-workflow --var name="old-workflow"
+
+  - name  kebab-case filename of the workflow to delete (no .sky extension)
+※※
+
+⊕meta⊕
+name = "delete-sky-workflow"
+description = "Find a .sky workflow by name and delete it behind a manual approval gate. Fire via: sky run delete-sky-workflow --var name=<file>"
+trigger.manual = true
+output_style = "terse"
+⊕⊕
+
+※※
+Step 1 — find. Resolves the target file. Exits non-zero (stopping the run) and
+lists the available workflows when the name doesn't match.
+※※
+
+§find§
+bash = "F=\".sky/workflows/$SKY_NAME.sky\"\nif [ ! -f \"$F\" ]; then\n  echo \"[delete] no workflow at $F\"\n  echo \"[delete] available:\"\n  ls .sky/workflows/ 2>/dev/null || true\n  exit 1\nfi\necho \"[delete] found $F\""
+§§
+
+※※
+Step 2 — confirm. Manual gate. Deletion is irreversible, so a human approves
+before the file is removed. Reject to stop; timeout after 1h.
+※※
+
+§confirm§
+depends_on = ["find"]
+wait.prompt = "Delete .sky/workflows/{{name}}.sky? Approve to remove it, reject to keep."
+wait.channel = "manual"
+wait.timeout = "1h"
+§§
+
+※※
+Step 3 — remove. Deletes the file once approved.
+※※
+
+§remove§
+depends_on = ["confirm"]
+bash = "F=\".sky/workflows/$SKY_NAME.sky\"\nrm \"$F\" && echo \"[delete] removed $F\""
+§§
