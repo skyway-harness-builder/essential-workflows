@@ -114,6 +114,45 @@ Exactly one execution kind per node (more than one → SKY-WF-024; none → SKY-
 | council | `council = { members = [{ id, prompt }], synthesis = "...", max_wait = "25m", max_budget_usd = N }` — read-only advisors + synthesis. Empty members → 085; empty member → 086; empty synthesis → 087; bad max_wait → 088; negative budget → 089. |
 | review | `review = { base = "main", target = "<pr#|branch>", paths = [...] }` — built-in read-only code review. Empty path entry → SKY-WF-091. |
 
+## DAG Shape & Data Flow
+
+`depends_on` defines edges; nodes with no path between them run in parallel. A diagram explains a non-trivial DAG far better than a node list:
+
+```
+          trigger  (manual | github | sky_event)
+                       │
+                       ▼
+                  ┌─────────┐
+                  │ classify │  haiku → JSON
+                  └─────────┘
+                 ╱     │      ╲      depends_on = ["classify"]   ← fan-out, run in parallel
+                ▼      ▼       ▼     (each reads $SKY_OUTPUT_CLASSIFY)
+            ┌──────┐┌──────┐┌──────┐
+            │  a   ││  b   ││  c   │
+            └──────┘└──────┘└──────┘
+                 ╲     │      ╱      depends_on = ["a","b","c"]  ← join
+                  ▼    ▼     ▼       trigger_rule = "one_success"
+                  ┌───────────┐
+                  │ synthesize │
+                  └───────────┘
+                       │  chain_from = "synthesize"  ← resumes the same Claude session
+                       ▼
+                  ┌─────────┐
+                  │   fix   │ ⟲  loop.until.bash = "make test"   ← repeats body until exit 0 (loop.max)
+                  └─────────┘
+                       │  emit = { name = "fixed" }  → fires any workflow with trigger.sky_event.event = "fixed"
+                       ▼
+                     done
+```
+
+- **Edge** = `depends_on`. Upstream output reaches a node as `$SKY_OUTPUT_<ID>`.
+- **Parallel** = sibling nodes sharing a dependency; `trigger_rule` decides when the join fires (`all_done` default, `one_success`, …).
+- **Session reuse** = `chain_from` (solid intent, not a new edge — must also be in `depends_on`).
+- **Loop** = `⟲`, a modifier on the body kind.
+- **Fan-out to workers** inside one node = `spawn` / `council` (not separate DAG nodes).
+
+**Sketch the DAG.** When a workflow branches, fans out, loops, or gates, draw its shape as an ASCII diagram in the top `※※` comment block. Readers grok flow from a picture far faster than from a node list, and `※※` content is discarded by the parser — diagrams cost nothing at runtime.
+
 ## Templates & Variables
 
 `{{var}}` expansion runs in **prompt, http, and eval** node fields — **not** in `bash`, `script`, or `loop.until.bash` (use `$SKY_*` env vars there).

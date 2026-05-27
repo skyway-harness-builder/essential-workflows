@@ -2,10 +2,23 @@
 # update-sky-workflow
 
 Manually-run meta-workflow that applies a change to an existing `.sky` workflow,
-then lints it until clean. Two stages:
+then lints it until clean. Flow:
 
-  update — reads <dir>/<name>.sky, applies {{request}}, writes it back (sky-workflow-authoring skill)
-  lint   — runs `sky lint` and fixes every error, looping until clean (max 6 passes)
+  (manual run)
+       │
+       ▼
+   ┌────────┐   reads + rewrites    ┌──────────────────────┐
+   │ update │ ────────────────────▶ │ <dir>/<name>.sky      │
+   └────────┘   applies {{request}} └──────────────────────┘
+       │        (sky-workflow-authoring skill)      ▲
+       ▼                                            │ edits to fix errors
+   ┌────────┐                                       │
+   │  lint  │ ─── sky lint ──▶ errors? ──yes──▶ fix ┘   (loop, max 6 passes)
+   └────────┘                     │
+                                  no (clean)
+                                   │
+                                   ▼
+                                 done
 
 Run it (state where the workflow lives with --var dir):
 
@@ -52,7 +65,7 @@ Change to apply: {{request}}
 
 Language rule: the change above may be written in any language. Keep the workflow itself entirely in English — `name`, all config keys, node ids, and every ∆ prompt body. Only the ※※ comment blocks may be written in the request's language.
 
-Read the file first. Apply only the requested change and preserve everything else. Follow the sky-workflow-authoring skill: keep the four delimiter blocks valid, keep `name = "{{name}}"`, keep exactly one trigger, and keep node ids and references consistent. Write the updated file — do not lint it yet.
+Read the file first. Apply only the requested change and preserve everything else. Follow the sky-workflow-authoring skill: keep the four delimiter blocks valid, keep `name = "{{name}}"`, keep exactly one trigger, and keep node ids and references consistent. If the change alters the DAG shape (adds/removes nodes, edges, a loop, or a gate), refresh — or add — the ASCII flow diagram in the ※※ header per the skill's "Sketch the DAG" guidance. Write the updated file — do not lint it yet.
 ∆∆
 
 ※※
