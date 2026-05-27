@@ -1,0 +1,133 @@
+※※
+# pure-laravel-new-feature-planning-to-prd-execution-to-pr
+
+Brownfield-aware Laravel feature pipeline. Fires when a GitHub issue is labelled
+`sky-feature` and runs six stages, planning before any code is written:
+
+  classify   — haiku probe: greenfield vs brownfield, backend vs frontend orientation, detected stack (JSON)
+  research   — picks the most compatible packages across vendor tiers via the laravel-package-selection skill
+  prd        — writes a Blueprint-format PRD via the laravel-blueprint skill; chained from research so it keeps the package reasoning
+  approve    — manual gate: a human signs off the PRD before execution
+  implement  — builds the feature in an isolated git worktree per the approved PRD, then pushes a feature branch
+  pr         — opens a pull request against main, linked to the issue
+
+Trigger syntax:
+
+  trigger.github.events = ["issues.labeled"]
+  trigger.github.label  = "sky-feature"
+
+Available vars: {{issue.number}}, {{issue.title}}, {{issue.body}}, {{repo.full_name}}, {{label}}.
+
+Required skills — install before first run:
+  - laravel-package-selection (this repo): sky examples install laravel-package-selection
+  - laravel-blueprint (laravel-development plugin): ships with the Skylence claude-code-marketplace
+Skills resolve from .claude/skills/<name>/SKILL.md in the target repo or ~/.claude.
+※※
+
+⊕meta⊕
+name = "pure-laravel-new-feature-planning-to-prd-execution-to-pr"
+description = "Brownfield-aware Laravel feature pipeline — classify → package research → Blueprint PRD → manual approval → worktree execution → PR. Fire via: GitHub issues.labeled with label sky-feature"
+trigger.github.events = ["issues.labeled"]
+trigger.github.label = "sky-feature"
+output_style = "terse"
+max_budget_usd = 5.00
+⊕⊕
+
+※※
+Step 1 — classify. Cheap haiku probe. Inspects the repo (composer.json, app/,
+routes/, migrations, resources/) and the issue, then emits structured JSON the
+research and PRD prompts read. Read-only; no edits.
+※※
+
+§classify§
+model = "haiku"
+§§
+
+∆classify∆
+Classify a Laravel repo and a requested feature. Inspect composer.json, app/, routes/, database/migrations/, resources/ via shell/read tools. Feature — issue #{{issue.number}} "{{issue.title}}":
+{{issue.body}}
+
+Decide: maturity = "greenfield" (empty/skeleton app, no domain models) or "brownfield" (existing domain, migrations, business logic); orientation = "backend" (data/API/jobs/domain), "frontend" (Blade/Livewire/Inertia/UI) or "balanced"; stack = one-line detected stack (Laravel version + Livewire/Inertia/Filament/API/Sanctum). Output JSON only, no prose: {"maturity":"...","orientation":"...","stack":"...","reasoning":"<one sentence>"}
+∆∆
+
+※※
+Step 2 — research. Selects packages with the laravel-package-selection skill,
+which ranks vendor tiers (Laravel first-party → skylence-be org → Spatie →
+reputable vendors → lesser-known) and gates on Laravel 12 / PHP compatibility,
+maintenance, and license. Read-only; recommends, does not install.
+※※
+
+§research§
+model = "sonnet"
+depends_on = ["classify"]
+skills = ["laravel-package-selection"]
+§§
+
+∆research∆
+Select packages for feature "{{issue.title}}" in {{repo.full_name}}. Classification: $SKY_OUTPUT_CLASSIFY
+
+Follow the laravel-package-selection skill. For each capability the feature needs, walk the vendor tiers top-down and pick the most compatible option; prefer first-party/framework when it covers the need; reject anything failing the compatibility gate. For brownfield, respect packages already in composer.json. Output: a ranked recommendation table (capability, chosen package, vendor tier, version constraint, why, `composer require` command) plus rejected alternatives with one-line reasons.
+∆∆
+
+※※
+Step 3 — prd. Chained from research so the Blueprint PRD inherits the package
+reasoning without re-deriving it. Uses the laravel-blueprint skill for the plan
+format (models, controllers, routes, services, actions, tests). Writes the PRD
+to docs/prd/issue-<n>.md and echoes it as output.
+※※
+
+§prd§
+model = "sonnet"
+depends_on = ["research"]
+chain_from = "research"
+skills = ["laravel-blueprint"]
+§§
+
+∆prd∆
+Write a PRD for feature "{{issue.title}}" using the laravel-blueprint skill format. Build on the package selection above and the classification: $SKY_OUTPUT_CLASSIFY
+
+Cover: overview + key decisions; user flows; data model (models, migrations, relationships, indexes); controllers/routes/actions/services; validation; selected packages with config notes; test plan (Pest). Scope strictly to the issue — no gold-plating. Output the full PRD contents as your response (the implement step writes it to a file in its worktree).
+∆∆
+
+※※
+Step 4 — approve. Manual gate. Execution is destructive (writes code, pushes a
+branch), so a human approves the PRD before implement runs. Reject to stop the
+run; timeout after 24h.
+※※
+
+§approve§
+depends_on = ["prd"]
+wait.prompt = "PRD ready for feature #{{issue.number}} ({{issue.title}}). Review docs/prd/issue-{{issue.number}}.md. Approve to implement, reject to stop."
+wait.channel = "manual"
+wait.timeout = "24h"
+§§
+
+※※
+Step 5 — implement. Runs in a dedicated git worktree (isolated from the main
+checkout). Builds the feature per the approved PRD, installs the chosen
+packages, runs tests, then creates and pushes branch sky-feature/issue-<n>.
+※※
+
+§implement§
+model = "sonnet"
+depends_on = ["approve"]
+isolation = "worktree"
+skills = ["laravel-blueprint"]
+§§
+
+∆implement∆
+Implement feature "{{issue.title}}" (issue #{{issue.number}}) per the approved PRD:
+$SKY_OUTPUT_PRD
+
+First, write the PRD above verbatim to docs/prd/issue-{{issue.number}}.md in this worktree so it ships in the PR. Then follow the laravel-blueprint skill. Install the selected packages with `composer require`. Build only what the PRD specifies — migrations, models, routes, controllers/actions/services, validation, and Pest tests. Run `php artisan test` (or `./vendor/bin/pest`) and fix failures before finishing. Then: `git checkout -b sky-feature/issue-{{issue.number}}`, stage everything including docs/prd/issue-{{issue.number}}.md, commit with a message referencing #{{issue.number}}, and `git push -u origin sky-feature/issue-{{issue.number}}`. Output a short summary: what you built, packages added, test result.
+∆∆
+
+※※
+Step 6 — pr. Opens the pull request against main for the pushed feature branch,
+linked to the issue. Bash node; guards on the branch existing on origin.
+※※
+
+§pr§
+depends_on = ["implement"]
+bash = "BRANCH=\"sky-feature/issue-$SKY_ISSUE_NUMBER\"\nif ! git ls-remote --exit-code --heads origin \"$BRANCH\" >/dev/null 2>&1; then\n  echo \"[laravel-feature] branch $BRANCH not on origin — implement step did not push; skipping PR\"\n  exit 1\nfi\ngh pr create --repo \"$SKY_REPO_FULL_NAME\" --base main --head \"$BRANCH\" --title \"$SKY_ISSUE_TITLE\" --body \"Implements #$SKY_ISSUE_NUMBER. PRD: docs/prd/issue-$SKY_ISSUE_NUMBER.md\" 2>&1"
+§§

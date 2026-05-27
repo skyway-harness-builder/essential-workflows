@@ -1,6 +1,6 @@
 apiVersion: skylence.io/v1
-version: 1.0.0
-updated_at: "2026-05-26"
+version: 1.1.0
+updated_at: "2026-05-27"
 entries:
   - kind: workflow
     path: workflows/hello-bash.sky
@@ -31,3 +31,14 @@ entries:
     path: workflows/multi-agent-investigation.sky
     description: "Multi-agent incident investigation — spawn 3 parallel analysts with a shared run-doc, lock, and synthesis. Fire via: sky emit incident.reported"
     tags: [multi-agent, incident]
+
+  - kind: workflow
+    path: workflows/pure-laravel-new-feature-planning-to-prd-execution-to-pr.sky
+    description: "Brownfield-aware Laravel feature pipeline — classify → package research → Blueprint PRD → manual approval → worktree execution → PR. Fire via: GitHub issues.labeled with label sky-feature"
+    tags: [laravel, planning, prd, github, multi-step]
+
+  - kind: skill
+    path: skills/laravel-package-selection/SKILL.md
+    name: laravel-package-selection
+    description: "Pick the most compatible Laravel package for a capability by walking vendor tiers (Laravel first-party → skylence-be org → Spatie → reputable vendors → lesser-known) and gating on compatibility, maintenance, and license."
+    tags: [laravel, packages, planning]

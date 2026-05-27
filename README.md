@@ -19,6 +19,21 @@ This repo is the default remote source bundled with `sky`. Run `sky examples upd
 | `manual-gate` | Bash step gated by manual approval. Demonstrates the wait primitive. |
 | `ci-autofix` | CI autofix. Triggers on failed check runs, applies a fix, pushes to the PR branch. |
 | `multi-agent-investigation` | Multi-agent incident investigation with parallel analysts, shared run-doc, and lock. |
+| `pure-laravel-new-feature-planning-to-prd-execution-to-pr` | Brownfield-aware Laravel feature pipeline: classify → package research → Blueprint PRD → manual approval → worktree execution → PR. Triggered by labelling an issue `sky-feature`. |
+
+## Skills
+
+Some workflows declare `skills = [...]` on a node; `sky` injects the named `.claude/skills/<name>/SKILL.md` into that node's system prompt. Install a skill the same way as a workflow:
+
+```sh
+sky examples install laravel-package-selection
+```
+
+| Name | Description |
+|------|-------------|
+| `laravel-package-selection` | Pick the most compatible Laravel package for a capability by walking vendor tiers (Laravel first-party → skylence-be org → Spatie → reputable vendors → lesser-known) with a compatibility/maintenance/license gate. Used by `pure-laravel-new-feature-planning-to-prd-execution-to-pr`. |
+
+> The `pure-laravel-…` workflow also uses the `laravel-blueprint` skill, which ships with the Skylence [claude-code-marketplace](https://github.com/skylence-be/claude-code-marketplace) `laravel-development` plugin.
 
 ## Adding a custom source
 
