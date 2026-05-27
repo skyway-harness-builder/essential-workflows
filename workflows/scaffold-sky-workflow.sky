@@ -53,7 +53,7 @@ What it must do: {{request}}
 
 Language rule: the brief above may be written in any language. Write the workflow itself entirely in English — `name`, all config keys, node ids, and every ∆ prompt body. Only the ※※ comment blocks may be written in the brief's language, to document the workflow for its author.
 
-Follow the sky-workflow-authoring skill exactly: the four Unicode delimiter blocks (⊕meta⊕, §id§, ∆id∆, ※※), `name = "{{name}}"` matching the filename, exactly one trigger, and a sensible node DAG. Pick node types (claude / bash / script / http / loop) that fit the brief; keep prompts terse. Create the {{dir}} directory if absent. Write the file — do not lint it yet.
+Follow the sky-workflow-authoring skill exactly: the four Unicode delimiter blocks (⊕meta⊕, §id§, ∆id∆, ※※), `name = "{{name}}"` matching the filename, exactly one trigger, and a sensible node DAG. Pick node types (claude / bash / script / http / loop) that fit the brief. Two audiences (per the skill): write the ∆ prompt bodies for the model — terse, machine-oriented, no concern for human readability; write the ※※ comment blocks for the human — clear, and when the flow branches/loops/gates add the diagram that explains it fastest (ASCII, Mermaid, sequence, or swimlane). Create the {{dir}} directory if absent. Write the file — do not lint it yet.
 ∆∆
 
 ※※
