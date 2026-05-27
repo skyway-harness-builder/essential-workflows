@@ -9,6 +9,15 @@ tags: [skylence, sky, workflow, authoring, lint, dag, reference]
 
 A `.sky` file defines a DAG of execution nodes plus trigger metadata. The parser uses four Unicode delimiter blocks; every opener and closer must be alone on its line. This skill is self-contained — no marketplace plugin is required to author or lint a workflow. It mirrors the machine-readable language surface emitted by `sky describe --format json`.
 
+## Two Audiences (read this first)
+
+A `.sky` file is written for two readers with **opposite** priorities. Get this right and everything else follows.
+
+- **The workflow body — `∆` prompt blocks, config keys, node ids — is for the AI that runs the node.** Optimize purely for the model executing the task correctly. Be terse, telegraphic, machine-oriented. **Do not care whether a human can read it**, and do not pad or soften it for human eyes — the end user never reads the prompt body, by design. It only has to *work*. (Keep it English; see Language below.)
+- **The `※※` comment blocks are for the human.** The exact opposite goal: a person should open the file and immediately understand what it does, why, and how the pieces connect. Optimize hard for human comprehension — clear prose and, when a picture helps, a diagram.
+
+When the two pull in different directions, keep the prompt body machine-optimal and move every human-oriented explanation into a `※※` block.
+
 ## Delimiter Blocks
 
 ```
@@ -151,7 +160,14 @@ Exactly one execution kind per node (more than one → SKY-WF-024; none → SKY-
 - **Loop** = `⟲`, a modifier on the body kind.
 - **Fan-out to workers** inside one node = `spawn` / `council` (not separate DAG nodes).
 
-**Sketch the DAG.** When a workflow branches, fans out, loops, or gates, draw its shape as an ASCII diagram in the top `※※` comment block. Readers grok flow from a picture far faster than from a node list, and `※※` content is discarded by the parser — diagrams cost nothing at runtime.
+**Diagram the flow when a picture beats words.** When a workflow branches, fans out, loops, or gates — or any time a diagram conveys it faster than prose — put one in a `※※` comment block. Pick the **most pragmatic form for the case**, not a fixed one:
+
+- **ASCII** (boxes/arrows, like the DAG above) — renders everywhere: terminals, plain diffs, any viewer. Default for structural DAG shape.
+- **Mermaid** ` ```mermaid flowchart``` ` — renders on GitHub and most docs; best for larger branching graphs.
+- **Mermaid `sequenceDiagram`** — when ordering and hand-offs between nodes/services matter more than the graph shape.
+- **Swimlanes** (ASCII columns or Mermaid) — when responsibilities split across actors (e.g. workflow vs. GitHub vs. a human approver).
+
+Choose whatever a human grasps fastest, and optimize the diagram for that human — this lives in a `※※` block, the human-facing half of the file. `※※` content is discarded by the parser, so any diagram costs nothing at runtime.
 
 ## Templates & Variables
 
