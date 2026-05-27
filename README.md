@@ -13,27 +13,27 @@ This repo is the default remote source bundled with `sky`. Run `sky examples upd
 
 | Name | Description |
 |------|-------------|
-| `hello-bash` | Pure bash starter. Prints hostname and date. No LLM tokens. |
-| `hello-claude` | Single Claude step. Describes what the current directory contains. |
-| `review` | Read-only code review of a branch against main. |
-| `manual-gate` | Bash step gated by manual approval. Demonstrates the wait primitive. |
-| `ci-autofix` | CI autofix. Triggers on failed check runs, applies a fix, pushes to the PR branch. |
-| `multi-agent-investigation` | Multi-agent incident investigation with parallel analysts, shared run-doc, and lock. |
-| `pure-laravel-new-feature-planning-to-prd-execution-to-pr` | Brownfield-aware Laravel feature pipeline: classify → package research → Blueprint PRD → manual approval → worktree execution → PR. Triggered by labelling an issue `sky-feature`. |
+| `scaffold-sky-workflow` | Author a new `.sky` workflow from a plain-English brief, then lint it until clean. Run manually with `--var name=<file> --var request=<what it should do>`. |
+
+```sh
+sky examples install scaffold-sky-workflow
+sky examples install sky-workflow-authoring   # the skill it depends on
+sky run scaffold-sky-workflow \
+  --var name="deploy-on-tag" \
+  --var request="on a GitHub release, run the deploy script and post the result to Slack"
+```
 
 ## Skills
 
-Some workflows declare `skills = [...]` on a node; `sky` injects the named `.claude/skills/<name>/SKILL.md` into that node's system prompt. Install a skill the same way as a workflow:
+A workflow declares `skills = [...]` on a node; `sky` injects the named `.claude/skills/<name>/SKILL.md` into that node's system prompt. Install a skill the same way as a workflow — no marketplace plugin required:
 
 ```sh
-sky examples install laravel-package-selection
+sky examples install sky-workflow-authoring
 ```
 
 | Name | Description |
 |------|-------------|
-| `laravel-package-selection` | Pick the most compatible Laravel package for a capability by walking vendor tiers (Laravel first-party → skylence-be org → Spatie → reputable vendors → lesser-known) with a compatibility/maintenance/license gate. Used by `pure-laravel-new-feature-planning-to-prd-execution-to-pr`. |
-
-> The `pure-laravel-…` workflow also uses the `laravel-blueprint` skill, which ships with the Skylence [claude-code-marketplace](https://github.com/skylence-be/claude-code-marketplace) `laravel-development` plugin.
+| `sky-workflow-authoring` | Self-contained reference for authoring a valid `.sky` workflow: four-delimiter format, trigger routing, node types, variable references, MUST/MUST NOT rules, and lint error-code fixes. Used by `scaffold-sky-workflow`. |
 
 ## Adding a custom source
 
