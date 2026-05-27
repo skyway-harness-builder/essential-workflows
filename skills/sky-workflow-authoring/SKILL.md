@@ -133,7 +133,7 @@ Exactly one execution kind per node (more than one → SKY-WF-024; none → SKY-
                        │
                        ▼
                   ┌─────────┐
-                  │ classify │  haiku → JSON
+                  │ classify│  haiku → JSON
                   └─────────┘
                  ╱     │      ╲      depends_on = ["classify"]   ← fan-out, run in parallel
                 ▼      ▼       ▼     (each reads $SKY_OUTPUT_CLASSIFY)
@@ -143,7 +143,7 @@ Exactly one execution kind per node (more than one → SKY-WF-024; none → SKY-
                  ╲     │      ╱      depends_on = ["a","b","c"]  ← join
                   ▼    ▼     ▼       trigger_rule = "one_success"
                   ┌───────────┐
-                  │ synthesize │
+                  │ synthesize│
                   └───────────┘
                        │  chain_from = "synthesize"  ← resumes the same Claude session
                        ▼
