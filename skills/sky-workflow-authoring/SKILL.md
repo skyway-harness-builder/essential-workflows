@@ -66,9 +66,10 @@ Set **exactly one**. With no trigger block, the workflow is **manual** — run v
 | Manual | (no trigger block) — `sky run <name> --var k=v` |
 | GitHub | `trigger.github.events = ["issues", "pull_request", "issue_comment", "check_run.completed", …]`; `trigger.github.label = "..."`; `trigger.github.fork_policy = "deny"\|"allow"\|"trusted-only"`; `trigger.github.trusted_authors = [...]`; `trigger.github.check_run = { conclusion = "failure", name = "CI" }` (requires `check_run.completed` in events — SKY-WF-094; bad conclusion → SKY-WF-093) |
 | Sky event | `trigger.sky_event.event = "deploy.completed"` — exact name emitted by another workflow's `emit` |
+| Schedule | `trigger.schedule.cron = "0 3 * * *"` (required, standard 5-field `min hour dom mon dow`); `trigger.schedule.timezone = "Europe/Brussels"` (optional IANA name, defaults UTC). Missing cron → SKY-WF-096; bad expr → SKY-WF-097; bad timezone → SKY-WF-098. The daemon must be running for schedules to fire. |
 | Sentry / Linear / Jira | `trigger.<source>.events = [...]` — generic event-list triggers (empty list → SKY-WF-095) |
 
-There is **no `cron` trigger** in this version — a `trigger.cron` key is silently ignored (the workflow falls back to manual). Don't use it.
+**Schedule timezone & DST.** Schedule times resolve against an explicit IANA timezone — never the host's OS-local zone. Resolution order: `trigger.schedule.timezone` → the daemon's `SKY_SCHEDULE_TIMEZONE` config default → `UTC`. Because resolution uses IANA names, DST is handled by wall-clock: `0 3 * * *` fires at **03:00 local in both winter and summer** (the UTC offset shifts, the hour does not). At a spring-forward gap the run advances to the next valid time; at a fall-back overlap it fires once. Use a region name like `Europe/Brussels`, not a fixed offset or `Local` (rejected by SKY-WF-098). Note: `trigger.cron` (top-level) is **not** a trigger — the key is `trigger.schedule.cron`.
 
 ## Node Common Keys (any node kind)
 
@@ -209,7 +210,7 @@ Write the workflow file entirely in **English** — `name`, every config key, al
 
 - Use `{{var}}` in `bash`, `script`, or `loop.until.bash` — use `$SKY_*` env vars.
 - Use `${env:NAME}` in `prompt`/`bash`/`eval`/`script` — it resolves only for `mcp_servers`/`http` (SKY-WF-057). In bash, read `"$GITHUB_TOKEN"` directly.
-- Use `trigger.cron` — unsupported; silently ignored.
+- Put a schedule under `trigger.cron` — the key is `trigger.schedule.cron`; a bare `trigger.cron` is not a recognized trigger.
 - Commit secrets/tokens/`.env`.
 - Change an `output_format` schema without updating the `∆` prompt that produces it.
 - Run a destructive bash command without `safety = "requires_permission"` (SKY-WF-063).
@@ -238,6 +239,7 @@ Write the workflow file entirely in **English** — `name`, every config key, al
 | 078–084 | spawn: workers empty / empty id / empty prompt / bad max_wait / bad on_idle / contradictory boundary / `**` glob |
 | 085–089 | council: members empty / empty member / synthesis empty / bad max_wait / negative budget |
 | 091–095 | review path empty / links entry bad / check_run conclusion invalid / check_run without event / sentry·linear no events |
+| 096–098 | schedule: cron field required / cron expression invalid (5-field) / timezone not a valid IANA location |
 
 ## Self-Check Before Finishing
 
