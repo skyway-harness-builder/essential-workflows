@@ -10,4 +10,4 @@ jobs:
       - uses: actions/checkout@v6
       - uses: skylence-be/sky-lint-action@v2.0.0
         with:
-          paths: "workflows/*.sky"
+          paths: "*/workflows/*.sky"

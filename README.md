@@ -60,4 +60,4 @@ examples:
 
 This is a [GitHub template repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-repository-from-a-template). Fork it to build your own private library; open a PR here to contribute a workflow back to the community.
 
-Every workflow lives in `workflows/`. Add an entry to `manifest.yaml` when adding a new file. Bump `version` and `updated_at` with each release.
+Assets are grouped by **domain folder**, each holding `workflows/` and `skills/` subfolders. The first domain is `meta/` (managing your own `.sky` library); add more as needed (e.g. `git/`, `release/`). The on-disk layout is organizational only — `sky examples install` routes each asset by its `kind`, not its path. To add one: drop the file under the right domain folder, add a `manifest.yaml` entry (nested `path:` + a domain tag), and bump `version` + `updated_at`.

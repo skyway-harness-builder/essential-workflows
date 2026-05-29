@@ -1,24 +1,24 @@
 apiVersion: skylence.io/v1
-version: 2.0.0
-updated_at: "2026-05-27"
+version: 2.1.0
+updated_at: "2026-05-29"
 entries:
   - kind: workflow
-    path: workflows/scaffold-sky-workflow.sky
+    path: meta/workflows/scaffold-sky-workflow.sky
     description: "Author a new .sky workflow from a plain-English brief and lint it until clean. Fire via: sky run scaffold-sky-workflow --var name=<file> --var request=<what it should do>"
     tags: [meta, scaffold, lint, manual]
 
   - kind: workflow
-    path: workflows/update-sky-workflow.sky
+    path: meta/workflows/update-sky-workflow.sky
     description: "Apply a change to an existing .sky workflow and lint it until clean. Fire via: sky run update-sky-workflow --var name=<file> --var request=<change>"
     tags: [meta, update, lint, manual]
 
   - kind: workflow
-    path: workflows/delete-sky-workflow.sky
+    path: meta/workflows/delete-sky-workflow.sky
     description: "Find a .sky workflow by name and delete it behind a manual approval gate. Fire via: sky run delete-sky-workflow --var name=<file>"
     tags: [meta, delete, manual]
 
   - kind: skill
-    path: skills/sky-workflow-authoring/SKILL.md
+    path: meta/skills/sky-workflow-authoring/SKILL.md
     name: sky-workflow-authoring
     description: "Author a valid Skylence .sky workflow — four-delimiter format, trigger routing, node types, variable references, and lint error-code fixes. Self-contained; no marketplace plugin needed."
-    tags: [skylence, sky, authoring, lint]
+    tags: [meta, skylence, sky, authoring, lint]
