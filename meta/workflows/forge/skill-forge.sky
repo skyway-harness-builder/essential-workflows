@@ -1,0 +1,351 @@
+※※
+# skill-forge
+
+A meta-workflow that drives ONE of YOUR skills toward a measurable quality bar,
+then stages a PR for a human to merge. It runs against your repo checkout (the run's
+working dir) read-only — all mutation happens in a throwaway worktree — and loops
+generate → exercise → judge until a judge-scored eval GATE passes, then opens a PR.
+
+Fire it:
+
+  sky run skill-forge --var skill_name=<name>
+
+`{{skill_name}}` is the target skill directory under `<repo>/.claude/skills/<skill_name>/`
+(a `SKILL.md` plus any bundled scripts). `trigger.manual = true` — operator-driven only.
+
+  (manual run — sky run skill-forge --var skill_name=<name>)
+        │
+        ▼
+   ┌──────────────┐  bash, no LLM. Resolve the repo checkout + the target skill dir, then
+   │  read-skill  │  `cat` SKILL.md and inventory + `cat` the bundled scripts into one
+   └──────────────┘  greppable block. This text is how the skill's guidance reaches the
+        │            model — NOT `skills = ["{{skill_name}}"]` (skill names in skills[] are
+        │ depends_on  not templated; a {{var}} there would not resolve).
+        ▼
+   ┌──────────────┐  claude (haiku). Read the SKILL.md text from read-skill's output and
+   │    parse     │  SYNTHESIZE a v1 eval suite: 3–5 concrete success cases (judge-generated
+   └──────────────┘  evals; hand-authored fixtures are a follow-up). Emit as structured text.
+        │ depends_on [read-skill, parse]
+        ▼
+   ┌──────────────┐  claude (sonnet). Exercise the skill against the synthesized eval cases.
+   │   baseline   │  The skill's guidance is INJECTED as the SKILL.md text (from read-skill),
+   │   -exercise  │  not via skills[]. Capture one transcript per case.
+   └──────────────┘
+        │ depends_on
+        ▼
+   ┌──────────────┐  claude (opus) + advisory output_format. Score each eval case pass/fail,
+   │    judge     │  pinpoint WHERE each failure lives (prose ambiguity vs missing script vs
+   └──────────────┘  script bug), compute pass_rate. ENDS with exactly one machine sentinel:
+        │              SKY_FORGE delivers=<true|false> pass_rate=<n>
+        │ depends_on
+        ▼
+   ┌──────────────┐  bash, no LLM. Grep the SKY_FORGE sentinel → emit ONE clean JSON line
+   │     gate     │  {"delivers":"true|false"}. FAIL-CLOSED: a missing/garbled sentinel ⇒
+   └──────────────┘  delivers=false. (Opposite of track-anthropic-changes' fail-open: a
+        │              false "delivers" would SHIP A BROKEN SKILL — the costlier mistake.)
+        │ when delivers == 'false'
+        ▼
+   ┌──────────────┐  claude (sonnet) PROMPT-BODY LOOP, loop.max 3. Each iteration is a FRESH
+   │   improve    │  `claude -p` invocation (workflow nodes shell out per execution — no
+   │   (loop)     │  session carry-over without chain_from — so each pass reasons fresh; there
+   └──────────────┘  is NO `context`/`fresh_context` key, that mechanism does not exist).
+        │              Body: edit SKILL.md + bundled scripts in the worktree to fix the judged
+        │              failures, then re-exercise + self-judge and write a one-line verdict to
+        │              a sentinel file. loop.until.bash greps that file for delivers=true.
+        │ depends_on
+        ▼
+   ┌──────────────┐  bash, no LLM. Statically lint bundled scripts where a toolchain exists
+   │ lint-scripts │  IN-CONTAINER: `bash -n` for *.sh, `node --check` for *.js. Other
+   └──────────────┘  languages (e.g. Go — no Go toolchain in the prod image) defer to CI on
+        │              the pushed branch. Never EXECUTES the scripts (see SAFETY SCOPE).
+        │ depends_on
+        ▼
+   ┌──────────────┐  bash + gh, isolation = "worktree". Commit the improved skill tree on a
+   │   finalize   │  branch and `gh pr create`. CI IS THE QUALITY GATE. PROTECTED-FILES
+   └──────────────┘  BOUNDARY (#39): never auto-commit MISSION.md, FACTORY_RULES.md, .github/,
+                     .sky/ workflow defs, or learnings; and skill-forge MUST NOT edit a skill
+                     that governs the factory itself — it only STAGES a PR for a human merge.
+
+IDEMPOTENT: re-running on an already-delivering skill is a no-op. judge says delivers=true
+on the first gate → improve is skipped (when delivers == 'false' is false) → finalize finds
+no diff in the worktree and opens NOTHING ("already passing").
+
+BOUNDED: max_budget_usd = 8.00 (whole run) + loop.max = 3 (improve passes).
+
+═══════════════════════════════════════════════════════════════════════════════════════
+SAFETY SCOPE (v1) — stated deliberately:
+
+  1. v1 does NOT execute arbitrary model-generated scripts as a build step. The only
+     "running" of code is (a) static checks — `bash -n` / `node --check` — which parse but
+     do not run, and (b) the skill-injected exercise, which happens INSIDE the model
+     (Claude reasoning over the SKILL.md text), NOT by executing the bundled scripts.
+     Full sandboxed script EXECUTION as an eval signal is DEFERRED behind the threat-model
+     sandbox decision (an open question in the issue). Do not add a node that runs a
+     model-produced script until that decision lands.
+
+  2. All file mutation happens under `isolation = "worktree"` (throwaway). The improve loop
+     and finalize write only inside the worktree; the live read-only checkout is never
+     edited in place. The output is always a PR — CI, then a human, is the merge gate.
+
+DEVIATIONS FROM THE ISSUE DAG (see manifest discussion):
+  - The issue's improve step re-exercises/re-judges as SEPARATE downstream nodes. Sky's
+    flat `when` grammar + loop constraints make a multi-node re-judge INSIDE a loop awkward,
+    so improve is a single self-contained PROMPT-BODY loop: each iteration edits → re-
+    exercises → self-judges → writes a sentinel file that loop.until.bash polls. This keeps
+    the loop bounded and lint-valid (loop bodies may be prompt/command/bash; NOT
+    http/eval/wait — SKY-WF-037). Correctness + lint-clean was preferred over matching the
+    diagram node-for-node.
+  - `read-skill` is an added bash node not drawn in the issue's prose DAG; it exists because
+    skill text must reach the model via $SKY_OUTPUT_*, not via the non-templating skills[].
+═══════════════════════════════════════════════════════════════════════════════════════
+※※
+
+⊕meta⊕
+name = "skill-forge"
+description = "Meta-workflow: drive one of YOUR skills (a .claude/skills/<name>/SKILL.md plus bundled scripts) toward a measurable bar by looping generate → exercise → judge until a judge-scored eval gate passes (fail-closed), then stage a PR for a human to merge. Runs against your repo (the run's working dir); all mutation is in a throwaway worktree (isolation=worktree). v1 does NOT execute model-generated scripts (static bash -n / node --check only); full sandboxed execution is deferred behind the threat-model sandbox decision. Bounded by max_budget_usd + loop.max. Idempotent: an already-delivering skill opens no PR. Fire via: sky run skill-forge --var skill_name=<name>"
+trigger.manual = true
+output_style = "terse"
+max_budget_usd = 8.00
+learnings.exclude = ["execution-rules", "patterns", "anti-patterns", "project-notes"]
+⊕⊕
+
+※※
+Step 1 — read-skill. DETERMINISTIC bash, no LLM. Resolve the repo checkout (skill_repo var →
+default: the run's working dir, $PWD) and the target skill dir <repo>/.claude/skills/<skill_name>/.
+`cat` SKILL.md and a file inventory + the contents of each bundled script into ONE stable,
+greppable block delimited by `=== skill-source ===`. This block is the channel by which the
+skill's actual guidance reaches the model in parse/baseline-exercise — skills[] would NOT work
+because skill names there are not {{var}}-templated. No destructive commands (read-only `cat`/find).
+{{skill_name}} is NOT used here — bash never templates; we read $SKY_SKILL_NAME from the env channel.
+※※
+
+§read-skill§
+bash = "set -u\nNAME=\"${SKY_SKILL_NAME:-}\"\nif [ -z \"$NAME\" ]; then echo 'SKILL_FORGE_FAILED: skill_name var is required (sky run skill-forge --var skill_name=<name>)' >&2; exit 1; fi\nREPO=\"${SKY_SKILL_REPO:-$PWD}\"\nif [ ! -d \"$REPO/.git\" ]; then echo \"SKILL_FORGE_FAILED: $REPO is not a git checkout\" >&2; exit 1; fi\nDIR=\"$REPO/.claude/skills/$NAME\"\nif [ ! -f \"$DIR/SKILL.md\" ]; then echo \"SKILL_FORGE_FAILED: no SKILL.md at $DIR\" >&2; exit 1; fi\necho '=== skill-source ==='\necho \"skill_name=$NAME\"\necho \"skill_repo=$REPO\"\necho \"skill_dir=$DIR\"\necho '--- inventory ---'\n( cd \"$DIR\" && find . -type f | sort )\necho '--- SKILL.md ---'\ncat \"$DIR/SKILL.md\"\nfor f in $(cd \"$DIR\" && find . -type f ! -name 'SKILL.md' | sort); do\n  REL=\"${f#./}\"\n  echo \"--- script: $REL ---\"\n  cat \"$DIR/$REL\"\ndone\necho '=== end skill-source ==='"
+§§
+
+※※
+Step 2 — parse. Claude (haiku). Reads the skill source block from read-skill and SYNTHESIZES a
+v1 eval suite: 3–5 concrete, checkable success cases that exercise what the skill PROMISES. These
+are judge-generated evals; hand-authored fixtures are a deliberate follow-up (note that). Output is
+structured text (numbered cases), consumed verbatim by baseline-exercise and judge.
+※※
+
+§parse§
+model = "haiku"
+depends_on = ["read-skill"]
+max_turns = 8
+§§
+
+∆parse∆
+You are bootstrapping an evaluation suite for ONE Claude Code skill so it can be measured and improved. Be terse and concrete.
+
+The full source of the target skill (its SKILL.md plus any bundled scripts) was printed by an upstream node as a `=== skill-source ===` block here:
+
+$SKY_OUTPUT_READ_SKILL
+
+From that block, read `skill_name`, the SKILL.md guidance, and any bundled scripts.
+
+Your task: SYNTHESIZE a v1 eval suite of 3 to 5 concrete success cases that test what this skill PROMISES to do. Each case must be a realistic task a user would bring to a model that has loaded this skill. Make each case CHECKABLE — describe the exact observable behaviour that counts as a pass (a specific output shape, a correct decision, the right script invoked, an edge case handled).
+
+Bias the cases toward the skill's stated triggers and any "MUST"/"MUST NOT" rules — those are the contract. If the skill bundles scripts, include at least one case that depends on a bundled script behaving correctly.
+
+Output EXACTLY this structure, nothing else:
+
+## Eval suite for <skill_name>
+### Case 1: <short title>
+- Task: <the user task / prompt to run against the skill>
+- Pass criteria: <the exact observable behaviour that counts as a pass>
+### Case 2: ...
+(3 to 5 cases total.)
+
+## Notes
+- v1 caveat: these are judge-synthesized evals, not hand-authored fixtures (hand-authored fixtures are a follow-up). State any case you are unsure is fair.
+∆∆
+
+※※
+Step 3 — baseline-exercise. Claude (sonnet). Exercises the skill against the synthesized eval
+cases. The skill's guidance is INJECTED as the SKILL.md text from read-skill (NOT via skills[]).
+For each case it produces the response a skill-loaded model would give, so the judge can score the
+SKILL AS WRITTEN. Capture one transcript per case.
+※※
+
+§baseline-exercise§
+model = "sonnet"
+depends_on = ["parse"]
+max_turns = 12
+§§
+
+∆baseline-exercise∆
+You are exercising a Claude Code skill against an eval suite so its quality can be judged. Be terse.
+
+The skill's full source (SKILL.md + bundled scripts) is here, in the `=== skill-source ===` block:
+
+$SKY_OUTPUT_READ_SKILL
+
+Treat the SKILL.md content above as your loaded skill guidance — follow it exactly as a model that had this skill injected would. (The skill's guidance reaches you only through this text; there is no separately-loaded skill.)
+
+The eval suite to run is here:
+
+$SKY_OUTPUT_PARSE
+
+For EACH case in the suite, do the task using ONLY the guidance and scripts from the skill source, and record what you would actually produce. Do not consult outside knowledge the skill does not provide — the point is to test the SKILL AS WRITTEN, including its gaps.
+
+Output, per case:
+
+### Case <n>: <title>
+- Response: <the concrete output / decision / steps you produced following the skill>
+- Skill artifacts used: <which SKILL.md sections and/or bundled scripts you relied on, or "none applicable">
+
+Do not score yourself — the next step judges. Do not edit any files.
+∆∆
+
+※※
+Step 4 — judge. Claude (opus) + ADVISORY output_format. Scores each eval case pass/fail, pinpoints
+WHERE each failure lives, and computes pass_rate. The output_format is advisory ONLY — opus may
+return prose; the deterministic `gate` bash node (next) parses a machine SENTINEL instead, so the
+gate never depends on LLM-formatted JSON (same lesson as track-anthropic-changes). The prompt mirrors
+the schema AND mandates the sentinel as the final line.
+※※
+
+§judge§
+model = "opus"
+depends_on = ["baseline-exercise"]
+max_turns = 12
+output_format = {"type": "object", "properties": {"delivers": {"type": "boolean"}, "pass_rate": {"type": "number"}, "cases": {"type": "array", "items": {"type": "object", "properties": {"case": {"type": "string"}, "pass": {"type": "boolean"}, "failure_locus": {"type": "string", "enum": ["prose-ambiguity", "missing-script", "script-bug", "none"]}, "fix": {"type": "string"}}, "required": ["case", "pass", "failure_locus", "fix"]}}}, "required": ["delivers", "pass_rate", "cases"]}
+§§
+
+∆judge∆
+You are the QUALITY JUDGE for a Claude Code skill. You score how well the skill — AS WRITTEN — delivered on its own eval suite, and you pinpoint exactly where each failure lives so the next step can fix it. Be rigorous and terse.
+
+The skill source (SKILL.md + bundled scripts):
+$SKY_OUTPUT_READ_SKILL
+
+The eval suite:
+$SKY_OUTPUT_PARSE
+
+The baseline exercise transcripts (one response per case):
+$SKY_OUTPUT_BASELINE_EXERCISE
+
+For EACH eval case, decide pass or fail against its Pass criteria. For each FAILING case, classify the failure locus as exactly one of:
+- `prose-ambiguity` — the SKILL.md guidance was vague, missing, or contradictory, so the model could not reliably do the task.
+- `missing-script` — the task needed a helper the skill should bundle but does not.
+- `script-bug` — a bundled script is present but wrong/incomplete for the case.
+- `none` — used only for passing cases.
+For each failing case, give a concrete `fix` (what to add/change in SKILL.md or which script to add/repair).
+
+Compute `pass_rate` = passing cases / total cases (a number 0.0–1.0).
+
+DELIVERS RULE: `delivers` is true ONLY if pass_rate >= 0.8 AND no case fails with locus `script-bug` (a shipped buggy script is never acceptable). Otherwise `delivers` is false.
+
+Output, in this exact order:
+1. A JSON object matching this shape (advisory — the gate does not depend on it, but produce it):
+   {"delivers": <bool>, "pass_rate": <num>, "cases": [{"case": "<title>", "pass": <bool>, "failure_locus": "<one of the four>", "fix": "<concrete fix or empty>"}]}
+2. A short `## Findings` section: per failing case, one line — `<case>: <locus> — <fix>`.
+3. As the VERY LAST line of your output, ALWAYS print this machine sentinel EXACTLY (a downstream bash node parses it — it must be the final line, lowercase true/false, no markdown, no trailing text):
+   SKY_FORGE delivers=true pass_rate=<n>
+   (or `delivers=false`). Use the same boolean as the JSON. Do not add prose after this line.
+∆∆
+
+※※
+Step 5 — gate. DETERMINISTIC bash. Greps the judge output for the `SKY_FORGE delivers=…` sentinel
+and emits ONE clean JSON line {"delivers":"true|false"} — bash output always parses, so the
+downstream `when` never silently falls back. FAIL-CLOSED: only an explicit `delivers=true` yields
+true; a missing/garbled sentinel yields "false". Rationale (opposite of track-anthropic-changes'
+fail-open): a false "delivers=true" would SHIP A BROKEN SKILL via PR; a false "delivers=false" just
+runs a cheap, bounded improve loop. The costlier mistake is gated against.
+※※
+
+§gate§
+depends_on = ["judge"]
+bash = "set -u\nV=$(printf '%s' \"$SKY_OUTPUT_JUDGE\" | grep -oE 'SKY_FORGE delivers=(true|false)' | tail -1 | grep -oE '(true|false)$')\nif [ \"$V\" = \"true\" ]; then echo '{\"delivers\":\"true\"}'; else echo '{\"delivers\":\"false\"}'; fi"
+§§
+
+※※
+Step 6 — improve. Claude (sonnet) PROMPT-BODY LOOP, runs ONLY when the gate says delivers=false
+(reading the gate bash node's deterministic JSON, not LLM output). isolation = "worktree": all edits
+land in a throwaway checkout, never the live repo. Each loop iteration is a FRESH `claude -p`
+invocation — sky shells out per node execution and nothing carries the session over without
+chain_from — so each pass reasons fresh on the current worktree state. (There is NO `context`/
+`fresh_context` node key; that mechanism does not exist. Fresh-per-iteration is intrinsic to a
+prompt loop body.) The body edits SKILL.md + bundled scripts to fix the judged failures, then
+re-exercises + self-judges and WRITES a one-line verdict to a per-run sentinel file. loop.until.bash
+greps that file for delivers=true; loop.max = 3 caps the passes (loop bodies may be prompt/command/
+bash, NOT http/eval/wait — SKY-WF-037). The sentinel path is derived from $SKY_RUN_ID inside the
+loop.until.bash (a bash context, where {{var}} does not expand — env channel only).
+※※
+
+§improve§
+model = "sonnet"
+depends_on = ["gate", "judge", "read-skill"]
+when = "$gate.output.delivers == 'false'"
+isolation = "worktree"
+max_turns = 30
+loop = {"until": {"bash": "F=\"/tmp/sky-forge-${SKY_RUN_ID:-unknown}.verdict\"; test -f \"$F\" && grep -q 'delivers=true' \"$F\""}, "max": 3}
+§§
+
+∆improve∆
+You are improving a Claude Code skill so it passes its eval suite. You are running inside an isolated git worktree — edit files freely here; nothing touches the live repo. Be terse and surgical.
+
+The skill source (SKILL.md + bundled scripts) and its on-disk location:
+$SKY_OUTPUT_READ_SKILL
+
+(read `skill_dir` from that block — it is the absolute path to the skill directory in THIS worktree.)
+
+The eval suite the skill must pass:
+$SKY_OUTPUT_PARSE
+
+The judge's scored findings (what failed and WHERE — prose-ambiguity / missing-script / script-bug):
+$SKY_OUTPUT_JUDGE
+
+This is one improvement pass (the workflow may run up to 3). Do exactly this:
+
+1. Pick the failing cases from the judge findings and fix their root cause IN THE WORKTREE under `skill_dir`:
+   - `prose-ambiguity` → tighten/clarify SKILL.md (add the missing rule, disambiguate, add a worked example).
+   - `missing-script` → add the helper script the skill needs, and reference it from SKILL.md.
+   - `script-bug` → repair the bundled script.
+
+PROTECTED-FILES BOUNDARY — you MUST NOT create or edit, anywhere: MISSION.md, FACTORY_RULES.md, anything under `.github/`, any `.sky/` workflow definition, or any learnings file. And you MUST NOT edit a skill that governs the factory itself (e.g. a skill whose purpose is running/authoring these meta-workflows) — if the target skill is such a governance skill, make NO edits and write the verdict file with `delivers=false reason=governance-skill-needs-human`. Edit ONLY files under the target `skill_dir`.
+
+2. RE-EXERCISE the skill (as written AFTER your edits) against every eval case, then SELF-JUDGE pass/fail honestly using the same DELIVERS rule the judge used: delivers is true only if pass_rate >= 0.8 AND no case has a `script-bug`.
+
+3. Use the Bash tool to write your verdict to the per-run sentinel file. Run exactly:
+   printf 'delivers=%s pass_rate=%s\n' "<true|false>" "<n>" > "/tmp/sky-forge-${SKY_RUN_ID}.verdict"
+   (Use the real values. The loop stops when this file contains delivers=true; otherwise another pass runs, up to the cap.)
+
+4. Output a terse summary: which files you changed, the new pass_rate, and the verdict line you wrote.
+
+Do not commit, push, or open a PR — finalize does that. Do not touch anything outside `skill_dir`.
+∆∆
+
+※※
+Step 7 — lint-scripts. DETERMINISTIC bash, no LLM. Statically lints the bundled scripts in the
+worktree where a toolchain exists IN-CONTAINER: `bash -n` (parse-check) for *.sh, `node --check`
+for *.js/*.mjs/*.cjs. NEVER executes the scripts (parse-only — see SAFETY SCOPE). Languages without
+an in-container toolchain (e.g. Go — the prod debian-slim image has no Go) are listed as deferred-to-CI.
+Non-fatal by design: a static-check failure is REPORTED and carried into finalize's PR body so a human
+sees it; CI on the pushed branch is the real gate. Reads the same skill_dir resolution as read-skill.
+NOTE: this runs against the LIVE checkout's skill_dir for languages whose static check is path-pure;
+the improved files live in improve's worktree, so finalize re-runs the authoritative checks pre-PR.
+※※
+
+§lint-scripts§
+depends_on = ["improve"]
+bash = "set -u\nP=\"$SKY_OUTPUT_READ_SKILL\"\nDIR=$(printf '%s' \"$P\" | sed -n 's/^skill_dir=//p' | head -1)\nif [ -z \"$DIR\" ] || [ ! -d \"$DIR\" ]; then echo 'lint-scripts: skill_dir unresolved — deferring all checks to CI'; exit 0; fi\necho '=== static-script-checks ==='\nFOUND=0\nwhile IFS= read -r f; do\n  FOUND=1\n  case \"$f\" in\n    *.sh) if bash -n \"$f\" 2>/tmp/sky-forge-lint.err; then echo \"OK   bash -n $f\"; else echo \"FAIL bash -n $f\"; cat /tmp/sky-forge-lint.err; fi ;;\n    *.js|*.mjs|*.cjs) if command -v node >/dev/null 2>&1; then if node --check \"$f\" 2>/tmp/sky-forge-lint.err; then echo \"OK   node --check $f\"; else echo \"FAIL node --check $f\"; cat /tmp/sky-forge-lint.err; fi; else echo \"DEFER no node toolchain: $f (CI checks it)\"; fi ;;\n    *.go) echo \"DEFER no Go toolchain in container: $f (CI checks it)\" ;;\n    *) echo \"DEFER no in-container static check: $f (CI checks it)\" ;;\n  esac\ndone <<EOF\n$(cd \"$DIR\" && find . -type f ! -name 'SKILL.md' | sed \"s@^\\.@$DIR@\")\nEOF\nif [ \"$FOUND\" = 0 ]; then echo 'no bundled scripts — SKILL.md only'; fi\necho '=== end static-script-checks ==='"
+§§
+
+※※
+Step 8 — finalize. bash + gh, isolation = "worktree". Commits the improved skill tree (only files
+under the target skill_dir) on a branch and opens a PR. CI IS THE QUALITY GATE — this never merges.
+IDEMPOTENT: if the worktree has no changes under skill_dir (the skill already delivered, or improve
+was skipped/made no edits), it prints "already passing — no PR" and opens nothing.
+PROTECTED-FILES BOUNDARY (#39): the commit is scoped with an explicit pathspec to the skill_dir, and
+an EXPLICIT GUARD rejects any staged path matching MISSION.md / FACTORY_RULES.md / .github/ / .sky/ /
+learnings — if such a path is staged, the node fails closed and opens nothing (defence in depth on top
+of improve's prompt-level boundary). No destructive shell patterns. SKILL_REPO/skill_name from env.
+※※
+
+§finalize§
+depends_on = ["lint-scripts"]
+isolation = "worktree"
+bash = "set -u\nNAME=\"${SKY_SKILL_NAME:-}\"\nREPO=\"${SKY_SKILL_REPO:-$PWD}\"\nREL=\".claude/skills/$NAME\"\nDIR=\"$REPO/$REL\"\nif [ -z \"$NAME\" ] || [ ! -d \"$DIR\" ]; then echo \"SKILL_FORGE_FAILED: skill_dir $DIR missing\" >&2; exit 1; fi\ncd \"$REPO\" || { echo 'SKILL_FORGE_FAILED: cd repo' >&2; exit 1; }\nif git diff --quiet -- \"$REL\" && git diff --cached --quiet -- \"$REL\"; then echo 'already passing — no changes under skill_dir, no PR'; exit 0; fi\nSTAGED=$(git status --porcelain -- \"$REL\" | awk '{print $2}')\nfor p in $STAGED; do\n  case \"$p\" in\n    MISSION.md|FACTORY_RULES.md|.github/*|.sky/*|*/learnings/*|.claude/skills/*/learnings/*) echo \"SKILL_FORGE_FAILED: protected path staged: $p\" >&2; exit 1 ;;\n  esac\ndone\nBR=\"skill-forge/$NAME-$(date -u +%Y%m%d-%H%M%S)\"\ngit checkout -b \"$BR\" || { echo 'SKILL_FORGE_FAILED: branch' >&2; exit 1; }\ngit add -- \"$REL\" || { echo 'SKILL_FORGE_FAILED: add' >&2; exit 1; }\ngit commit -m \"skill-forge: improve $NAME skill toward eval bar\" -m 'Staged by skill-forge meta-workflow. CI is the quality gate; human merge required.' || { echo 'SKILL_FORGE_FAILED: commit' >&2; exit 1; }\ngit push -u origin \"$BR\" || { echo 'SKILL_FORGE_FAILED: push' >&2; exit 1; }\nURL=$(gh pr create --title \"skill-forge: improve $NAME skill\" --body \"Automated skill-forge pass on the \\`$NAME\\` skill. All edits scoped to \\`$REL\\`. Static script checks ran in-container (bash -n / node --check); other languages defer to CI. CI IS THE QUALITY GATE — review + merge by a human. Protected files (MISSION.md, FACTORY_RULES.md, .github/, .sky/, learnings) were guarded and never staged.\" 2>&1) && echo \"PR: $URL\" || echo \"pr-create note: $URL\""
+§§
