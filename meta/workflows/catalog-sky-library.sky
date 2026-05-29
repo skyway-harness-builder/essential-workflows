@@ -1,0 +1,80 @@
+※※
+# catalog-sky-library
+
+Manually-run workflow that regenerates a browsable `INDEX.md` for a `.sky` directory —
+one row per workflow (name, trigger, vars, node-DAG sketch, budget) — then verifies in
+bash that every workflow is listed. One cheap Claude (haiku) node does the formatting;
+the rest is bash. Re-run any time to refresh the map of your library.
+
+  (manual run: --var dir)
+       │
+       ▼
+   ┌────────┐  count *.sky in <dir>
+   │  scan  │
+   └────────┘
+       │
+       ▼
+   ┌────────┐  haiku reads each .sky -> writes <dir>/INDEX.md table
+   │ index  │  (sky-workflow-authoring skill)
+   └────────┘
+       │
+       ▼
+   ┌────────┐  assert INDEX.md non-empty + every .sky listed
+   │ verify │  exit 1 if any workflow is missing
+   └────────┘
+
+Run it (state which directory to catalog with --var dir):
+
+  sky run catalog-sky-library --var dir=".sky/workflows"
+
+  - dir   directory of .sky files to index — STATE THIS (e.g. .sky/workflows)
+
+Install the skill it formats with (once):
+
+  sky examples install sky-workflow-authoring
+※※
+
+⊕meta⊕
+name = "catalog-sky-library"
+description = "Regenerate a browsable INDEX.md for a .sky directory (name, trigger, vars, DAG, budget) with a bash coverage check that every file is listed. Fire via: sky run catalog-sky-library --var dir=<path>"
+trigger.manual = true
+output_style = "terse"
+max_budget_usd = 1.00
+⊕⊕
+
+※※
+Step 1 — scan. Counts the workflows to be indexed and stops cleanly if the directory
+is empty (nothing to catalog is not a failure).
+※※
+
+§scan§
+bash = "set -e\nif [ ! -d \"$SKY_DIR\" ]; then echo \"[catalog] no such dir: $SKY_DIR\"; exit 1; fi\nN=$(find \"$SKY_DIR\" -maxdepth 1 -name '*.sky' | wc -l | tr -d ' ')\necho \"[catalog] indexing $N workflow(s) in $SKY_DIR\""
+§§
+
+※※
+Step 2 — index. A cheap haiku node reads every .sky in the directory and writes the
+INDEX.md table. The sky-workflow-authoring skill teaches it the four-delimiter format
+so it extracts the trigger / vars / DAG correctly.
+※※
+
+§index§
+model = "haiku"
+depends_on = ["scan"]
+skills = ["sky-workflow-authoring"]
+§§
+
+∆index∆
+List every `*.sky` file in {{dir}} (ignore INDEX.md and any non-.sky file). Read each one and extract: its `name` (from the ⊕meta⊕ block), its trigger type (manual / sky_event / github / cron), the `--var` inputs it expects, a one-line node-DAG sketch (node ids joined by `->` following depends_on edges), and `max_budget_usd` if set.
+
+Write a Markdown file at {{dir}}/INDEX.md containing a `# Workflow Index` title, a one-line intro, and a table with the header `| Workflow | Trigger | Vars | Flow | Budget |`. One row per workflow, sorted by name; use `—` for an empty cell. Do not modify any `.sky` file. Output the path you wrote when done.
+∆∆
+
+※※
+Step 3 — verify. Pure-bash coverage check: INDEX.md must exist, be non-empty, and
+mention every workflow file by name. Fails the run if the index is stale or partial.
+※※
+
+§verify§
+depends_on = ["index"]
+bash = "set -e\nIDX=\"$SKY_DIR/INDEX.md\"\nif [ ! -s \"$IDX\" ]; then echo \"[catalog] INDEX.md missing or empty\"; exit 1; fi\nmissing=0\nfor f in \"$SKY_DIR\"/*.sky; do\n  [ -e \"$f\" ] || continue\n  b=$(basename \"$f\" .sky)\n  if ! grep -q \"$b\" \"$IDX\"; then echo \"[catalog] not listed: $b\"; missing=$((missing+1)); fi\ndone\nif [ \"$missing\" -gt 0 ]; then echo \"[catalog] $missing workflow(s) missing from INDEX.md\"; exit 1; fi\necho \"[catalog] INDEX.md covers all workflows -> $IDX\""
+§§

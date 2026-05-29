@@ -1,5 +1,5 @@
 apiVersion: skylence.io/v1
-version: 2.1.0
+version: 2.2.0
 updated_at: "2026-05-29"
 entries:
   - kind: workflow
@@ -13,9 +13,34 @@ entries:
     tags: [meta, update, lint, manual]
 
   - kind: workflow
+    path: meta/workflows/rename-sky-workflow.sky
+    description: "Atomically rename a .sky: git mv, fix its meta name, and rewrite `sky run <old>` refs behind a manual gate, then lint and verify. Pure bash. Fire via: sky run rename-sky-workflow --var dir=<dir> --var name=<old> --var new-name=<new>"
+    tags: [meta, rename, lifecycle, manual]
+
+  - kind: workflow
     path: meta/workflows/delete-sky-workflow.sky
     description: "Find a .sky workflow by name and delete it behind a manual approval gate. Fire via: sky run delete-sky-workflow --var name=<file>"
     tags: [meta, delete, manual]
+
+  - kind: workflow
+    path: meta/workflows/audit-sky-library.sky
+    description: "Lint every .sky in a directory in one pass and report pass/fail grouped by file, exiting non-zero on any failure. Pure bash. Fire via: sky run audit-sky-library --var dir=<path>"
+    tags: [meta, audit, lint, ci, manual]
+
+  - kind: workflow
+    path: meta/workflows/audit-sky-secrets.sky
+    description: "Scan every .sky for secret-shaped $ENV refs in bash/http not declared in secrets[], report the undeclared ones, exit non-zero on any. Pure bash. Fire via: sky run audit-sky-secrets --var dir=<path>"
+    tags: [meta, audit, secrets, security, manual]
+
+  - kind: workflow
+    path: meta/workflows/check-sky-trigger-conflicts.sky
+    description: "Detect workflows bound to the same non-manual trigger (sky_event, cron, or github event+action+label) that would all fire together, exit non-zero on collision. Pure bash. Fire via: sky run check-sky-trigger-conflicts --var dir=<path>"
+    tags: [meta, audit, triggers, manual]
+
+  - kind: workflow
+    path: meta/workflows/catalog-sky-library.sky
+    description: "Regenerate a browsable INDEX.md for a .sky directory (name, trigger, vars, DAG, budget) with a bash coverage check that every file is listed. Fire via: sky run catalog-sky-library --var dir=<path>"
+    tags: [meta, docs, catalog, manual]
 
   - kind: skill
     path: meta/skills/sky-workflow-authoring/SKILL.md

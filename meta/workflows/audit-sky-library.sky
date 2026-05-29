@@ -1,0 +1,57 @@
+※※
+# audit-sky-library
+
+Manually-run workflow that lints every `.sky` file in a directory in one pass and
+prints a pass/fail report grouped by file, exiting non-zero if any workflow fails.
+Pure bash — no LLM tokens. The steward's pre-flight before sharing a library or in CI.
+
+  (manual run: --var dir)
+       │
+       ▼
+   ┌────────┐  none found ──▶ note + stop (exit 0)
+   │  scan  │
+   └────────┘
+       │ found N files
+       ▼
+   ┌──────────┐  for each: sky lint → OK / FAIL + codes
+   │ lint-all │
+   └──────────┘
+       │
+       ▼
+   ┌────────┐
+   │ report │ ── grouped summary; exit 1 if any FAIL
+   └────────┘
+
+Run it (state which directory to audit with --var dir):
+
+  sky run audit-sky-library --var dir=".sky/workflows"
+
+  - dir   directory of .sky files to lint — STATE THIS before running (e.g. .sky/workflows)
+※※
+
+⊕meta⊕
+name = "audit-sky-library"
+description = "Lint every .sky in a directory in one pass and report pass/fail grouped by file, exiting non-zero on any failure. Fire via: sky run audit-sky-library --var dir=<path>"
+trigger.manual = true
+output_style = "terse"
+⊕⊕
+
+※※
+Step 1 — scan. Lists the .sky files in the target directory. If there are none,
+notes it and stops cleanly (nothing to audit is not a failure).
+※※
+
+§scan§
+bash = "set -e\nif [ ! -d \"$SKY_DIR\" ]; then echo \"[audit] no such dir: $SKY_DIR\"; exit 1; fi\nN=$(find \"$SKY_DIR\" -maxdepth 1 -name '*.sky' | wc -l | tr -d ' ')\necho \"[audit] $N workflow(s) in $SKY_DIR\"\nif [ \"$N\" -eq 0 ]; then echo \"[audit] nothing to lint\"; fi"
+§§
+
+※※
+Step 2 — lint-all. Runs `sky lint` on each file, tallies pass/fail, and exits
+non-zero when any file fails so the workflow can gate CI. The grouped, human
+report is printed here next to each result.
+※※
+
+§lint§
+depends_on = ["scan"]
+bash = "fail=0\npass=0\nfor f in \"$SKY_DIR\"/*.sky; do\n  [ -e \"$f\" ] || continue\n  if out=$(sky lint \"$f\" 2>&1); then\n    pass=$((pass+1))\n    echo \"OK    $(basename \"$f\")\"\n  else\n    fail=$((fail+1))\n    echo \"FAIL  $(basename \"$f\")\"\n    echo \"$out\" | sed 's/^/        /'\n  fi\ndone\necho \"[audit] $pass passed, $fail failed\"\nif [ \"$fail\" -gt 0 ]; then exit 1; fi"
+§§
