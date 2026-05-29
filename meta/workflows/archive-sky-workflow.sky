@@ -1,0 +1,72 @@
+⊕meta⊕
+name = "archive-sky-workflow"
+description = "Archive a .sky workflow into _archive/ with its trigger neutralized so it leaves the active path; reversible via restore mode. Manual gate before any move. Pure bash, no LLM."
+trigger.manual = true
+output_style = "terse"
+⊕⊕
+
+§find§
+bash = "set -eu\nDIR=\"$SKY_DIR\"\nNAME=\"$SKY_NAME\"\nMODE=\"${SKY_MODE:-archive}\"\nif [ \"$MODE\" != \"archive\" ] && [ \"$MODE\" != \"restore\" ]; then\n  echo \"ERROR: mode must be 'archive' or 'restore', got '$MODE'\" >&2\n  exit 1\nfi\nif [ \"$MODE\" = \"restore\" ]; then\n  SOURCE=\"$DIR/_archive/$NAME.sky\"\n  DEST=\"$DIR/$NAME.sky\"\nelse\n  SOURCE=\"$DIR/$NAME.sky\"\n  DEST=\"$DIR/_archive/$NAME.sky\"\nfi\nif [ ! -f \"$SOURCE\" ]; then\n  echo \"ERROR: source not found: $SOURCE\" >&2\n  exit 1\nfi\nif [ -e \"$DEST\" ]; then\n  echo \"ERROR: destination already exists: $DEST\" >&2\n  exit 1\nfi\necho \"mode=$MODE\"\necho \"source=$SOURCE\"\necho \"dest=$DEST\""
+§§
+
+§gate§
+depends_on = ["find"]
+trigger_rule = "all_success"
+wait.channel = "manual"
+wait.prompt = "Confirm move. Archiving NEUTRALIZES the trigger so the file cannot auto-fire even if the loader scans _archive/. Restore returns it as a manual-only workflow (re-add a trigger to reactivate). Review the source and dest paths printed by the find step, then approve."
+wait.timeout = "1h"
+§§
+
+§move§
+depends_on = ["gate"]
+trigger_rule = "all_success"
+bash = "set -eu\nDIR=\"$SKY_DIR\"\nNAME=\"$SKY_NAME\"\nMODE=\"${SKY_MODE:-archive}\"\nif [ \"$MODE\" = \"restore\" ]; then\n  SOURCE=\"$DIR/_archive/$NAME.sky\"\n  DEST=\"$DIR/$NAME.sky\"\nelse\n  SOURCE=\"$DIR/$NAME.sky\"\n  DEST=\"$DIR/_archive/$NAME.sky\"\nfi\nif [ \"$MODE\" = \"archive\" ]; then\n  mkdir -p \"$DIR/_archive\"\n  grep -v '^trigger\\.' \"$SOURCE\" > \"$SOURCE.tmp\"\n  mv \"$SOURCE.tmp\" \"$SOURCE\"\nfi\nif command -v git >/dev/null 2>&1 && git -C \"$DIR\" rev-parse --is-inside-work-tree >/dev/null 2>&1; then\n  git -C \"$DIR\" mv \"$SOURCE\" \"$DEST\" || mv \"$SOURCE\" \"$DEST\"\nelse\n  mv \"$SOURCE\" \"$DEST\"\nfi\necho \"moved $SOURCE -> $DEST\""
+§§
+
+§verify§
+depends_on = ["move"]
+trigger_rule = "all_success"
+bash = "set -eu\nDIR=\"$SKY_DIR\"\nNAME=\"$SKY_NAME\"\nMODE=\"${SKY_MODE:-archive}\"\nif [ \"$MODE\" = \"restore\" ]; then\n  DEST=\"$DIR/$NAME.sky\"\nelse\n  DEST=\"$DIR/_archive/$NAME.sky\"\nfi\nif [ ! -f \"$DEST\" ]; then\n  echo \"ERROR: moved file not found at $DEST\" >&2\n  exit 1\nfi\nsky lint \"$DEST\""
+§§
+
+※※
+archive-sky-workflow
+====================
+
+Move a .sky workflow into an _archive/ subdir with its trigger neutralized so it
+leaves the active load path, behind a manual gate. Reversible via restore mode.
+
+Pure bash, no LLM: moving a file does not change its content, so the moved file
+stays lint-clean and a bash `sky lint` verify suffices. No token cost.
+
+What archiving does to the trigger
+----------------------------------
+Archiving STRIPS every `^trigger.` line from the file (grep -v) before the move.
+This NEUTRALIZES the trigger, so even if the loader ever scans _archive/, the
+file cannot auto-fire. Restore moves the file back but leaves the trigger
+neutralized: it returns as a manual-only workflow. Re-add a trigger line to
+reactivate it.
+
+DAG
+---
+  find ──> gate (manual) ──> move ──> verify
+
+  find    resolve source/dest from mode; fail if source missing or dest exists
+  gate    manual confirm (shows both paths via find output); 1h timeout
+  move    archive: mkdir _archive, strip trigger lines, git mv (|| mv)
+          restore: git mv (|| mv) back, trigger stays neutralized
+  verify  sky lint the moved file at its new path; nonzero exit on failure
+
+Run
+---
+  archive (default):
+    sky run archive-sky-workflow --var dir=.sky/workflows --var name=old-flow
+  restore:
+    sky run archive-sky-workflow --var dir=.sky/workflows --var name=old-flow --var mode=restore
+
+Vars
+----
+  dir   directory holding the workflow (e.g. .sky/workflows)        -> $SKY_DIR
+  name  workflow filename without .sky (e.g. old-flow)              -> $SKY_NAME
+  mode  archive | restore; default archive when unset              -> $SKY_MODE
+※※

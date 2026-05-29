@@ -1,0 +1,102 @@
+⊕meta⊕
+name = "annotate-sky-workflow"
+description = "Insert inline ※※ rationale comments before each node in a .sky file explaining the node's purpose and the meaning of its when/chain_from/depends_on edges, then lint until clean."
+trigger.manual = true
+output_style = "terse"
+max_budget_usd = 3
+⊕⊕
+
+§read§
+bash = "set -eu\nF=\"$SKY_DIR/$SKY_NAME.sky\"\nif [ ! -f \"$F\" ]; then\n  echo \"not found: $F\" >&2\n  exit 1\nfi\necho \"target: $F\"\ngrep -c '^§' \"$F\" | sed 's/^/node-config blocks: /'"
+§§
+
+§annotate§
+model = "sonnet"
+skills = ["sky-workflow-authoring"]
+depends_on = ["read"]
+trigger_rule = "all_success"
+§§
+
+∆annotate∆
+Annotate the workflow file {{dir}}/{{name}}.sky with inline rationale comments.
+
+Steps:
+1. READ {{dir}}/{{name}}.sky in full.
+2. For each §id§ node-config block, add a concise ※※ ... ※※ comment block IMMEDIATELY BEFORE that §id§ opener line. The comment must explain:
+   - the node's purpose (what it does in one line),
+   - the meaning of each edge it has: depends_on (which upstreams must finish first), trigger_rule (when this node runs relative to those upstreams: all_done / all_success / one_success / one_failure), chain_from (which prior Claude session it resumes), and any when condition (the exact data condition that must hold).
+3. Use the Edit tool for every change. Do NOT use bash/sed to rewrite delimiter lines; that is fragile and will corrupt the file.
+4. PRESERVE every node, every trigger, every ∆ prompt body, and the ⊕meta⊕ block exactly. Do not rename ids, reorder nodes, change bash, or alter any prompt text. Only insert ※※ comment blocks.
+5. Keep each comment terse and machine-oriented. Skip a node only if an identical ※※ rationale already precedes it.
+
+Each ※※ block: opener ※※ alone on its line, closer ※※ alone on its line, body in between.
+∆∆
+
+§lint§
+model = "sonnet"
+skills = ["sky-workflow-authoring"]
+depends_on = ["annotate"]
+trigger_rule = "all_success"
+loop.until.bash = "sky lint \"$SKY_DIR/$SKY_NAME.sky\""
+loop.max = 6
+§§
+
+∆lint∆
+Run `sky lint "$SKY_DIR/$SKY_NAME.sky"` on the freshly annotated file (the loop re-runs this until lint exits 0, up to the cap).
+
+If lint reports any error or warning:
+- READ {{dir}}/{{name}}.sky again.
+- Fix ONLY the problems lint names — most likely a malformed ※※ block from the annotate step (an opener or closer not alone on its line, or an unbalanced ※※ pair).
+- Apply fixes with the Edit tool. Never delete a node, trigger, edge, or prompt body to satisfy the linter.
+
+If lint already passes, make no edits.
+∆∆
+
+※※
+annotate-sky-workflow — add inline rationale comments to one .sky, then lint clean.
+
+Inserts a ※※ comment block before each §id§ node documenting the node's
+purpose and what its depends_on / trigger_rule / chain_from / when edges mean.
+Best for COMPLEX workflows whose edges are non-obvious. A small, terse library
+file may not want the extra verbosity — annotation adds line count.
+
+DAG:
+  read ──▶ annotate ──▶ lint
+  (bash:      (sonnet:        (sonnet loop:
+   verify      Edit in           sky lint until 0,
+   file        place)            max 6 passes)
+   exists)
+
+  Edges:
+    read     all_success gate is implicit (bash; nonzero exit if file missing).
+    annotate trigger_rule=all_success  → runs only if read found the file.
+    lint     trigger_rule=all_success  → runs only if annotate succeeded;
+             loop.until.bash re-runs the node until `sky lint` exits 0.
+
+Run:
+  sky run annotate-sky-workflow --vars dir=.sky/workflows,name=triage-issue
+
+Vars:
+  dir   directory holding the target .sky (e.g. .sky/workflows). → $SKY_DIR
+  name  workflow filename WITHOUT the .sky extension.            → $SKY_NAME
+
+The target file edited in place is "$dir/$name.sky".
+※※
+
+※※
+node: read — verify the target .sky exists; exit 1 if missing so downstream
+all_success gates skip cleanly. Reports node-config block count for context.
+※※
+
+※※
+node: annotate — sonnet w/ sky-workflow-authoring skill. Reads the file and
+inserts a ※※ rationale block before each §id§ via the Edit tool. Preserves
+every node/trigger/prompt exactly. Gated all_success on read.
+※※
+
+※※
+node: lint — sonnet loop. loop.until.bash runs `sky lint` on the file each
+pass and stops at exit 0 (max 6). Fixes only lint-named issues (typically a
+malformed ※※ block) with Edit; never strips structure. Gated all_success on
+annotate.
+※※

@@ -1,0 +1,78 @@
+⊕meta⊕
+name = "explain-sky-workflow"
+description = "Read one .sky file and emit a plain-English walkthrough so a user understands its triggers, node DAG, inputs, and edges without parsing the Unicode delimiters. Read-only."
+trigger.manual = true
+output_style = "terse"
+max_budget_usd = 1
+⊕⊕
+
+※※
+explain-sky-workflow — describe a .sky workflow in plain English (read-only)
+
+WHAT
+  Resolves one .sky file, then has Claude (haiku) read it and write a prose
+  walkthrough: what triggers it, the node DAG in order, the --var inputs, what
+  each node does, and the meaning of any when / chain_from / depends_on / loop
+  edges. The file is NEVER modified.
+
+DAG
+  resolve ──> explain
+  (bash)       (claude haiku, skills=[sky-workflow-authoring])
+
+  resolve  verifies "$SKY_DIR/$SKY_NAME.sky" exists (exit 1 if not) and runs
+           'sky describe' best-effort for extra context.
+  explain  depends_on=[resolve], trigger_rule=all_success — only runs if the
+           file actually resolved. Reads the file and writes prose. Read-only.
+
+RUN
+  sky run explain-sky-workflow --var dir=.sky/workflows --var name=my-workflow
+
+VARS
+  dir   directory containing the .sky file (no trailing slash).  -> $SKY_DIR
+  name  workflow name WITHOUT the .sky extension.                -> $SKY_NAME
+※※
+
+※※
+Step 1 — resolve. Assert the target .sky exists ("$SKY_DIR/$SKY_NAME.sky"); exit 1
+with a clear message if not. Then run `sky describe` best-effort for extra context the
+explain step can use. Read-only: no rm, no mutation.
+※※
+
+§resolve§
+bash = "set -eu\nF=\"$SKY_DIR/$SKY_NAME.sky\"\nif [ ! -f \"$F\" ]; then\n  echo \"ERROR: no such .sky file: $F\" >&2\n  exit 1\nfi\necho \"resolved: $F\"\necho \"--- sky describe (best-effort) ---\"\nsky describe \"$F\" 2>/dev/null || echo \"(sky describe unavailable; explain will read the file directly)\""
+§§
+
+※※
+Step 2 — explain. A cheap haiku node reads the resolved .sky and writes a plain-English
+walkthrough (triggers, node DAG, --var inputs, per-node purpose, edge meanings). Runs
+only if resolve succeeded (trigger_rule = all_success). Read-only — must not edit the
+file. The sky-workflow-authoring skill teaches it the four-delimiter format.
+※※
+
+§explain§
+model = "haiku"
+depends_on = ["resolve"]
+trigger_rule = "all_success"
+skills = ["sky-workflow-authoring"]
+§§
+
+∆explain∆
+Read the workflow file at {{dir}}/{{name}}.sky and write a plain-English walkthrough for a user who does NOT know the .sky Unicode-delimiter format. Do NOT modify the file — read only.
+
+Context from the resolve step (path + optional `sky describe`):
+$SKY_OUTPUT_RESOLVE
+
+Cover, in this order, using clear headings and short paragraphs:
+
+1. Summary — one sentence on what the workflow does.
+2. Trigger — what makes it run (manual / github event / sky_event / cron) and any output_style or budget settings.
+3. Inputs — every --var the user can pass, what each means, and how it maps to a $SKY_ variable.
+4. Node DAG — list nodes in dependency order. For each: its id, type (bash / claude / http / script / loop / etc.), and one plain sentence on what it does.
+5. Edges — explain the meaning of every depends_on, when condition, trigger_rule, chain_from, and loop.until / loop.max found. Translate gating semantics into plain language (e.g. "runs only if the previous step failed").
+6. How to run — a copy-pasteable `sky run` command with the required --var flags.
+
+Rules:
+- Plain English. Do not show the raw Unicode delimiters; translate them.
+- Be accurate to the actual file contents; do not invent nodes or vars.
+- Keep it terse and machine-skimmable. No preamble, no closing pleasantries.
+∆∆

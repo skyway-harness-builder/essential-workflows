@@ -1,0 +1,96 @@
+⊕meta⊕
+name = "sky-library-health-report"
+description = "Compose per-workflow lint status, run-recency, and budget-cap presence into a one-screen graded HEALTH.md (red/amber/green) for a whole .sky library."
+trigger.manual = true
+output_style = "terse"
+max_budget_usd = 0.5
+⊕⊕
+
+§inventory§
+bash = "set -eu\nDIR=\"$SKY_DIR\"\nif [ -z \"$DIR\" ]; then echo 'ERROR: --var dir is required' >&2; exit 2; fi\nif [ ! -d \"$DIR\" ]; then echo \"ERROR: not a directory: $DIR\" >&2; exit 2; fi\nN=0\nfor f in \"$DIR\"/*.sky; do\n  [ -e \"$f\" ] || continue\n  echo \"$f\"\n  N=$((N+1))\ndone\nif [ \"$N\" -eq 0 ]; then echo \"ERROR: no .sky files in $DIR\" >&2; exit 2; fi\necho \"inventory: $N workflow(s) in $DIR\" >&2"
+§§
+
+§checks§
+depends_on = ["inventory"]
+trigger_rule = "all_success"
+bash = "set -u\nDIR=\"$SKY_DIR\"\nprintf 'workflow\\tlint\\tllm_uncapped\\tlast_run\\n'\nfor f in \"$DIR\"/*.sky; do\n  [ -e \"$f\" ] || continue\n  BASE=$(basename \"$f\" .sky)\n  if sky lint \"$f\" >/dev/null 2>&1; then LINT=pass; else LINT=fail; fi\n  HAS_CLAUDE=no\n  if grep -Eq '^[[:space:]]*model[[:space:]]*=' \"$f\"; then HAS_CLAUDE=yes; fi\n  HAS_CAP=no\n  if grep -Eq '^[[:space:]]*max_budget_usd[[:space:]]*=' \"$f\"; then HAS_CAP=yes; fi\n  if [ \"$HAS_CLAUDE\" = yes ] && [ \"$HAS_CAP\" = no ]; then UNCAPPED=yes; else UNCAPPED=no; fi\n  LAST=never\n  REC=$(sky logs 2>/dev/null | grep -F \"$BASE\" | head -n 1 || true)\n  if [ -n \"$REC\" ]; then LAST=seen; fi\n  printf '%s\\t%s\\t%s\\t%s\\n' \"$BASE\" \"$LINT\" \"$UNCAPPED\" \"$LAST\"\ndone"
+§§
+
+§render§
+model = "haiku"
+depends_on = ["checks"]
+trigger_rule = "all_success"
+§§
+
+∆render∆
+You are writing a one-screen library health dashboard. Read the tab-separated rows in environment variable SKY_OUTPUT_CHECKS. The header row is: workflow, lint, llm_uncapped, last_run.
+
+Write a Markdown file to the path in environment variable SKY_DIR, named HEALTH.md (i.e. {{dir}}/HEALTH.md). Use the Write tool. Overwrite if it exists.
+
+Grade each workflow row red/amber/green by these exact rules, in priority order:
+- RED if lint == fail.
+- AMBER if lint == pass AND (llm_uncapped == yes OR last_run == never).
+- GREEN if lint == pass AND llm_uncapped == no AND last_run != never.
+
+File contents, in this order:
+1. An H1 title: "# .sky Library Health".
+2. A one-line rollup sentence: total workflows and a count per grade, e.g. "12 workflows: 8 green, 3 amber, 1 red."
+3. A Markdown table with columns: Workflow | Grade | Lint | LLM cap | Last run. Render Grade as a colored circle emoji plus the word (red circle RED, amber/yellow circle AMBER, green circle GREEN). For LLM cap: "uncapped" when llm_uncapped == yes, "ok" otherwise. For Last run: "never" or "seen".
+4. A short "What this means" section (3-4 bullets): red = lint failing, fix first; amber = passes lint but is an uncapped LLM workflow or has never run; green = clean and exercised. State plainly that this report COMPOSES the lint, budget-cap, and run-recency signals into a dashboard and is NOT a substitute for the dedicated audits — run audit-sky-library, dry-run-sky-workflow, and the budget audit for per-issue detail.
+
+Keep it under one screen. Terse. No preamble in your chat reply; just write the file and report the path and the grade tallies.
+∆∆
+
+§verify§
+depends_on = ["render"]
+trigger_rule = "all_success"
+bash = "set -eu\nDIR=\"$SKY_DIR\"\nOUT=\"$DIR/HEALTH.md\"\nif [ ! -s \"$OUT\" ]; then echo \"ERROR: render did not produce $OUT\" >&2; exit 1; fi\necho \"wrote $OUT ($(wc -l < \"$OUT\" | tr -d ' ') lines)\""
+§§
+
+※※
+sky-library-health-report
+==========================
+
+One-screen graded HEALTH.md for a whole .sky library. Composes three cheap
+signals per workflow into a red/amber/green dashboard:
+
+  - lint pass/fail        (red when failing)
+  - LLM budget cap        (amber when a claude node has no max_budget_usd)
+  - run recency           (amber when the workflow has never run)
+  - green                 (lint passes, capped-or-no-LLM, and seen in run history)
+
+HONESTY: this is a DASHBOARD that rolls up existing signals. It does not
+re-audit deeply. For per-issue detail run the dedicated workflows:
+  - audit-sky-library        (full library scan + report)
+  - dry-run-sky-workflow     (probe a single workflow)
+  - the budget audit         (token/cost detail)
+
+DAG
+---
+  inventory ──► checks ──► render ──► verify
+   (bash)       (bash)     (haiku)     (bash)
+
+  inventory   list "$SKY_DIR"/*.sky; fail if dir missing or empty.
+  checks      per file: sky lint pass/fail, claude-node-without-cap detection,
+              best-effort last-run recency from `sky logs`; emit TSV rows.
+  render      haiku reads $SKY_OUTPUT_CHECKS, grades each row, writes
+              "$SKY_DIR"/HEALTH.md (table + one-line rollup).
+  verify      assert HEALTH.md exists and is non-empty.
+
+RUN
+---
+  sky run sky-library-health-report --vars dir=/path/to/.sky/workflows
+
+VARS
+----
+  dir   (required)  Directory containing the *.sky files to grade.
+                    Exposed to bash as "$SKY_DIR" and to the prompt as {{dir}}.
+                    HEALTH.md is written into this same directory.
+
+NOTES
+-----
+  - No `rm -f`/`rm -r`: nothing is deleted; render overwrites HEALTH.md in place.
+  - last_run is best-effort (greps `sky logs` for the workflow basename); a
+    "never" can be a false negative if logs were pruned — treat amber as a nudge.
+  - max_budget_usd caps the single haiku render node.
+※※

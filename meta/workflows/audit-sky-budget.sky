@@ -1,0 +1,82 @@
+⊕meta⊕
+name = "audit-sky-budget"
+description = "Estimate per-workflow LLM spend across a directory and flag every workflow that has a Claude node but no max_budget_usd cap; rank by cost risk with suggested caps."
+trigger.manual = true
+output_style = "terse"
+max_budget_usd = 1
+⊕⊕
+
+§scan§
+bash = "set -eu\nDIR=\"${SKY_DIR:-.sky/workflows}\"\nif [ ! -d \"$DIR\" ]; then echo \"no such dir: $DIR\" >&2; exit 1; fi\nfound=0\nfor f in \"$DIR\"/*.sky; do\n  [ -e \"$f\" ] || continue\n  found=$((found + 1))\n  name=$(basename \"$f\" .sky)\n  prompt_blocks=$(grep -cE '^∆[A-Za-z0-9_-]+∆$' \"$f\" || true)\n  model_nodes=$(grep -cE '^[[:space:]]*model[[:space:]]*=' \"$f\" || true)\n  claude_nodes=$prompt_blocks\n  if [ \"$model_nodes\" -gt \"$claude_nodes\" ]; then claude_nodes=$model_nodes; fi\n  if grep -qE '^[[:space:]]*max_budget_usd[[:space:]]*=' \"$f\"; then has_cap=yes; else has_cap=no; fi\n  models=$(grep -hoE 'model[[:space:]]*=[[:space:]]*\"(haiku|sonnet|opus)\"' \"$f\" | sed -E 's/.*\"(haiku|sonnet|opus)\"/\\1/' | sort -u | paste -sd, - || true)\n  [ -n \"$models\" ] || models=none\n  printf '%s\\t%s\\t%s\\t%s\\n' \"$name\" \"$claude_nodes\" \"$has_cap\" \"$models\"\ndone\nif [ \"$found\" -eq 0 ]; then echo \"no .sky files in: $DIR\" >&2; exit 1; fi"
+§§
+
+§report§
+model = "haiku"
+depends_on = ["scan"]
+trigger_rule = "all_success"
+max_budget_usd = 1
+§§
+
+∆report∆
+You are a cost-risk auditor for Skylence `.sky` workflows. The scan node already classified every workflow in the target directory. Its tab-separated output (one line per file) is in the environment variable named SKY_OUTPUT_SCAN. Each line is:
+
+  name <TAB> claude_node_count <TAB> has_cap(yes|no) <TAB> models(comma-separated, or "none")
+
+Read SKY_OUTPUT_SCAN and produce a terse, machine-oriented English report with these sections:
+
+1. MISSING CAP (durable signal — this is the reliable part):
+   List EVERY workflow where has_cap == "no" AND claude_node_count > 0. These are LLM workflows with no `max_budget_usd` ceiling: an unbounded run can spend without limit. For each, print:
+     <name>  models=<models>  claude_nodes=<n>  suggested_cap=$<USD>
+   Suggested cap heuristic (rough, per workflow):
+     - base = 0.5 USD per claude node
+     - opus present: multiply node contribution by 4
+     - sonnet present (no opus): multiply by 2
+     - haiku only: multiply by 1
+     - round up to the nearest 0.5; minimum 0.5
+   Sort this list cost-risk descending (highest suggested_cap first).
+
+2. COST RISK RANKING (rough estimate — explicitly label as approximate):
+   Rank ALL workflows that have claude_node_count > 0 by the same rough cost figure (capped or not). Print rank, name, rough_estimate=$<USD>, has_cap, models. State plainly at the top of this section that the figure is a coarse estimate derived only from node count and model tier, not from real token accounting.
+
+3. SUMMARY: total workflows scanned, count with claude nodes, count missing a cap, count of pure-bash (claude_node_count == 0) workflows (these need no cap and are not a risk).
+
+Rules: do not invent workflows not present in SKY_OUTPUT_SCAN. Do not run any tools or read files — operate only on SKY_OUTPUT_SCAN. If a model column is "none" treat the row as pure-bash even if a count slipped through. Keep it compact; tables or aligned columns are fine.
+∆∆
+
+※※
+audit-sky-budget — estimate per-workflow LLM spend and flag uncapped Claude workflows.
+
+WHAT IT DOES
+  Scans every *.sky in a directory, counts Claude prompt/model nodes per file,
+  detects whether each declares a `max_budget_usd` cap and which models it uses,
+  then a haiku node ranks workflows by rough cost risk and lists every LLM
+  workflow that is MISSING a `max_budget_usd` cap, with a suggested cap.
+
+  HONESTY NOTE: the dollar cost figure is a ROUGH ESTIMATE derived only from
+  node count and model tier (haiku/sonnet/opus) — NOT from real token usage.
+  The reliable, durable signal is the MISSING-CAP flag: a workflow with a
+  Claude node and no `max_budget_usd` can spend without bound. Trust that
+  flag; treat the dollar numbers as triage hints only.
+
+DAG
+  scan ──> report
+   │         │
+   │         └─ claude(haiku): rank by rough cost risk + list every
+   │            LLM workflow missing a max_budget_usd cap, suggest caps
+   │            (runs only if scan succeeds: trigger_rule = all_success)
+   └─ bash: for each "$SKY_DIR"/*.sky count ∆ prompt blocks + model nodes,
+      detect max_budget_usd presence and models used; emit one TSV line
+      per file: name, claude_node_count, has_cap, models. Exits nonzero
+      if the dir is missing or contains no .sky files.
+
+RUN
+  sky run audit-sky-budget --var dir=.sky/workflows
+
+VARS
+  dir   directory to scan for *.sky files (read in bash as "$SKY_DIR";
+        defaults to .sky/workflows when unset). Required in practice.
+
+EXIT
+  scan exits nonzero when the directory is missing or has no .sky files,
+  which fails the run before any Claude spend.
+※※

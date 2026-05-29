@@ -1,0 +1,115 @@
+※※
+# codemod-sky-var
+
+Manually-run workflow that bulk-renames ONE token across every `.sky` file in a
+directory, consistently across its three syntactic forms, behind a manual gate, then
+lints every touched file. Pure bash, no LLM tokens.
+
+A `--var` key (or a node id) shows up in three places in a `.sky` file, and a rename
+must hit all three or the workflow breaks:
+
+  1. template form  {{old}}            (in ∆ prompt / http / eval bodies)
+  2. bash env form  $SKY_<UPPER_OLD>   (UPPER_OLD = old uppercased, '-' -> '_')
+  3. node-id form   §old§  and  ∆old∆  (the prompt body pairs to §old§ by id),
+                    plus the quoted "old" refs in depends_on / chain_from
+
+  (manual run: --var dir, old, new)
+       │
+       ▼
+   ┌────────┐  compute UPPER forms; grep -n the three forms across <dir>/*.sky;
+   │  scan  │  print every hit + the set of affected files. No hits ──▶ stop (exit 1).
+   └────────┘
+       │ hits found
+       ▼
+   ┌────────┐  ⏸ manual approval gate (timeout 1h)
+   │  gate  │  shows the planned old -> new edit. Reject ──▶ stop, nothing changed.
+   └────────┘
+       │ approve
+       ▼
+   ┌────────┐  per affected file, portable temp-file sed rewrites all three forms:
+   │ apply  │  {{old}}->{{new}}, $SKY_<UPPER_OLD>->$SKY_<UPPER_NEW>, §old§->§new§,
+   └────────┘  ∆old∆->∆new∆, and the quoted "old" id refs in depends_on / chain_from.
+       │
+       ▼
+   ┌────────┐  sky lint each touched file; exit 1 if ANY fails.
+   │ verify │
+   └────────┘
+
+Run it (state the directory and the rename with --var):
+
+  sky run codemod-sky-var \
+    --var dir=".sky/workflows" \
+    --var old="old-token" \
+    --var new="new-token"
+
+  - dir   directory of .sky files to codemod — STATE THIS (e.g. .sky/workflows)
+  - old   the existing token (kebab-case --var key OR node id), WITHOUT $SKY_ / §
+  - new   the replacement token (kebab-case), WITHOUT $SKY_ / §
+
+HONEST WARNING — read before approving the gate. The three-form rewrite is plain
+regex sed, so it is FRAGILE: a short or common `old` token (e.g. "x", "id", "run")
+can false-match unrelated text — the quoted "old" rule rewrites ANY "old" string,
+not only depends_on/chain_from values, and {{old}} / §old§ are matched literally.
+That is exactly why this workflow (a) GATES every change behind manual approval so you
+review the scan preview first, and (b) LINT-VERIFIES every touched file afterward.
+Prefer long, distinctive tokens. The bash env form is word-boundary guarded so
+$SKY_OLD does not clobber $SKY_OLD_EXTRA, but the other two forms are not — review the
+scan output carefully. Use a git working tree so you can `git diff` / revert.
+※※
+
+⊕meta⊕
+name = "codemod-sky-var"
+description = "Bulk-rename one token across every .sky in a dir, consistently across its three forms ({{old}}, $SKY_<UPPER_OLD>, §old§ + quoted id refs), behind a manual gate, then lint every touched file. Pure bash, fragile regex so gated + verified. Fire via: sky run codemod-sky-var --var dir=<dir> --var old=<token> --var new=<token>"
+trigger.manual = true
+output_style = "terse"
+⊕⊕
+
+※※
+Step 1 — scan. Computes the uppercase env-var forms of old/new, then greps every
+.sky in the dir for the three forms and prints a numbered preview of each hit plus
+the set of affected files. Hard-fails (exit 1) on a missing dir, a missing token,
+or zero hits — there is nothing to codemod and nothing to approve in those cases.
+※※
+
+§scan§
+bash = "set -u\nif [ ! -d \"$SKY_DIR\" ]; then echo \"[codemod] no such dir: $SKY_DIR\" >&2; exit 1; fi\nif [ -z \"$SKY_OLD\" ] || [ -z \"$SKY_NEW\" ]; then echo \"[codemod] both --var old and --var new are required\" >&2; exit 1; fi\nU_OLD=$(printf '%s' \"$SKY_OLD\" | tr 'a-z-' 'A-Z_')\nU_NEW=$(printf '%s' \"$SKY_NEW\" | tr 'a-z-' 'A-Z_')\nPAT=\"\\{\\{$SKY_OLD\\}\\}|\\\\\\$SKY_$U_OLD([^A-Za-z0-9_]|\\$)|§$SKY_OLD§|∆$SKY_OLD∆|\\\"$SKY_OLD\\\"\"\necho \"[codemod] $SKY_OLD -> $SKY_NEW\"\necho \"[codemod] forms: {{$SKY_OLD}} -> {{$SKY_NEW}} | \\$SKY_$U_OLD -> \\$SKY_$U_NEW | §$SKY_OLD§/∆$SKY_OLD∆ -> §$SKY_NEW§/∆$SKY_NEW∆ | \\\"$SKY_OLD\\\" id-refs -> \\\"$SKY_NEW\\\"\"\nhits=0\nfor f in \"$SKY_DIR\"/*.sky; do\n  [ -e \"$f\" ] || continue\n  out=$(grep -nE \"$PAT\" \"$f\" 2>/dev/null || true)\n  if [ -n \"$out\" ]; then\n    hits=$((hits+1))\n    echo \"--- $(basename \"$f\")\"\n    printf '%s\\n' \"$out\" | sed 's/^/    /'\n  fi\ndone\nif [ \"$hits\" -eq 0 ]; then echo \"[codemod] no occurrences of '$SKY_OLD' (any form) in $SKY_DIR — nothing to do\"; exit 1; fi\necho \"[codemod] $hits file(s) affected — review above, then approve the gate\""
+§§
+
+※※
+Step 2 — gate. Manual approval before any edit. The rewrite is regex-fragile (see the
+header), so a human reviews the scan preview and approves. Reject to stop with nothing
+changed; auto-stops after 1h if nobody answers.
+※※
+
+§gate§
+depends_on = ["scan"]
+wait.prompt = "Rewrite all three forms of '{{old}}' -> '{{new}}' across the affected .sky files in {{dir}}? Review the scan preview first — short/common tokens can false-match. Approve to apply."
+wait.channel = "manual"
+wait.timeout = "1h"
+§§
+
+※※
+Step 3 — apply. For each affected file, a portable temp-file sed (no `sed -i`, macOS +
+Linux safe) rewrites the three forms in order: template {{old}}->{{new}}, bash env
+$SKY_<UPPER_OLD>->$SKY_<UPPER_NEW> (word-boundary guarded so $SKY_OLD_EXTRA is spared),
+node-id §old§->§new§ and the matching prompt-block opener ∆old∆->∆new∆, then the
+quoted "old"->"new" id refs used in depends_on / chain_from. Only files that contain
+a form are touched.
+※※
+
+§apply§
+depends_on = ["gate"]
+bash = "set -eu\nU_OLD=$(printf '%s' \"$SKY_OLD\" | tr 'a-z-' 'A-Z_')\nU_NEW=$(printf '%s' \"$SKY_NEW\" | tr 'a-z-' 'A-Z_')\nPAT=\"\\{\\{$SKY_OLD\\}\\}|\\\\\\$SKY_$U_OLD([^A-Za-z0-9_]|\\$)|§$SKY_OLD§|∆$SKY_OLD∆|\\\"$SKY_OLD\\\"\"\ntouched=0\nfor f in \"$SKY_DIR\"/*.sky; do\n  [ -e \"$f\" ] || continue\n  if ! grep -qE \"$PAT\" \"$f\" 2>/dev/null; then continue; fi\n  sed \"s/{{$SKY_OLD}}/{{$SKY_NEW}}/g; s/\\$SKY_$U_OLD\\([^A-Za-z0-9_]\\)/\\$SKY_$U_NEW\\1/g; s/\\$SKY_$U_OLD\\$/\\$SKY_$U_NEW/g; s/§$SKY_OLD§/§$SKY_NEW§/g; s/∆$SKY_OLD∆/∆$SKY_NEW∆/g; s/\\\"$SKY_OLD\\\"/\\\"$SKY_NEW\\\"/g\" \"$f\" > \"$f.tmp\" && mv \"$f.tmp\" \"$f\"\n  touched=$((touched+1))\n  echo \"[codemod] rewrote $(basename \"$f\")\"\ndone\necho \"$touched\" > /tmp/codemod-sky-var.touched\necho \"[codemod] applied $SKY_OLD -> $SKY_NEW in $touched file(s)\""
+§§
+
+※※
+Step 4 — verify. Pure-bash gate: re-lints every .sky in the dir (a touched file with
+a broken reference is the failure we care about) and exits non-zero if any fails, so
+a bad codemod surfaces immediately. The fragile rewrite is only trusted once this
+passes — review `git diff` regardless.
+※※
+
+§verify§
+depends_on = ["apply"]
+bash = "fail=0\npass=0\nfor f in \"$SKY_DIR\"/*.sky; do\n  [ -e \"$f\" ] || continue\n  if out=$(sky lint \"$f\" 2>&1); then\n    pass=$((pass+1))\n    echo \"OK    $(basename \"$f\")\"\n  else\n    fail=$((fail+1))\n    echo \"FAIL  $(basename \"$f\")\"\n    printf '%s\\n' \"$out\" | sed 's/^/        /'\n  fi\ndone\nrm /tmp/codemod-sky-var.touched 2>/dev/null || true\necho \"[codemod] lint: $pass passed, $fail failed\"\nif [ \"$fail\" -gt 0 ]; then echo \"[codemod] a touched file no longer lints — review git diff and revert if needed\"; exit 1; fi\necho \"[codemod] all files lint clean after codemod\""
+§§

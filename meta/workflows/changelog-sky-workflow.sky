@@ -1,0 +1,79 @@
+⊕meta⊕
+name = "changelog-sky-workflow"
+description = "Diff a .sky against its last committed git version and append a plain-English changelog entry to CHANGELOG.md."
+trigger.manual = true
+output_style = "terse"
+max_budget_usd = 0.20
+⊕⊕
+
+※※
+changelog-sky-workflow
+======================
+Produce a plain-English changelog entry for one .sky file by diffing its current
+working-tree source against the last committed git version (HEAD), then append a
+dated bullet to CHANGELOG.md in the same directory. Read-only on the .sky itself.
+
+ASSUMES: --dir is inside a git-tracked working tree (uses `git diff HEAD`). If the
+file has no uncommitted changes, the entry records "no changes" instead of failing.
+
+DAG
+---
+  diff (bash: git diff HEAD for the file; emits a no-change marker if empty)
+    |
+    v
+  describe (claude haiku: turn the diff into ONE reviewable changelog bullet)
+    |
+    v
+  emit (bash: print the bullet, append it under a dated heading to CHANGELOG.md)
+
+RUN
+---
+  sky run changelog-sky-workflow --vars dir=/path/to/repo,name=my-workflow
+
+VARS
+----
+  dir   directory containing the .sky AND its CHANGELOG.md; must be a git working tree
+  name  workflow filename without the .sky extension (the file diffed)
+※※
+
+※※
+diff: git working-tree vs HEAD for the target .sky; emit a stable marker when there are no uncommitted changes.
+※※
+§diff§
+bash = "set -u\nFILE=\"$SKY_NAME.sky\"\nif [ ! -f \"$SKY_DIR/$FILE\" ]; then echo \"error: $SKY_DIR/$FILE not found\" >&2; exit 1; fi\nif ! git -C \"$SKY_DIR\" rev-parse --git-dir >/dev/null 2>&1; then echo \"error: $SKY_DIR is not a git working tree\" >&2; exit 1; fi\nDIFF=$(git -C \"$SKY_DIR\" diff HEAD -- \"$FILE\" 2>/dev/null)\nif [ -z \"$DIFF\" ]; then echo \"NO_UNCOMMITTED_CHANGES\"; else printf '%s\\n' \"$DIFF\"; fi"
+§§
+
+※※
+describe: read the diff from the upstream node and write ONE concise changelog bullet in reviewable prose.
+※※
+§describe§
+model = "haiku"
+depends_on = ["diff"]
+§§
+
+∆describe∆
+You write changelog bullets for .sky workflow files.
+
+The unified git diff (working tree vs HEAD) for the file {{name}}.sky is available
+in the environment variable $SKY_OUTPUT_DIFF.
+
+If $SKY_OUTPUT_DIFF is exactly the single token NO_UNCOMMITTED_CHANGES, output
+exactly this one line and nothing else:
+
+- no changes
+
+Otherwise, read the diff and output EXACTLY ONE markdown bullet line (starting with
+"- ") in plain English describing what changed. Focus on reviewable semantics:
+added/removed/renamed nodes, changed depends_on or trigger_rule wiring, trigger
+changes, budget (max_budget_usd) changes, model changes, and prompt or bash edits.
+Be concise and specific. Do not quote raw diff lines. Do not add headings, code
+fences, or any text other than the single bullet line.
+∆∆
+
+※※
+emit: print the bullet, then append it under a dated heading to CHANGELOG.md in the target dir.
+※※
+§emit§
+depends_on = ["describe"]
+bash = "set -u\nBULLET=\"$SKY_OUTPUT_DESCRIBE\"\nLOG=\"$SKY_DIR/CHANGELOG.md\"\nDATE=$(date +%Y-%m-%d)\nif [ ! -f \"$LOG\" ]; then printf '# Changelog\\n' > \"$LOG\"; fi\nprintf '%s\\n' \"$BULLET\"\nprintf '\\n## %s - %s\\n%s\\n' \"$DATE\" \"$SKY_NAME\" \"$BULLET\" >> \"$LOG\"\necho \"appended entry for $SKY_NAME to $LOG\""
+§§

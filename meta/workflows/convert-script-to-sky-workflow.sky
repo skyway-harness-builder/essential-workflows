@@ -1,0 +1,117 @@
+⊕meta⊕
+name = "convert-script-to-sky-workflow"
+description = "Read an existing shell script, Makefile target, or cron line and author an equivalent .sky workflow, then lint-loop and dry-run it."
+trigger.manual = true
+output_style = "terse"
+max_budget_usd = 3
+⊕⊕
+
+§read§
+bash = "set -e\nif [ -z \"$SKY_SOURCE\" ]; then echo 'source var is empty' >&2; exit 1; fi\nif [ ! -f \"$SKY_SOURCE\" ]; then echo \"source not found: $SKY_SOURCE\" >&2; exit 1; fi\necho \"=== source: $SKY_SOURCE ===\"\ncat \"$SKY_SOURCE\""
+§§
+
+§author§
+model = "sonnet"
+skills = ["sky-workflow-authoring"]
+depends_on = ["read"]
+trigger_rule = "all_success"
+§§
+
+∆author∆
+You convert an existing automation script into a Skylence `.sky` workflow.
+
+Source file path: {{source}}
+Target file to write: {{dir}}/{{name}}.sky
+
+The source contents were captured by the upstream `read` node and are also in the env var $SKY_OUTPUT_READ. Read the source from that env var, or re-read the file at {{source}} directly with your tools — either is fine.
+
+Author one `.sky` file at {{dir}}/{{name}}.sky following the sky-workflow-authoring skill. Mapping rules (best-effort, translate faithfully):
+
+- A plain shell script body maps to a single `bash` node holding the commands as one double-quoted string with \n between lines. Shell-quote every variable.
+- A cron line (e.g. `0 6 * * *`) maps to `trigger.schedule.cron` in the meta block.
+- A Makefile target maps its recipe lines to a `bash` node; drop the leading tab and Make-only prefixes.
+- Environment variables the script reads go into the meta `secrets` array; reference them as ordinary `$NAME` in bash.
+- The workflow `name` MUST equal {{name}} and equal the filename stem.
+- Include exactly one trigger. If the source has no cron schedule, use `trigger.manual = true`.
+- Add `output_style = "terse"`. If you add any Claude node, also set `max_budget_usd`.
+
+Write the file. Do not run anything. Report the path you wrote and a one-line summary of how you mapped the source.
+∆∆
+
+§lint§
+model = "sonnet"
+skills = ["sky-workflow-authoring"]
+depends_on = ["author"]
+trigger_rule = "all_success"
+loop.until.bash = "sky lint \"$SKY_DIR/$SKY_NAME.sky\""
+loop.max = 6
+§§
+
+∆lint∆
+Run `sky lint` on the workflow you just authored and fix every error and warning until it exits 0.
+
+Target file: {{dir}}/{{name}}.sky
+
+Each loop pass:
+1. Run: sky lint "{{dir}}/{{name}}.sky"
+2. Read each reported code (e.g. SKY-WF-040, SKY-WF-055, SKY-WF-063) and the line it points at.
+3. Edit the file to fix it. Common fixes: quote the RHS of every `when`; add any chain_from target to depends_on; declare every env token used in mcp_servers/http in the secrets array; add safety = "requires_permission" to any bash node using rm -r / rm -rf / rm -f; keep name equal to the filename stem.
+4. Re-lint.
+
+Stop when `sky lint` exits 0. Report the final lint output.
+∆∆
+
+§dryrun§
+bash = "cd \"$SKY_DIR\" && sky run \"$SKY_NAME\" --dry-run 2>&1 || true"
+depends_on = ["lint"]
+§§
+
+※※
+================================================================================
+convert-script-to-sky-workflow
+--------------------------------------------------------------------------------
+Reads an existing shell script / Makefile target / cron line and authors an
+equivalent .sky workflow, then lint-loops it clean and does a best-effort
+dry-run.
+
+HONESTY: the shell-to-bash-node translation is BEST-EFFORT. A working script
+does not guarantee a working bash node (template vars, isolation, secrets,
+exit-code semantics all differ). Always review the generated .sky before
+trusting it in production.
+
+DAG
+---
+  read ──▶ author ──▶ lint ──▶ dryrun
+
+  read    bash; cat the source file, exit 1 if missing or empty
+  author  claude/sonnet; map the source to {{dir}}/{{name}}.sky
+  lint    claude/sonnet loop; `sky lint` until exit 0 (loop.max 6)
+  dryrun  bash; `sky run <name> --dry-run`, best-effort (never fails the run)
+
+RUN
+---
+  sky run convert-script-to-sky-workflow \
+    --var dir=.sky/workflows \
+    --var name=my-new-workflow \
+    --var source=scripts/nightly-backup.sh
+
+VARS
+----
+  dir     directory to write the new .sky into     -> $SKY_DIR
+          (e.g. .sky/workflows)
+  name    workflow name AND filename stem;          -> $SKY_NAME
+          MUST be kebab-case (e.g. my-new-workflow)
+  source  path to the script / Makefile / cron      -> $SKY_SOURCE
+          line to convert (e.g. scripts/backup.sh)
+
+NOTES
+-----
+- author/lint read the source via $SKY_OUTPUT_READ or by re-reading {{source}}.
+- lint loops at most 6 times; if still dirty, inspect the file and the last
+  lint output by hand.
+- dryrun swallows failures (|| true) so a half-valid draft still surfaces
+  output instead of failing the whole run.
+- No destructive flags (no rm -r / rm -rf / rm -f), so no node needs
+  safety = "requires_permission".
+================================================================================
+※※

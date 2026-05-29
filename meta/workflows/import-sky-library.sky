@@ -1,0 +1,87 @@
+⊕meta⊕
+name = "import-sky-library"
+description = "Validate and import a folder of foreign/legacy .sky files into a target dir one-by-one: lint each, skip any that fail lint or already exist, gate the import manually, then write a kept/rejected/skipped manifest and verify the imports."
+trigger.manual = true
+output_style = "terse"
+⊕⊕
+
+§enumerate§
+bash = "set -eu\nSRC=\"$SKY_SOURCE\"\nDST=\"$SKY_DIR\"\nif [ ! -d \"$SRC\" ]; then echo \"ERROR: source dir not found: $SRC\" >&2; exit 1; fi\nif [ ! -d \"$DST\" ]; then echo \"ERROR: target dir not found: $DST\" >&2; exit 1; fi\nFOUND=0\nfor f in \"$SRC\"/*.sky; do\n  if [ -e \"$f\" ]; then FOUND=$((FOUND+1)); echo \"$f\"; fi\ndone\nif [ \"$FOUND\" -eq 0 ]; then echo \"ERROR: no .sky files in source: $SRC\" >&2; exit 1; fi\necho \"---\"\necho \"enumerated $FOUND candidate .sky file(s) in $SRC\""
+§§
+
+§validate§
+depends_on = ["enumerate"]
+bash = "set -eu\nSRC=\"$SKY_SOURCE\"\nDST=\"$SKY_DIR\"\nSTAGE=\"$(mktemp /tmp/sky-import-stage.XXXXXX)\"\necho \"$STAGE\" > /tmp/sky-import-stage.path\nPASS=0\nFAIL=0\nSKIP=0\nfor f in \"$SRC\"/*.sky; do\n  [ -e \"$f\" ] || continue\n  BASE=\"$(basename \"$f\")\"\n  if [ -e \"$DST/$BASE\" ]; then\n    echo \"SKIP  $BASE (already exists in target)\"\n    SKIP=$((SKIP+1))\n    continue\n  fi\n  if CODES=\"$(sky lint \"$f\" 2>&1)\"; then\n    echo \"PASS  $BASE\"\n    echo \"$f\" >> \"$STAGE\"\n    PASS=$((PASS+1))\n  else\n    SUMMARY=\"$(printf '%s' \"$CODES\" | grep -Eo 'SKY-[A-Z]+-[0-9]+' | sort -u | tr '\\n' ',' | sed 's/,$//')\"\n    [ -n \"$SUMMARY\" ] || SUMMARY=\"lint-failed\"\n    echo \"FAIL  $BASE ($SUMMARY)\"\n    FAIL=$((FAIL+1))\n  fi\ndone\necho \"---\"\necho \"validate summary: pass=$PASS fail=$FAIL skip=$SKIP\"\necho \"staging list: $STAGE\""
+§§
+
+§gate§
+depends_on = ["validate"]
+wait.channel = "manual"
+wait.prompt = "Review the PASS (will import), FAIL (lint errors, rejected), and SKIP (already exists) sets above. Approve to copy the PASS files into the target dir."
+wait.timeout = "1h"
+§§
+
+§finalize§
+depends_on = ["gate"]
+bash = "set -eu\nDST=\"$SKY_DIR\"\nSTAGE=\"$(cat /tmp/sky-import-stage.path)\"\nif [ ! -f \"$STAGE\" ]; then echo \"ERROR: staging list missing: $STAGE\" >&2; exit 1; fi\nKEPT=0\nSKIPPED=0\nwhile IFS= read -r f; do\n  [ -n \"$f\" ] || continue\n  BASE=\"$(basename \"$f\")\"\n  if [ -e \"$DST/$BASE\" ]; then\n    echo \"SKIPPED  $BASE (appeared in target since validate)\"\n    SKIPPED=$((SKIPPED+1))\n    continue\n  fi\n  cp \"$f\" \"$DST/$BASE\"\n  echo \"KEPT     $BASE\"\n  KEPT=$((KEPT+1))\ndone < \"$STAGE\"\necho \"---\"\necho \"manifest: kept=$KEPT skipped=$SKIPPED (rejected files were never staged)\""
+§§
+
+§verify§
+depends_on = ["finalize"]
+bash = "set -eu\nDST=\"$SKY_DIR\"\nSTAGE=\"$(cat /tmp/sky-import-stage.path)\"\nFAILED=0\nCHECKED=0\nif [ -f \"$STAGE\" ]; then\n  while IFS= read -r f; do\n    [ -n \"$f\" ] || continue\n    BASE=\"$(basename \"$f\")\"\n    TARGET=\"$DST/$BASE\"\n    [ -e \"$TARGET\" ] || continue\n    CHECKED=$((CHECKED+1))\n    if sky lint \"$TARGET\" >/dev/null 2>&1; then\n      echo \"OK    $BASE\"\n    else\n      echo \"BROKEN $BASE (lint failed after import)\"\n      FAILED=$((FAILED+1))\n    fi\n  done < \"$STAGE\"\nfi\nrm \"$STAGE\"\nrm /tmp/sky-import-stage.path\necho \"---\"\necho \"verify: checked=$CHECKED broken=$FAILED\"\nif [ \"$FAILED\" -ne 0 ]; then echo \"ERROR: $FAILED imported file(s) fail lint\" >&2; exit 1; fi\necho \"import complete: all imported files lint clean\""
+§§
+
+※※
+# import-sky-library
+
+Validate and import foreign/legacy .sky files from a SOURCE folder into a
+TARGET .sky workflows dir, one file at a time. Each candidate is linted; only
+lint-clean files that do NOT already exist in the target are staged for import.
+A manual gate shows the kept / rejected / skipped sets before any file is
+copied. After import, every newly-copied file is re-linted to confirm it is
+clean in its new home.
+
+Pure bash. No Claude node. No tokens consumed.
+
+DAG:
+
+    enumerate            list SOURCE/*.sky, fail if none / dirs missing
+        |
+    validate             lint each; PASS -> /tmp staging list (mktemp),
+        |                FAIL -> log + codes, SKIP -> already in TARGET
+        |
+    gate   (manual)      show PASS/FAIL/SKIP; approve to import
+        |
+    finalize             cp each staged PASS into TARGET unless it exists;
+        |                print kept / skipped manifest
+        |
+    verify               sky lint each imported file; rm the staging list;
+                         exit nonzero if any imported file is broken
+
+Run:
+
+    sky run import-sky-library --var source=/path/to/foreign/dir --var dir=.sky/workflows
+
+Vars:
+
+    source  ($SKY_SOURCE)  directory holding the foreign/legacy .sky files to import.
+    dir     ($SKY_DIR)     target .sky workflows directory to import into.
+
+Nodes:
+
+    enumerate  list SOURCE/*.sky; fail fast if a dir is missing or no candidates.
+    validate   lint each candidate; stage PASS to /tmp, log FAIL+codes, mark SKIP.
+    gate       manual approval gate; shows PASS/FAIL/SKIP before any mutation.
+    finalize   copy each staged PASS into TARGET (never overwrite); print manifest.
+    verify     re-lint every imported file; rm the /tmp staging list; fail if broken.
+
+Notes:
+
+  - A file is REJECTED (not imported) if `sky lint` fails on it; its error
+    codes are logged so you can fix the source and re-run.
+  - A file is SKIPPED if a same-named file already exists in the target dir;
+    this workflow never overwrites. Remove/rename the target file and re-run
+    to replace it.
+  - Staging uses a mktemp file under /tmp; verify removes it with a plain `rm`
+    (no `rm -f`), so no permission gate is needed.
+※※
