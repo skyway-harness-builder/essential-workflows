@@ -215,6 +215,7 @@ Write the workflow file entirely in **English** — `name`, every config key, al
 - Change an `output_format` schema without updating the `∆` prompt that produces it.
 - Run a destructive bash command without `safety = "requires_permission"` (SKY-WF-063).
 - Add an `emit` that re-triggers a workflow already in the ancestor chain — the chain depth cap is **5** and over-cap dispatch is silently suppressed.
+- Put Claude Code magic keywords — `ultrathink`, `ultraplan`, `ultrareview`, `ultracode` — in a `∆` prompt body. They are meant for interactive Claude Code, not workflow authoring. `ultraplan`/`ultrareview` are flagged by SKY-WF-061; `ultrathink` is *not* linted but still fires under `sky run` (sky drives Claude via `--input-format stream-json`, not `-p`) — it injects a "reason thoroughly" nudge you did not intend and cannot control per-node. Express intent explicitly instead: write what you want the node to do, and set reasoning via `effort = "..."` or `thinking = { ... }` on the node, never via a keyword in the prose.
 
 ## Lint Codes (SKY-WF-*)
 
