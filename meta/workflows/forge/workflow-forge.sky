@@ -1,0 +1,420 @@
+※※
+# workflow-forge
+
+A META-workflow that authors another `.sky` workflow from a plain-English intent, then
+DRIVES it through sky's OWN tooling as quality gates — `sky lint` (clean) and
+`sky run --dry-run` (DAG resolves, vars wire, no cycles, budget estimates) — looping
+author → lint → lint-fix until the candidate lints clean, then dry-runs it, has opus judge
+it against the intent, and only on a fail-CLOSED gate opens a staged PR. It DOGFOODS sky on
+sky: the harness builds harness workflows, gated by the harness's own validators.
+
+Intent is supplied at run time:
+
+  sky run workflow-forge --var intent="a manual workflow that greets the operator and exits"
+
+(Trigger is manual-only; `--var` is the singular flag — the daemon flattens it to {{intent}}
+in prompts and $SKY_INTENT in bash. If you read older notes saying `--vars`, the binary's
+flag is `--var key=value`, repeatable.)
+
+────────────────────────────────────────────────────────────────────────────────────────
+SAFETY SCOPE (v1) — READ THIS
+────────────────────────────────────────────────────────────────────────────────────────
+The gates are `sky lint` + `sky run --dry-run` ONLY. v1 does **NOT** execute the
+model-generated `.sky` for real. Running untrusted, model-authored workflow code against a
+live daemon (real Claude turns, real bash, real network/PR side effects) is the issue's hard
+open question (#314); the safe-exercise sandbox that would let us *run* a generated workflow
+under containment is DEFERRED until that sandbox is specified. So v1 proves a candidate is
+STRUCTURALLY sound and INTENT-aligned, never that it behaves correctly at runtime. That is
+the deliberate v1 boundary — stated here so a future reader does not mistake "delivers" for
+"verified-at-runtime".
+
+All mutation happens under `isolation = "worktree"` and lands as a staged PR. The live
+checkout is never edited in place; nothing is auto-merged. Per the protected-files boundary
+(#39), finalize never auto-commits MISSION.md / FACTORY_RULES.md / .github/ / .sky/
+definitions or learnings — CI is the quality gate (the prod container has no Go toolchain),
+and a human merges.
+
+────────────────────────────────────────────────────────────────────────────────────────
+HOW THE GATES RESOLVE THE CANDIDATE (mechanism — important, non-obvious)
+────────────────────────────────────────────────────────────────────────────────────────
+`sky lint <path>` reads ANY file path directly — easy.
+`sky run --dry-run` does NOT take a path; it resolves a workflow BY NAME, scanning the
+current repo's `.sky/workflows/` and matching the `name =` field in ⊕meta⊕ against the run
+argument. (Verified: a file placed in `.sky/workflows/` only resolves when its internal
+`name =` equals the `sky run <name>` argument.) So the gates use a deterministic
+CANDIDATE-NAME contract:
+
+  - `author` emits ONLY the raw `.sky` body (no fences) whose ⊕meta⊕ carries
+    name = "forge-candidate" — a FIXED sentinel name the gate nodes know.
+  - `write-candidate` (bash) writes $SKY_OUTPUT_AUTHOR verbatim to BOTH
+      <repo>/.sky/workflows/forge-candidate.sky   (so `sky run forge-candidate --dry-run` resolves it)
+      $RUNTMP/forge-candidate.sky                  (a stable path for lint + later inspection)
+    then prints the two paths as a greppable block.
+  - `lint` / `dry-run` operate on `forge-candidate`; `cleanup`/`finalize` rename it to the
+    REAL intended workflow name only when writing the PR.
+
+The candidate file in `.sky/workflows/` is a TEMP scratch artifact for the dry-run resolver;
+it is git-ignored territory under the worktree and is removed by `cleanup`. The forge runs
+with cwd = the workflows-internal checkout, so `.sky/workflows/` is the repo tier the
+resolver scans.
+
+────────────────────────────────────────────────────────────────────────────────────────
+DAG (v1 — gate on lint + dry-run only; never execute the generated workflow)
+────────────────────────────────────────────────────────────────────────────────────────
+
+  (manual run: sky run workflow-forge --var intent="…")
+        │
+        ▼
+   ┌──────────────┐  claude (haiku). Classify new-vs-improve; pick trigger + node shape
+   │    parse     │  for {{intent}}. Cheap orientation only — emits a short plan.
+   └──────────────┘
+        │ depends_on
+        ▼
+   ┌──────────────┐  claude (opus). Generate the FULL candidate .sky body. ⊕meta⊕ name MUST
+   │    author    │  be "forge-candidate". Output ONLY the file body — no prose, no fences.
+   └──────────────┘
+        │ depends_on
+        ▼
+   ┌──────────────┐  bash, no LLM. Write $SKY_OUTPUT_AUTHOR to .sky/workflows/forge-candidate.sky
+   │write-candidate│ + $RUNTMP/forge-candidate.sky. Print both paths.
+   └──────────────┘
+        │ depends_on
+        ▼
+   ┌──────────────┐  loop (max 3). Each pass: opus REWRITES the whole candidate, re-writing
+   │   fix-loop   │  the file, until `sky lint` exits 0. loop.until.bash is the lint gate;
+   └──────────────┘  body context = "fresh" so each fix turn starts clean. First pass = the
+        │            initial author output already on disk; the loop self-corrects SKY-WF-*.
+        │ depends_on
+        ▼
+   ┌──────────────┐  bash, no LLM. Authoritative lint AFTER the loop: `sky lint … --format json`.
+   │    lint      │  Emit one clean JSON line {"clean":"true|false"} (+ the codes if dirty).
+   └──────────────┘
+        │ depends_on
+        ▼
+   ┌──────────────┐  bash, no LLM. when clean. `sky run forge-candidate --dry-run --format json`.
+   │   dry-run    │  DAG resolves, vars wire, no cycles, budget estimate. NEVER runs for real.
+   └──────────────┘  Emit {"dry_ok":"true|false"}.
+        │ depends_on
+        ▼
+   ┌──────────────┐  claude (opus). Does the candidate MATCH {{intent}} (trigger, node shape,
+   │    judge     │  behavior on paper)? Ends with EXACTLY one sentinel line:
+   └──────────────┘  SKY_FORGE delivers=<true|false>
+        │ depends_on
+        ▼
+   ┌──────────────┐  bash, no LLM. FAIL-CLOSED gate: delivers=true ONLY if lint clean AND
+   │    gate      │  dry_ok AND the judge sentinel says true. Anything missing/garbled → false.
+   └──────────────┘  Emit {"delivers":"true|false"}.
+        │ depends_on
+        ▼
+   ┌──────────────┐  claude (opus), isolation = "worktree". when delivers == 'true'. Rename the
+   │   finalize   │  candidate to its real name, write it + a manifest.yaml entry, push a branch,
+   └──────────────┘  open a PR. Staged, never auto-merged. Protected files untouched.
+        │ depends_on
+        ▼
+   ┌──────────────┐  bash, no LLM. trigger_rule all_done. Remove the scratch
+   │   cleanup    │  .sky/workflows/forge-candidate.sky so the repo tier is left clean.
+   └──────────────┘
+
+────────────────────────────────────────────────────────────────────────────────────────
+PR ROUTING (operator decision; v1 default)
+────────────────────────────────────────────────────────────────────────────────────────
+The TARGET repo depends on the workflow's audience:
+  - public-meta workflow  → skylence-be/workflows        (end-user `sky examples` source)
+  - internal/dogfood      → skylence-be/workflows-internal (this repo)
+  - demo/example          → skylence-be/workflow-examples
+v1 DEFAULTS to opening the PR against workflows-internal and surfaces the routing call to the
+operator in the PR body (the finalize prompt asks for an explicit routing line). Moving a
+workflow to the public repo is a deliberate human decision, not an autonomous one.
+
+────────────────────────────────────────────────────────────────────────────────────────
+BOUNDS & IDEMPOTENCE
+────────────────────────────────────────────────────────────────────────────────────────
+Bounded by max_budget_usd = 8.00 and loop.max = 3. Idempotent on an already-passing
+workflow: an intent that describes a workflow which is already lint-clean and intent-aligned
+flows straight through (fix-loop exits on the first lint pass) and the only side effect is a
+PR the operator can close as a no-op.
+
+PREREQUISITES:
+  - cwd at run time = the workflows-internal checkout (so `.sky/workflows/` is the repo tier).
+  - `gh` authed with repo scope for finalize's PR.
+  - `sky` on PATH inside the run environment (the gates shell out to it).
+
+DEVIATIONS from the issue DAG are listed at the bottom of this file's commit message / PR;
+the structural shape matches: parse → author → lint → lint-fix(loop) → dry-run → judge →
+gate → finalize, with a deterministic write-candidate inserted before lint and a cleanup
+after finalize (both bash, no LLM) to manage the candidate scratch file.
+
+Cartographer orientation: OMITTED in v1. The issue makes it optional; adding the
+cartographer HTTP MCP + its secret widens the dependency surface of a workflow whose value is
+the lint/dry-run/judge loop, not code-graph orientation. A future version may add a
+cartographer step (skills = ["cartographer-rules"] + an mcp_servers cartographer-http block,
+as in cartographer-reindex.sky) once the safe-exercise sandbox lands.
+※※
+
+⊕meta⊕
+name = "workflow-forge"
+description = "META-workflow: author a target .sky workflow from a plain-English intent, then drive it through sky's own gates — sky lint (clean) + sky run --dry-run (DAG/vars/cycles/budget) — looping author→lint→lint-fix until clean, dry-run it (NEVER executed for real in v1), have opus judge it against the intent with a fail-closed gate, and open a STAGED PR under worktree isolation. Uses sky's own lint + dry-run as its gates. Bounded by max_budget_usd + loop.max. Fire via: sky run workflow-forge --var intent=\"…\""
+trigger.manual = true
+output_style = "terse"
+max_budget_usd = 8.00
+learnings.exclude = ["anti-patterns"]
+⊕⊕
+
+※※
+Step 1 — parse. Cheap haiku orientation. Classify the intent as new-vs-improve and sketch the
+trigger + node shape author should produce. No file IO. {{intent}} is the operator's --var.
+※※
+
+§parse§
+model = "haiku"
+max_turns = 6
+§§
+
+∆parse∆
+You are the planning front-end of a workflow-authoring pipeline. The operator wants a `.sky` workflow. Read their intent and produce a SHORT authoring plan for the next (author) step. Be terse.
+
+INTENT:
+{{intent}}
+
+Decide and output, as a compact bullet list:
+1. mode: `new` (create a fresh workflow) or `improve` (edit an existing one). If the intent names or describes an existing workflow to change, it is `improve`; otherwise `new`.
+2. trigger: exactly one of `trigger.manual = true`, `trigger.github.events = [...]`, `trigger.sky_event.event = "..."`, or `trigger.schedule.cron = "..."` — pick the one the intent implies; default to `trigger.manual = true` when ambiguous.
+3. node shape: a short ordered list of the DAG nodes (id + kind: prompt/bash/script/http/loop/cancel/emit/invoke) the workflow needs to satisfy the intent.
+4. risks: any obvious lint traps the author must avoid (bareword `when` RHS, an env-secret reference without a `secrets` entry, `{{var}}` inside bash, `chain_from` not in `depends_on`).
+
+Do not write the `.sky` file yet. Output only the plan.
+∆∆
+
+※※
+Step 2 — author. Opus generates the FULL candidate .sky body. CRITICAL CONTRACT: the
+candidate's ⊕meta⊕ name MUST be exactly "forge-candidate" so the dry-run resolver finds it by
+name. Author emits ONLY the raw file body — no markdown fences, no commentary — because the
+next node writes its stdout verbatim to disk.
+※※
+
+§author§
+model = "opus"
+depends_on = ["parse"]
+max_turns = 30
+§§
+
+∆author∆
+You author `.sky` workflow files for the Skylence harness. Produce a COMPLETE, lint-clean `.sky` file that satisfies the operator's intent, following the plan from the parse step.
+
+OPERATOR INTENT:
+{{intent}}
+
+PARSE PLAN:
+$SKY_OUTPUT_PARSE
+
+`.sky` format rules you MUST follow (the file is validated by `sky lint`; inventing keys fails it):
+- Four delimiter blocks, each opener/closer alone on its line: `⊕meta⊕`…`⊕⊕` (identity + exactly one trigger), `§<id>§`…`§§` (node config), `∆<id>∆`…`∆∆` (Claude prompt body for that node), `※※`…`※※` (discarded doc/comment).
+- ⊕meta⊕ requires `name` and `description` and exactly one trigger (`trigger.manual = true` | `trigger.github.events = [...]` | `trigger.sky_event.event = "..."` | `trigger.schedule.cron = "..."`).
+- Real node keys only: `model` (sonnet/opus/haiku), `depends_on`, `when`, `bash`, `script`, `http`, `output_format`, `max_turns`, `max_budget_usd`, `isolation = "worktree"`, `chain_from`, `trigger_rule`, `emit`, `cancel`, `loop.until.bash`/`loop.until.eval`/`loop.max`, `invoke.target`/`invoke.vars`, `skills`, `mcp_servers`. There is NO `env.*`, NO `fresh_context`, NO `allowed_tools` key — use node `context = "fresh"` for a clean turn and `skills = [...]` to load skills.
+- `when` is FLAT: `"$node.output == 'value'"` or `"$node.output != 'value'"` or a bare boolean — RHS ALWAYS single-quoted; bareword RHS silently never fires.
+- `{{var}}` expands ONLY in `∆` prompt bodies and `http.body` (use `{{var|json}}` inside JSON). In `bash`/`script` use `$SKY_OUTPUT_<NODE_ID>` and `$SKY_<UPPER_KEY>`; never `{{var}}`.
+- A secret reference of the form dollar-brace env-NAME is allowed ONLY in `mcp_servers` and HTTP url/body/headers, and every NAME must be declared in `secrets = [...]` in ⊕meta⊕. It is rejected anywhere else (prompt/bash/eval).
+- `chain_from = "X"` requires "X" in that node's `depends_on`.
+- Always shell-quote `$SKY_*` in bash.
+
+HARD OUTPUT CONTRACT:
+1. The candidate's ⊕meta⊕ `name` MUST be exactly `forge-candidate`. (Do NOT use the workflow's real future name yet — the gates resolve it by this fixed sentinel name. The real name is chosen later, at PR time.)
+2. Output ONLY the raw `.sky` file body. No ``` fences, no leading/trailing prose, no explanation. The very first non-whitespace characters must begin a `※※` doc block or the `⊕meta⊕` opener; the very last line must be a delimiter closer. The next step writes your stdout verbatim to disk and lints it.
+∆∆
+
+※※
+Step 3 — write-candidate. DETERMINISTIC bash, no LLM. Persists the author's output to two
+paths: the repo-tier .sky/workflows/forge-candidate.sky (so `sky run forge-candidate
+--dry-run` resolves it by name) and a stable $RUNTMP copy. Prints a greppable path block the
+downstream gates read. We write the author's WHOLE stdout ($SKY_OUTPUT_AUTHOR) verbatim — no
+templating, no shell splicing of model output into commands (that output is untrusted; it
+only ever lands in a file, never in an eval/source sink).
+※※
+
+§write-candidate§
+depends_on = ["author"]
+bash = "set -u\nRUNTMP=$(mktemp -d)\nREPO_WF=\".sky/workflows\"\nmkdir -p \"$REPO_WF\"\nTMP_FILE=\"$RUNTMP/forge-candidate.sky\"\nREPO_FILE=\"$REPO_WF/forge-candidate.sky\"\nprintf '%s' \"$SKY_OUTPUT_AUTHOR\" > \"$TMP_FILE\"\ncp \"$TMP_FILE\" \"$REPO_FILE\"\nif ! grep -q 'name = \"forge-candidate\"' \"$TMP_FILE\"; then echo 'WARN: candidate ⊕meta⊕ name is not forge-candidate — dry-run resolution may fail' >&2; fi\necho '=== candidate ==='\necho \"tmp_path=$TMP_FILE\"\necho \"repo_path=$REPO_FILE\"\necho \"candidate_name=forge-candidate\""
+§§
+
+※※
+Step 4 — fix-loop. opus, body context = "fresh" (each fix turn starts from a clean session,
+not a chained one). The loop's stop condition is the LINT itself: loop.until.bash runs
+`sky lint` on the repo-tier candidate and exits 0 when clean, stopping the loop. loop.max = 3
+caps the spend. On entry the file already holds author's first draft; each turn the model
+re-reads the lint diagnostics and REWRITES the whole file in place to clear the specific
+SKY-WF-* / SKY-CFG-* codes. We re-author the FULL file (rather than surgical patches) because
+opus rewriting the complete artifact is more reliable than diff-mode under the flat-when/loop
+constraints — a documented deviation from the issue's "fix the specific codes" phrasing, but
+lint-clean is the contract that matters. The model writes the file with its own Write tool;
+the prompt forbids touching anything other than the candidate path.
+※※
+
+§fix-loop§
+model = "opus"
+depends_on = ["write-candidate"]
+context = "fresh"
+max_turns = 20
+loop.until.bash = "sky lint .sky/workflows/forge-candidate.sky --format json | grep -q '^\\[\\]$'"
+loop.max = 3
+§§
+
+∆fix-loop∆
+The candidate `.sky` file at `.sky/workflows/forge-candidate.sky` must lint clean. Run the linter, read the diagnostics, and FIX the file until `sky lint` reports no errors.
+
+Do exactly this:
+1. Run: `sky lint .sky/workflows/forge-candidate.sky --format json`
+2. If the output is `[]` (empty array — no diagnostics), the file is already clean: STOP, do nothing else.
+3. Otherwise, each diagnostic has a `code` (e.g. SKY-WF-040, SKY-WF-055, SKY-WF-047, SKY-WF-060) and a message. Read the file, fix EVERY reported code, and write the corrected `.sky` back to the SAME path `.sky/workflows/forge-candidate.sky` using your Write/Edit tool.
+
+Common fixes:
+- SKY-WF-042 `chain_from` not in `depends_on` → add the chain target to that node's `depends_on`.
+- SKY-WF-055 undeclared env-secret reference (dollar-brace env-NAME) → add NAME to `secrets = [...]` in ⊕meta⊕ (or remove the reference).
+- SKY-WF-047 bare `{{var}}` in a JSON string in `http.body` → use the unwrapped `{{var|json}}` form.
+- SKY-WF-060 `output_format` not valid JSON Schema → fix the schema object.
+- SKY-WF-031 bad `when` → quote the RHS: `"$x.output == 'value'"`.
+- SKY-WF-037 loop body is http/eval/wait → use a prompt/command/bash body.
+
+Constraints:
+- Edit ONLY `.sky/workflows/forge-candidate.sky`. Do not touch any other file.
+- Keep ⊕meta⊕ `name` exactly `forge-candidate`.
+- Do not weaken the workflow's intent to satisfy the linter — fix the FORMAT, preserve the BEHAVIOR.
+
+Output a one-line summary of what you changed (or `already-clean`).
+∆∆
+
+※※
+Step 5 — lint. DETERMINISTIC bash, no LLM. The AUTHORITATIVE lint AFTER the loop (the loop's
+own lint is just its stop condition; this node is what the gate trusts). `sky lint … --format
+json` prints `[]` when clean, else a JSON array of diagnostics. We emit ONE clean JSON line
+`{"clean":"true|false"}` so the downstream `when` always parses, plus the raw codes to stderr
+for the run log. FAIL-CLOSED: only an explicit empty `[]` yields clean=true.
+※※
+
+§lint§
+depends_on = ["fix-loop"]
+bash = "set -u\nF=\".sky/workflows/forge-candidate.sky\"\nOUT=$(sky lint \"$F\" --format json 2>/dev/null)\necho \"lint-codes:\" >&2\nprintf '%s\\n' \"$OUT\" | grep -oE 'SKY-(WF|CFG)-[0-9]+' >&2 || echo '(none)' >&2\nif [ \"$OUT\" = '[]' ]; then echo '{\"clean\":\"true\"}'; else echo '{\"clean\":\"false\"}'; fi"
+§§
+
+※※
+Step 6 — dry-run. DETERMINISTIC bash, no LLM. Runs ONLY when lint is clean. `sky run
+forge-candidate --dry-run --format json` renders each node's prompt and resolves the DAG, var
+wiring, cycle check, and budget estimate WITHOUT invoking Claude or executing any bash — this
+is the v1 safety boundary (we validate structure, we never run the generated workflow for
+real). The dry-run resolves the candidate BY NAME from the repo-tier .sky/workflows/. Exit 0 +
+non-empty JSON array → dry_ok=true. Emit ONE clean JSON line `{"dry_ok":"true|false"}`.
+※※
+
+§dry-run§
+depends_on = ["lint"]
+when = "$lint.output.clean == 'true'"
+bash = "set -u\nOUT=$(sky run forge-candidate --dry-run --format json 2>/dev/null)\nRC=$?\necho \"dry-run-rc=$RC\" >&2\nprintf '%s\\n' \"$OUT\" | head -c 400 >&2\nif [ \"$RC\" -eq 0 ] && printf '%s' \"$OUT\" | grep -q '\"id\"'; then echo '{\"dry_ok\":\"true\"}'; else echo '{\"dry_ok\":\"false\"}'; fi"
+§§
+
+※※
+Step 7 — judge. Opus reads the intent and the actual candidate file and decides whether the
+candidate MATCHES the intent (right trigger, right node shape, plausible behavior on paper).
+output_format is advisory only — opus often returns prose instead of JSON, so we do NOT gate
+on it; instead judge MUST end with EXACTLY one machine sentinel line that the deterministic
+gate node greps:  SKY_FORGE delivers=<true|false>
+This is the same AI-judge → bash-gate-greps-sentinel pattern as track-anthropic-changes.
+※※
+
+§judge§
+model = "opus"
+depends_on = ["dry-run"]
+max_turns = 12
+output_format = {"type": "object", "properties": {"delivers": {"type": "boolean"}, "reason": {"type": "string"}}, "required": ["delivers", "reason"]}
+§§
+
+∆judge∆
+You are the acceptance judge for an authored `.sky` workflow. Decide whether the candidate MATCHES the operator's intent. You judge STRUCTURE and INTENT-ALIGNMENT on paper only — the workflow has NOT been executed for real (v1 gates are lint + dry-run only).
+
+OPERATOR INTENT:
+{{intent}}
+
+The candidate already passed `sky lint` (clean) and `sky run --dry-run` (DAG resolves, vars wire, no cycles). Read the candidate file at `.sky/workflows/forge-candidate.sky` and assess:
+1. Trigger — does the candidate's single trigger match what the intent implies?
+2. Node shape — do the DAG nodes (their kinds and dependencies) plausibly accomplish the intent?
+3. Behavior on paper — reading each node's prompt/bash/config, would this workflow do what the operator asked? Flag anything that lints clean but is intent-wrong (e.g. a `when` that will never fire, a node that no-ops, a trigger that subscribes to the wrong event).
+4. Completeness — is anything the intent asked for missing?
+
+`delivers` is true ONLY if the trigger, node shape, and on-paper behavior all match the intent with nothing material missing. When in doubt, `delivers=false` (a false negative costs another loop; a false positive ships a broken workflow).
+
+Output:
+- A short assessment (a few bullet points: what matches, what is off).
+- Then, as the VERY LAST line of your output, print EXACTLY this machine sentinel (a downstream bash node parses it — it must be the final line, lowercase true/false, no markdown, no trailing text):
+  SKY_FORGE delivers=true
+  (or `SKY_FORGE delivers=false`). Do not add any prose after this line.
+∆∆
+
+※※
+Step 8 — gate. DETERMINISTIC bash, no LLM. The FAIL-CLOSED acceptance gate. delivers=true ONLY
+when ALL THREE hold: lint clean ($SKY_OUTPUT_LINT), dry_ok ($SKY_OUTPUT_DRY_RUN), and the judge
+sentinel says true ($SKY_OUTPUT_JUDGE). A missing/garbled sentinel, a skipped dry-run, or a
+dirty lint all yield delivers=false — because a false "delivers" ships a broken workflow as a
+PR (the opposite fail-direction from track-anthropic-changes, which fails OPEN because a
+spurious issue is cheap; here a spurious PR of broken generated code is NOT cheap). Emit ONE
+clean JSON line `{"delivers":"true|false"}`.
+※※
+
+§gate§
+depends_on = ["lint", "dry-run", "judge"]
+trigger_rule = "all_done"
+bash = "set -u\nCLEAN=$(printf '%s' \"${SKY_OUTPUT_LINT:-}\" | grep -oE '\"clean\":\"(true|false)\"' | grep -oE '(true|false)' | tail -1)\nDRY=$(printf '%s' \"${SKY_OUTPUT_DRY_RUN:-}\" | grep -oE '\"dry_ok\":\"(true|false)\"' | grep -oE '(true|false)' | tail -1)\nVERDICT=$(printf '%s' \"${SKY_OUTPUT_JUDGE:-}\" | grep -oE 'SKY_FORGE delivers=(true|false)' | tail -1 | grep -oE '(true|false)$')\necho \"gate: clean=${CLEAN:-missing} dry_ok=${DRY:-missing} judge=${VERDICT:-missing}\" >&2\nif [ \"$CLEAN\" = 'true' ] && [ \"$DRY\" = 'true' ] && [ \"$VERDICT\" = 'true' ]; then echo '{\"delivers\":\"true\"}'; else echo '{\"delivers\":\"false\"}'; fi"
+§§
+
+※※
+Step 9 — finalize. Opus under isolation = "worktree" (per-node throwaway git worktree — the
+live checkout is NEVER edited in place). Runs ONLY when the gate says delivers == 'true'.
+Renames the candidate from the sentinel name forge-candidate to its REAL intended name, writes
+it to the routed repo path, adds a manifest.yaml entry, and opens a STAGED PR (never
+auto-merged). PROTECTED-FILES BOUNDARY (#39): never auto-commit MISSION.md / FACTORY_RULES.md /
+.github/ / .sky/ definitions or learnings. CI is the quality gate (the prod container has no Go
+toolchain). v1 ROUTING DEFAULT: open the PR against this repo (workflows-internal) and put an
+explicit routing recommendation in the PR body for the operator to redirect to
+skylence-be/workflows (public-meta) or workflow-examples (demo) if appropriate.
+※※
+
+§finalize§
+model = "opus"
+depends_on = ["gate"]
+when = "$gate.output.delivers == 'true'"
+isolation = "worktree"
+max_turns = 40
+max_budget_usd = 3.00
+§§
+
+∆finalize∆
+The candidate workflow passed every v1 gate (lint clean, dry-run clean, judge delivers=true). Ship it as a STAGED pull request. You are in an isolated git worktree — work only here; never push to a base branch and never auto-merge.
+
+OPERATOR INTENT:
+{{intent}}
+
+The validated candidate is at `.sky/workflows/forge-candidate.sky`. Its ⊕meta⊕ `name` is the sentinel `forge-candidate` — you must rename it to the workflow's REAL name now.
+
+Do exactly this:
+1. Pick the REAL workflow name: a kebab-case name derived from the intent (e.g. `greet-operator`). The file's ⊕meta⊕ `name =` MUST equal the new filename stem.
+2. Decide the routing and target repo. The rule:
+   - public-meta workflow (end users would want it via `sky examples`) → skylence-be/workflows
+   - internal dogfood/self-improvement → skylence-be/workflows-internal (THIS repo)
+   - demo/example → skylence-be/workflow-examples
+   v1 default: open the PR against THIS repo (workflows-internal). State your routing recommendation explicitly in the PR body so the operator can move it if the audience is really public/demo.
+3. Within this repo, write the renamed file to `production/workflows/<real-name>.sky` (the production tier; mirror the sibling workflows). Update its ⊕meta⊕ `name` and (if present) the candidate's internal sentinel references to the real name. Do NOT leave the `forge-candidate` name in the shipped file.
+4. Add a `manifest.yaml` entry mirroring the existing production entries — `kind: workflow`, `path: production/workflows/<real-name>.sky`, `name: <real-name>`, a `description` ending with the fire-command, and `tags` including `tier:production` and `internal`.
+5. Do NOT modify, stage, or commit any of: MISSION.md, FACTORY_RULES.md, anything under .github/, any `.sky/` workflow/command/learning definition, or the scratch `.sky/workflows/forge-candidate.sky`. Touch ONLY the new `production/workflows/<real-name>.sky` and `manifest.yaml`.
+6. Create a branch, commit the two files, push, and open a PR with `gh pr create`. The PR body must include: the operator intent, the routing recommendation (target-repo decision), and a note that this is a v1 forge output gated by lint + dry-run ONLY (NOT runtime-verified — the generated workflow was never executed for real). Never merge; leave it for human review (CI is the gate).
+7. Print the PR URL.
+∆∆
+
+※※
+Step 10 — cleanup. DETERMINISTIC bash, no LLM. trigger_rule = "all_done" so it runs whether
+finalize ran, was skipped, or failed. Removes the scratch repo-tier candidate file so the
+.sky/workflows/ tier is left exactly as found (the candidate was only ever a temp resolution
+artifact for the dry-run). Best-effort: a missing file is fine.
+※※
+
+§cleanup§
+depends_on = ["gate", "finalize"]
+trigger_rule = "all_done"
+bash = "set -u\nF=\".sky/workflows/forge-candidate.sky\"\nif [ -f \"$F\" ]; then rm \"$F\" && echo \"cleaned $F\"; else echo \"no scratch candidate to clean\"; fi"
+§§
