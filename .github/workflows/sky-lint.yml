@@ -10,4 +10,7 @@ jobs:
       - uses: actions/checkout@v6
       - uses: skylence-be/sky-lint-action@v2.0.0
         with:
-          paths: "*/workflows/*.sky"
+          # The action word-splits + glob-expands $paths (no globstar). First glob
+          # covers flat domain workflows; second covers category subdirs
+          # (meta/workflows/{authoring,audit,docs}/*.sky).
+          paths: "*/workflows/*.sky */workflows/*/*.sky"

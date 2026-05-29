@@ -1,132 +1,132 @@
 apiVersion: skylence.io/v1
-version: 2.4.0
+version: 2.5.0
 updated_at: "2026-05-29"
 entries:
   # ── Authoring & lifecycle ──────────────────────────────────────────────
   - kind: workflow
-    path: meta/workflows/scaffold-sky-workflow.sky
+    path: meta/workflows/authoring/scaffold-sky-workflow.sky
     description: "Author a new .sky workflow from a plain-English brief and lint it until clean. Fire via: sky run scaffold-sky-workflow --var name=<file> --var request=<what it should do>"
     tags: [meta, scaffold, lint, manual]
 
   - kind: workflow
-    path: meta/workflows/update-sky-workflow.sky
+    path: meta/workflows/authoring/update-sky-workflow.sky
     description: "Apply a change to an existing .sky workflow and lint it until clean. Fire via: sky run update-sky-workflow --var name=<file> --var request=<change>"
     tags: [meta, update, lint, manual]
 
   - kind: workflow
-    path: meta/workflows/rename-sky-workflow.sky
+    path: meta/workflows/authoring/rename-sky-workflow.sky
     description: "Atomically rename a .sky: git mv, fix its meta name, and rewrite `sky run <old>` refs behind a manual gate, then lint and verify. Pure bash. Fire via: sky run rename-sky-workflow --var dir=<dir> --var name=<old> --var new-name=<new>"
     tags: [meta, rename, lifecycle, manual]
 
   - kind: workflow
-    path: meta/workflows/clone-sky-workflow.sky
+    path: meta/workflows/authoring/clone-sky-workflow.sky
     description: "Duplicate a .sky as a new manual-trigger template under a new name, neutralizing the trigger so the copy never double-fires, then lint and describe. Fire via: sky run clone-sky-workflow --var dir=<dir> --var name=<src> --var new-name=<dst>"
     tags: [meta, clone, lifecycle, manual]
 
   - kind: workflow
-    path: meta/workflows/delete-sky-workflow.sky
+    path: meta/workflows/authoring/delete-sky-workflow.sky
     description: "Find a .sky workflow by name and delete it behind a manual approval gate. Fire via: sky run delete-sky-workflow --var name=<file>"
     tags: [meta, delete, manual]
 
   - kind: workflow
-    path: meta/workflows/archive-sky-workflow.sky
+    path: meta/workflows/authoring/archive-sky-workflow.sky
     description: "Move a workflow into _archive/ with its trigger neutralized (reversible via mode=restore) behind a manual gate, then lint. Pure bash. Fire via: sky run archive-sky-workflow --var dir=<dir> --var name=<file> --var mode=archive|restore"
     tags: [meta, archive, lifecycle, manual]
 
   - kind: workflow
-    path: meta/workflows/codemod-sky-var.sky
+    path: meta/workflows/authoring/codemod-sky-var.sky
     description: "Bulk-rename a --var key or node id across every .sky (templates, $SKY_ refs, node ids + edges) behind a manual gate, then lint touched files. Pure bash. Fire via: sky run codemod-sky-var --var dir=<dir> --var old=<k> --var new=<k>"
     tags: [meta, refactor, codemod, manual]
 
   - kind: workflow
-    path: meta/workflows/convert-script-to-sky-workflow.sky
+    path: meta/workflows/authoring/convert-script-to-sky-workflow.sky
     description: "Read a shell script / Makefile target / cron line and author an equivalent .sky (body->bash, schedule->cron, env->secrets), then lint-loop and dry-run. Fire via: sky run convert-script-to-sky-workflow --var dir=<dir> --var name=<file> --var source=<file>"
     tags: [meta, convert, scaffold, manual]
 
   - kind: workflow
-    path: meta/workflows/upgrade-sky-format.sky
+    path: meta/workflows/authoring/upgrade-sky-format.sky
     description: "Lint one .sky and, only when it reports problems, apply minimal format fixes (gated by trigger_rule), re-lint until clean, then show the git diff. Fire via: sky run upgrade-sky-format --var dir=<dir> --var name=<file>"
     tags: [meta, upgrade, lint, manual]
 
   # ── Audit & health ─────────────────────────────────────────────────────
   - kind: workflow
-    path: meta/workflows/audit-sky-library.sky
+    path: meta/workflows/audit/audit-sky-library.sky
     description: "Lint every .sky in a directory in one pass and report pass/fail grouped by file, exiting non-zero on any failure. Pure bash. Fire via: sky run audit-sky-library --var dir=<path>"
     tags: [meta, audit, lint, ci, manual]
 
   - kind: workflow
-    path: meta/workflows/lint-sky-library.sky
+    path: meta/workflows/audit/lint-sky-library.sky
     description: "Lint every .sky in a directory, then run a Claude fix-loop on the failing files until the whole library lints clean. Fire via: sky run lint-sky-library --var dir=<path>"
     tags: [meta, lint, fix, manual]
 
   - kind: workflow
-    path: meta/workflows/dry-run-sky-library.sky
+    path: meta/workflows/audit/dry-run-sky-library.sky
     description: "Run sky run --dry-run against every workflow in a directory and print a PASS/FAIL/SKIP plan matrix, exiting non-zero on any failure. Pure bash. Fire via: sky run dry-run-sky-library --var dir=<path>"
     tags: [meta, audit, dry-run, ci, manual]
 
   - kind: workflow
-    path: meta/workflows/audit-sky-secrets.sky
+    path: meta/workflows/audit/audit-sky-secrets.sky
     description: "Scan every .sky for secret-shaped $ENV refs in bash/http not declared in secrets[], report the undeclared ones, exit non-zero on any. Pure bash. Fire via: sky run audit-sky-secrets --var dir=<path>"
     tags: [meta, audit, secrets, security, manual]
 
   - kind: workflow
-    path: meta/workflows/check-sky-trigger-conflicts.sky
+    path: meta/workflows/audit/check-sky-trigger-conflicts.sky
     description: "Detect workflows bound to the same non-manual trigger (sky_event, cron, or github event+action+label) that would all fire together, exit non-zero on collision. Pure bash. Fire via: sky run check-sky-trigger-conflicts --var dir=<path>"
     tags: [meta, audit, triggers, manual]
 
   - kind: workflow
-    path: meta/workflows/find-orphan-sky-events.sky
+    path: meta/workflows/audit/find-orphan-sky-events.sky
     description: "Flag dangling event edges: sky_event triggers with no emitter and emit nodes nobody listens for, exit non-zero on any orphan. Pure bash. Fire via: sky run find-orphan-sky-events --var dir=<path>"
     tags: [meta, audit, events, manual]
 
   - kind: workflow
-    path: meta/workflows/find-unused-sky-workflows.sky
+    path: meta/workflows/audit/find-unused-sky-workflows.sky
     description: "Cross-reference every .sky against sky logs run history and list never-run files as deletion candidates with ready-to-paste delete commands (no auto-delete). Pure bash. Fire via: sky run find-unused-sky-workflows --var dir=<path>"
     tags: [meta, audit, cleanup, manual]
 
   - kind: workflow
-    path: meta/workflows/audit-sky-budget.sky
+    path: meta/workflows/audit/audit-sky-budget.sky
     description: "Estimate per-workflow spend and flag every LLM workflow missing a max_budget_usd cap, ranked by cost risk. Fire via: sky run audit-sky-budget --var dir=<path>"
     tags: [meta, audit, budget, cost, manual]
 
   - kind: workflow
-    path: meta/workflows/sky-library-health-report.sky
+    path: meta/workflows/audit/sky-library-health-report.sky
     description: "Compose per-workflow lint, run-recency, and budget-cap presence into a graded red/amber/green HEALTH.md for the whole library. Fire via: sky run sky-library-health-report --var dir=<path>"
     tags: [meta, audit, health, docs, manual]
 
   - kind: workflow
-    path: meta/workflows/import-sky-library.sky
+    path: meta/workflows/audit/import-sky-library.sky
     description: "Validate and import a folder of foreign .sky files one-by-one, skipping lint failures, behind a manual gate, with a kept/rejected manifest. Pure bash. Fire via: sky run import-sky-library --var dir=<dir> --var source=<src>"
     tags: [meta, import, lifecycle, manual]
 
   - kind: workflow
-    path: meta/workflows/triage-failed-sky-run.sky
+    path: meta/workflows/audit/triage-failed-sky-run.sky
     description: "Read a failed run's logs + the .sky source, pinpoint the failing node and root cause, and propose (not apply) a fix diff plus the update command. Fire via: sky run triage-failed-sky-run --var dir=<dir> --var name=<file> --var run=<run-id>"
     tags: [meta, debug, triage, manual]
 
   # ── Documentation ──────────────────────────────────────────────────────
   - kind: workflow
-    path: meta/workflows/catalog-sky-library.sky
+    path: meta/workflows/docs/catalog-sky-library.sky
     description: "Regenerate a browsable INDEX.md for a .sky directory (name, trigger, vars, DAG, budget) with a bash coverage check that every file is listed. Fire via: sky run catalog-sky-library --var dir=<path>"
     tags: [meta, docs, catalog, manual]
 
   - kind: workflow
-    path: meta/workflows/diagram-sky-workflow.sky
+    path: meta/workflows/docs/diagram-sky-workflow.sky
     description: "Regenerate the ※※ ASCII DAG header for one .sky from its actual node graph, write it back in place, then lint. Fire via: sky run diagram-sky-workflow --var dir=<dir> --var name=<file>"
     tags: [meta, docs, diagram, manual]
 
   - kind: workflow
-    path: meta/workflows/explain-sky-workflow.sky
+    path: meta/workflows/docs/explain-sky-workflow.sky
     description: "Read one .sky and emit a plain-English walkthrough of its trigger, node DAG, vars, and per-node behavior. Fire via: sky run explain-sky-workflow --var dir=<dir> --var name=<file>"
     tags: [meta, docs, explain, manual]
 
   - kind: workflow
-    path: meta/workflows/changelog-sky-workflow.sky
+    path: meta/workflows/docs/changelog-sky-workflow.sky
     description: "Diff a .sky against its last committed version and append a plain-English changelog entry to CHANGELOG.md. Fire via: sky run changelog-sky-workflow --var dir=<dir> --var name=<file>"
     tags: [meta, docs, changelog, manual]
 
   - kind: workflow
-    path: meta/workflows/annotate-sky-workflow.sky
+    path: meta/workflows/docs/annotate-sky-workflow.sky
     description: "Insert inline ※※ rationale comments before each node explaining its purpose and edges, then lint. Fire via: sky run annotate-sky-workflow --var dir=<dir> --var name=<file>"
     tags: [meta, docs, annotate, manual]
 
