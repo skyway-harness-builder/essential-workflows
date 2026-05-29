@@ -1,5 +1,5 @@
 apiVersion: skylence.io/v1
-version: 2.2.0
+version: 2.3.0
 updated_at: "2026-05-29"
 entries:
   - kind: workflow
@@ -18,6 +18,11 @@ entries:
     tags: [meta, rename, lifecycle, manual]
 
   - kind: workflow
+    path: meta/workflows/clone-sky-workflow.sky
+    description: "Duplicate a .sky as a new manual-trigger template under a new name, neutralizing the trigger so the copy never double-fires, then lint and describe. Fire via: sky run clone-sky-workflow --var dir=<dir> --var name=<src> --var new-name=<dst>"
+    tags: [meta, clone, lifecycle, manual]
+
+  - kind: workflow
     path: meta/workflows/delete-sky-workflow.sky
     description: "Find a .sky workflow by name and delete it behind a manual approval gate. Fire via: sky run delete-sky-workflow --var name=<file>"
     tags: [meta, delete, manual]
@@ -26,6 +31,16 @@ entries:
     path: meta/workflows/audit-sky-library.sky
     description: "Lint every .sky in a directory in one pass and report pass/fail grouped by file, exiting non-zero on any failure. Pure bash. Fire via: sky run audit-sky-library --var dir=<path>"
     tags: [meta, audit, lint, ci, manual]
+
+  - kind: workflow
+    path: meta/workflows/lint-sky-library.sky
+    description: "Lint every .sky in a directory, then run a Claude fix-loop on the failing files until the whole library lints clean. Fire via: sky run lint-sky-library --var dir=<path>"
+    tags: [meta, lint, fix, manual]
+
+  - kind: workflow
+    path: meta/workflows/dry-run-sky-library.sky
+    description: "Run sky run --dry-run against every workflow in a directory and print a PASS/FAIL/SKIP plan matrix, exiting non-zero on any failure. Pure bash. Fire via: sky run dry-run-sky-library --var dir=<path>"
+    tags: [meta, audit, dry-run, ci, manual]
 
   - kind: workflow
     path: meta/workflows/audit-sky-secrets.sky
@@ -38,9 +53,24 @@ entries:
     tags: [meta, audit, triggers, manual]
 
   - kind: workflow
+    path: meta/workflows/find-orphan-sky-events.sky
+    description: "Flag dangling event edges: sky_event triggers with no emitter and emit nodes nobody listens for, exit non-zero on any orphan. Pure bash. Fire via: sky run find-orphan-sky-events --var dir=<path>"
+    tags: [meta, audit, events, manual]
+
+  - kind: workflow
     path: meta/workflows/catalog-sky-library.sky
     description: "Regenerate a browsable INDEX.md for a .sky directory (name, trigger, vars, DAG, budget) with a bash coverage check that every file is listed. Fire via: sky run catalog-sky-library --var dir=<path>"
     tags: [meta, docs, catalog, manual]
+
+  - kind: workflow
+    path: meta/workflows/diagram-sky-workflow.sky
+    description: "Regenerate the ※※ ASCII DAG header for one .sky from its actual node graph, write it back in place, then lint. Fire via: sky run diagram-sky-workflow --var dir=<dir> --var name=<file>"
+    tags: [meta, docs, diagram, manual]
+
+  - kind: workflow
+    path: meta/workflows/upgrade-sky-format.sky
+    description: "Lint one .sky and, only when it reports problems, apply minimal format fixes (gated by trigger_rule), re-lint until clean, then show the git diff. Fire via: sky run upgrade-sky-format --var dir=<dir> --var name=<file>"
+    tags: [meta, upgrade, lint, manual]
 
   - kind: skill
     path: meta/skills/sky-workflow-authoring/SKILL.md

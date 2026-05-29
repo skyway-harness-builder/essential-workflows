@@ -1,0 +1,69 @@
+⊕meta⊕
+name = "dry-run-sky-library"
+description = "Dry-run every .sky workflow in a directory and print a PASS/FAIL/SKIP plan matrix; exit nonzero on any FAIL."
+trigger.manual = true
+output_style = "terse"
+⊕⊕
+
+§discover§
+bash = "set -u\nDIR=\"$SKY_DIR\"\nif [ -z \"$DIR\" ]; then echo 'ERROR: --var dir is required' >&2; exit 2; fi\nif [ ! -d \"$DIR\" ]; then echo \"ERROR: dir not a directory: $DIR\" >&2; exit 2; fi\nfound=0\nfor f in \"$DIR\"/*.sky; do\n  [ -e \"$f\" ] || continue\n  base=\"$(basename \"$f\")\"\n  name=\"${base%.sky}\"\n  printf '%s\\t%s\\n' \"$name\" \"$f\"\n  found=$((found + 1))\ndone\nif [ \"$found\" -eq 0 ]; then echo \"ERROR: no .sky files in $DIR\" >&2; exit 2; fi\necho \"discovered $found workflow(s) in $DIR\" >&2"
+§§
+
+§dryrun§
+bash = "set -u\nDIR=\"$SKY_DIR\"\nSKY_BIN=\"${SKY_CLI:-sky}\"\nprintf '%s\\n' \"$SKY_OUTPUT_DISCOVER\" | while IFS='\t' read -r name path; do\n  [ -n \"$name\" ] || continue\n  case \"$name\" in discovered\\ *) continue ;; esac\n  out=\"$(\"$SKY_BIN\" run \"$path\" --dry-run 2>&1)\"; code=$?\n  if [ \"$code\" -ne 0 ] && printf '%s\\n' \"$out\" | grep -qiE 'unknown flag|unknown.*dry-run|--dry-run'; then\n    out=\"$(cd \"$DIR\" && \"$SKY_BIN\" run \"$name\" --dry-run 2>&1)\"; code=$?\n  fi\n  firsterr=\"$(printf '%s\\n' \"$out\" | grep -iE 'error|fail|missing|required|undefined|unresolved' | head -n 1)\"\n  [ -n \"$firsterr\" ] || firsterr=\"$(printf '%s\\n' \"$out\" | head -n 1)\"\n  if [ \"$code\" -eq 0 ]; then\n    status='PASS'\n  elif printf '%s\\n' \"$out\" | grep -qiE 'required var|missing var|--vars|undefined var|unresolved var|template var'; then\n    status='SKIP'\n  else\n    status='FAIL'\n  fi\n  printf '%s\\t%s\\t%s\\n' \"$status\" \"$name\" \"$firsterr\"\ndone"
+depends_on = ["discover"]
+§§
+
+§matrix§
+bash = "set -u\nrows=\"$SKY_OUTPUT_DRYRUN\"\npass=0; fail=0; skip=0\nprintf '%-6s  %-32s  %s\\n' 'PLAN' 'WORKFLOW' 'FIRST DIAGNOSTIC'\nprintf '%-6s  %-32s  %s\\n' '------' '--------------------------------' '----------------'\nprintf '%s\\n' \"$rows\" | while IFS='\t' read -r status name detail; do\n  [ -n \"$status\" ] || continue\n  printf '%-6s  %-32s  %s\\n' \"$status\" \"$name\" \"$detail\"\ndone\nwhile IFS='\t' read -r status name detail; do\n  [ -n \"$status\" ] || continue\n  case \"$status\" in\n    PASS) pass=$((pass + 1)) ;;\n    FAIL) fail=$((fail + 1)) ;;\n    SKIP) skip=$((skip + 1)) ;;\n  esac\ndone <<EOF\n$rows\nEOF\ntotal=$((pass + fail + skip))\nprintf '\\nsummary: %d total  %d PASS  %d FAIL  %d SKIP\\n' \"$total\" \"$pass\" \"$fail\" \"$skip\"\nif [ \"$fail\" -gt 0 ]; then\n  echo \"result: FAIL ($fail workflow(s) failed to plan)\" >&2\n  exit 1\nfi\necho 'result: OK (no FAIL)'"
+depends_on = ["dryrun"]
+§§
+
+※※
+================================================================================
+ dry-run-sky-library  --  PASS/FAIL/SKIP plan matrix for a .sky library
+================================================================================
+
+ WHAT IT DOES
+   Runs `sky run <wf> --dry-run` against every .sky file in --var dir and prints
+   an aligned matrix of which workflows resolve their render+plan stage cleanly.
+   --dry-run exercises template substitution and depends_on wiring that static
+   `sky lint` cannot see, so this catches a different (deeper) class of bug.
+   Pure bash, no LLM, no cost.
+
+ DAG
+   discover ──> dryrun ──> matrix
+   (glob *.sky)  (per-wf    (aligned table +
+                 dry-run)    summary, exit 1 on any FAIL)
+
+ RUN
+   sky run dry-run-sky-library --vars dir=/abs/path/to/.sky/workflows
+
+ VARS
+   dir   (required)  Absolute path to the directory containing the .sky files.
+                     Reachable in bash as "$SKY_DIR".
+
+ EXIT
+   0  every workflow PASSed (or only SKIPped) the dry-run plan.
+   1  at least one workflow FAILed to plan (matrix node).
+   2  bad input: dir missing / not a directory / no .sky files (discover node).
+
+ HONESTY / KNOWN LIMITS
+   - name == filename is ASSUMED. `sky run "<path>" --dry-run` is tried first;
+     if that build does not accept a path, it falls back to `cd "$dir" && sky
+     run "<name>"` which relies on the workflow's name field matching its
+     filename. Mismatched name fields will mis-resolve.
+   - SKIP ("needs vars it can't supply") is a HEURISTIC: it matches the dry-run
+     stderr for phrases like "required var" / "missing var" / "--vars". A
+     workflow that fails for an unrelated reason but happens to mention those
+     words could be mis-classified as SKIP rather than FAIL, and vice versa.
+   - Only the FIRST diagnostic line is shown per workflow; read the full
+     dry-run output (`sky run <wf> --dry-run`) for the complete error.
+   - Override the binary with SKY_CLI=/path/to/sky in the daemon env if `sky`
+     is not on PATH.
+================================================================================
+
+ -- discover: glob "$SKY_DIR"/*.sky, emit one "<name>\t<path>" row per file (exit 2 on bad input).
+ -- dryrun: for each row, run `sky run --dry-run` (path first, cd+name fallback); classify PASS/FAIL/SKIP + capture first diagnostic.
+ -- matrix: render aligned PLAN/WORKFLOW/DIAGNOSTIC table, print summary counts, exit 1 if any FAIL.
+※※

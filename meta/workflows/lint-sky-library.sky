@@ -1,0 +1,99 @@
+⊕meta⊕
+name = "lint-sky-library"
+description = "Lint every .sky in a directory, then run a Claude fix-loop on the failing files until the whole library lints clean. Auto-fix twin of audit-sky-library. Edits files in place; budget-capped."
+trigger.manual = true
+output_style = "terse"
+max_budget_usd = 3.00
+⊕⊕
+
+§scan§
+bash = "set -u\nDIR=\"$SKY_DIR\"\nif [ -z \"$DIR\" ]; then echo 'ERROR: --var dir is required' >&2; exit 2; fi\nif [ ! -d \"$DIR\" ]; then echo \"ERROR: not a directory: $DIR\" >&2; exit 2; fi\nFAIL_COUNT=0\nTOTAL=0\nfor f in \"$DIR\"/*.sky; do\n  [ -e \"$f\" ] || continue\n  TOTAL=$((TOTAL + 1))\n  if ! OUT=$(sky lint \"$f\" 2>&1); then\n    FAIL_COUNT=$((FAIL_COUNT + 1))\n    echo \"FAIL: $f\"\n    printf '%s\\n' \"$OUT\" | grep -E 'SKY-WF-[0-9]+' || printf '%s\\n' \"$OUT\"\n  fi\ndone\nif [ \"$TOTAL\" -eq 0 ]; then echo \"ERROR: no .sky files found in $DIR\" >&2; exit 2; fi\necho \"---\"\necho \"scanned=$TOTAL failing=$FAIL_COUNT\"\nif [ \"$FAIL_COUNT\" -gt 0 ]; then exit 1; fi\nexit 0"
+§§
+
+§fix§
+model = "sonnet"
+depends_on = ["scan"]
+trigger_rule = "one_failure"
+skills = ["sky-workflow-authoring"]
+§§
+
+∆fix∆
+The scan node ran `sky lint` on every `.sky` file in a directory and reported the failing files plus their SKY-WF-* error codes.
+
+Scan output:
+$SKY_OUTPUT_SCAN
+
+For EACH file listed as FAIL above:
+1. Read the file fresh from disk.
+2. Run `sky lint "<path>"` yourself to see the current diagnostics.
+3. Fix every SKY-WF-* error and warning, editing the file in place.
+
+Apply the standard fixes per error code:
+- SKY-WF-040: a node's `chain_from` target must also appear in its `depends_on` array. Add it.
+- SKY-WF-047: bare `{{var}}` inside an `http.body` JSON string. Use `{{var|json}}`.
+- SKY-WF-055: an env-reference of the form dollar-brace env colon NAME (used in `mcp_servers` or HTTP url/body/headers) whose NAME is missing from the `secrets` array. Add NAME to `secrets = [...]` in the `⊕meta⊕` block.
+- SKY-WF-060/SKY-WF-064/SKY-WF-065/SKY-WF-066/SKY-WF-067: align the node config with the rule; consult the sky-workflow-authoring skill for the exact contract before editing.
+- Bareword `when` RHS: quote it. `when = "$x.output == 'value'"`, never `== value`.
+- Unquoted `$SKY_*` in a `bash` node: wrap in double quotes, e.g. `"$SKY_DIR"`.
+
+Rules you MUST respect while editing:
+- Keep the four delimiter blocks intact; every opener/closer alone on its line.
+- Never introduce `{{var}}` into a `bash` or `loop.until.bash` body; use `$SKY_*` there.
+- Use portable sed only (no `sed -i`); prefer the temp-file pattern.
+- Do not weaken or remove a `safety = "requires_permission"` guard on a destructive bash node.
+- Preserve each file's original intent, trigger, and DAG; make the minimal change that clears lint.
+
+Re-lint each file you touched after editing. When `sky lint` exits 0 on every previously-failing file, stop. Do not edit files that already passed.
+∆∆
+
+§verify§
+depends_on = ["fix"]
+bash = "DIR=\"$SKY_DIR\"\nFAIL=0\nfor f in \"$DIR\"/*.sky; do\n  [ -e \"$f\" ] || continue\n  if ! sky lint \"$f\" >/dev/null 2>&1; then\n    FAIL=$((FAIL + 1))\n    echo \"still failing: $f\"\n  fi\ndone\nif [ \"$FAIL\" -gt 0 ]; then echo \"verify: $FAIL file(s) still failing\"; exit 1; fi\necho 'verify: all .sky files lint clean'\nexit 0"
+loop.until.bash = "DIR=\"$SKY_DIR\"\nfor f in \"$DIR\"/*.sky; do\n  [ -e \"$f\" ] || continue\n  sky lint \"$f\" >/dev/null 2>&1 || exit 1\ndone\nexit 0"
+loop.max = 6
+§§
+
+※※
+# lint-sky-library
+
+Lint every `.sky` file in a directory, then hand the failing files to Claude and
+loop until the entire library lints clean.
+
+This is the AUTO-FIX twin of `audit-sky-library` (which only reports, never edits).
+WARNING: this workflow EDITS `.sky` files IN PLACE. It is BUDGET-CAPPED at
+`max_budget_usd = 3.00` because the fix node may touch many files.
+
+DAG:
+
+    scan (bash)          glob "$SKY_DIR"/*.sky, run `sky lint` on each,
+      |                  collect failing paths + SKY-WF-* codes;
+      |                  exit 1 if any fail (this nonzero is the gate for fix)
+      v
+    fix (claude/sonnet)  trigger_rule = one_failure: runs ONLY when scan failed.
+      |                  Reads each failing file, fixes per the SKY-WF-* table,
+      |                  re-lints, repeats until each clears. Skipped if scan was clean.
+      v
+    verify (loop)        re-lint EVERY file in the dir; the loop.until.bash exits 0
+                         only when all pass, retrying up to loop.max = 6 times.
+
+Run:
+
+    sky run lint-sky-library --var dir=.sky/workflows
+
+Vars:
+    dir   directory containing the .sky files to lint and fix (e.g. .sky/workflows)
+          -> $SKY_DIR in bash/loop; no {{var}} is used in any bash/loop body
+
+Notes:
+    - This workflow EDITS .sky files in place (the fix node) and is budget-capped
+      at max_budget_usd = 3.00.
+    - If `dir` is missing, not a directory, or has no `.sky` files, scan exits 2 (error).
+    - If every file already lints clean, scan exits 0; the fix node is skipped because
+      its trigger_rule = "one_failure" only fires when an upstream dep failed.
+    - verify is a final gate: if fix did not clear everything, verify exits nonzero
+      and the run fails, naming the files still failing.
+
+# scan: lint each .sky in $SKY_DIR; print FAIL lines + SKY-WF-* codes; exit 1 if any failed.
+# fix: trigger_rule one_failure -> only when scan failed; Claude fixes each failing file per the SKY-WF-* table.
+# verify: loop node re-linting every file in $SKY_DIR; loop.until.bash passes only when all clean (max 6 attempts).
+※※

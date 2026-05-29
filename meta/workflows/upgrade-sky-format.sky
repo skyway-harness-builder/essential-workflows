@@ -1,0 +1,94 @@
+※※
+# upgrade-sky-format
+
+Manually-run workflow that lints one `.sky` file and, **only when** lint reports
+problems, asks Claude to apply the minimal edits that bring it to the current format,
+re-linting until clean, then prints the git diff. No tokens are spent when the file
+already lints clean.
+
+Cost gate (the trick): `probe` exits with `sky lint`'s own exit code. The `fix` node
+runs only when an upstream node FAILED (`trigger_rule = "one_failure"`), so a clean
+file skips `fix` entirely. This avoids the fragile `when = "$probe.output == '…'"`
+equality gate (exact-match against multi-line lint output never fires).
+
+  probe (bash)            sky lint <file>; exit = lint status (0 clean / nonzero dirty)
+    │
+    ├─ clean (exit 0) ──▶ fix SKIPPED ─────────────┐
+    │                                              │
+    └─ dirty (nonzero) ─▶ fix (claude/sonnet)      │  trigger_rule = one_failure
+                            reads file, fixes every │  → runs only on failure
+                            SKY-WF-* code, re-lints │  self-loops until clean
+                            until `sky lint` passes │
+                                                    ▼
+                                              diff (bash)   git diff (always; all_done)
+
+Run:
+
+  sky run upgrade-sky-format --var dir=.sky/workflows --var name=my-workflow
+
+Vars:
+  --var dir    directory containing the file (a git repo) — "$SKY_DIR" in bash
+  --var name   workflow name WITHOUT .sky; file is "$SKY_DIR/$SKY_NAME.sky"
+
+Notes:
+- A missing file hard-fails at `probe` (exit 1) with a clear message.
+- `fix` self-iterates (reads → fixes → re-lints) within its own node, capped by
+  max_budget_usd; it makes surgical edits only and preserves behavior.
+- `diff` runs unconditionally (trigger_rule = all_done); the diff is empty when the
+  file was already clean.
+※※
+
+⊕meta⊕
+name = "upgrade-sky-format"
+description = "Lint one .sky and, only when it reports problems, apply minimal format fixes (gated by trigger_rule, not output-equality), re-lint until clean, then show the git diff. No tokens when already clean. Fire via: sky run upgrade-sky-format --var dir=<dir> --var name=<file>"
+trigger.manual = true
+output_style = "terse"
+max_budget_usd = 2.00
+⊕⊕
+
+※※
+Step 1 — probe. Lints the file and exits with lint's own status: 0 when clean (so the
+fix node is skipped), nonzero when dirty (so the fix node fires). A missing file is a
+hard error (exit 1) with a clear message.
+※※
+
+§probe§
+bash = "set -u\nF=\"$SKY_DIR/$SKY_NAME.sky\"\nif [ ! -f \"$F\" ]; then echo \"[upgrade] not found: $F\" >&2; exit 1; fi\nsky lint \"$F\"\nRC=$?\nif [ \"$RC\" -eq 0 ]; then echo \"[upgrade] $SKY_NAME.sky already clean — nothing to upgrade\"; else echo \"[upgrade] $SKY_NAME.sky has lint issues — fixing\"; fi\nexit \"$RC\""
+§§
+
+※※
+Step 2 — fix. Runs ONLY when probe failed (trigger_rule = one_failure), so a clean
+file costs zero tokens. The Claude node reads the file, fixes every reported code, and
+re-lints inside its own turn until `sky lint` passes — no separate loop node needed.
+※※
+
+§fix§
+model = "sonnet"
+depends_on = ["probe"]
+trigger_rule = "one_failure"
+skills = ["sky-workflow-authoring"]
+§§
+
+∆fix∆
+Bring the single .sky workflow at {{dir}}/{{name}}.sky to the current format with the MINIMAL edits needed to clear every `sky lint` diagnostic. Do not change its behavior.
+
+If {{dir}}/{{name}}.sky does not exist, print "not found: {{dir}}/{{name}}.sky" and stop without editing anything.
+
+Otherwise work this loop until it passes:
+1. Run `sky lint "{{dir}}/{{name}}.sky"` and read every reported code (SKY-WF-* / SKY-CFG-*).
+2. For each code apply the smallest fix that resolves it. Common ones: a node with `chain_from` must list that node in `depends_on`; a bare template var inside an `http.body` JSON string needs the `|json` filter; every env reference of the form dollar-brace-env-colon-NAME in `mcp_servers`/`http` must be declared in the `secrets` array; a bareword `when` right-hand side must be single-quoted; migrate deprecated keys or delimiters to the four-block format (⊕meta⊕, §id§, ∆id∆, ※※), each opener and closer alone on its line.
+3. Preserve every trigger, node id, dependency edge, prompt body, and bash command — touch only what a code forces. Make surgical edits, never rewrite a node wholesale.
+4. Re-run `sky lint` after editing; repeat steps 1–3 until it exits 0.
+5. Keep the workflow entirely in English. When clean, print the final lint result.
+∆∆
+
+※※
+Step 3 — diff. Always runs (trigger_rule = all_done), whether fix ran or was skipped,
+so you can see exactly what changed. The diff is empty when the file was already clean.
+※※
+
+§diff§
+depends_on = ["probe", "fix"]
+trigger_rule = "all_done"
+bash = "set -u\ngit -C \"$SKY_DIR\" diff -- \"$SKY_NAME.sky\" 2>/dev/null || true"
+§§

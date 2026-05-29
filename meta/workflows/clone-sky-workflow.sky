@@ -1,0 +1,111 @@
+※※
+# clone-sky-workflow
+
+Manually-run workflow that duplicates an existing `.sky` as a new template under a new
+name — and crucially NEUTRALIZES the copy's trigger so the two never double-fire. Pure
+bash for the copy + rewrite; one small claude lint-fix loop to land it clean.
+
+Why neutralize the trigger? A naive `cp a.sky b.sky` copies the trigger block verbatim.
+If the source fires on, say, `trigger.github.events = ["issues"]`, the clone now fires on
+the SAME event — so one GitHub issue starts TWO runs (silent duplicate work + double
+spend). Stripping every `trigger.*` line makes the clone manual by default (no trigger
+block == manual), which is what a fresh template should be. That strip is the whole point.
+
+  (manual run: --var dir, name, new-name)
+       │
+       ▼
+   ┌────────┐  source missing ──▶ list <dir> + exit 1
+   │  copy  │  dest exists     ──▶ exit 1 (never clobber)
+   └────────┘  else: cp source -> dest
+       │
+       ▼
+   ┌─────────┐  in dest: name = "<old>" -> name = "<new>" (temp-file sed)
+   │ rewrite │  then delete every `^trigger.` line -> clone is manual
+   └─────────┘
+       │
+       ▼
+   ┌────────┐ ⟲  loop.until.bash: sky lint dest  (max 6 passes)
+   │  lint  │     sonnet + sky-workflow-authoring fixes any leftover issue
+   └────────┘
+       │
+       ▼
+   ┌──────────┐  sky describe dest (best-effort) + "done"
+   │ describe │
+   └──────────┘
+
+Run it (state where the source lives with --var dir):
+
+  sky run clone-sky-workflow \
+    --var dir=".sky/workflows" \
+    --var name="source-name" \
+    --var new-name="clone-name"
+
+  - dir       directory both files live in — STATE THIS (e.g. .sky/workflows)
+  - name      existing kebab-case filename to clone (no .sky extension)
+  - new-name  new kebab-case filename + workflow name for the clone (no .sky extension)
+
+Note on the trigger strip: it deletes any line beginning with `trigger.` (github / cron /
+schedule / sky_event / manual). With no trigger block the workflow is manual by default.
+The lint loop then repairs anything the strip left dangling (e.g. a now-orphaned
+`secrets`/`when` reference) so the clone ships clean.
+※※
+
+⊕meta⊕
+name = "clone-sky-workflow"
+description = "Duplicate a .sky as a new manual template under a new name, neutralizing the copied trigger so both never double-fire, then lint clean. Fire via: sky run clone-sky-workflow --var dir=<dir> --var name=<source> --var new-name=<clone>"
+trigger.manual = true
+output_style = "terse"
+max_budget_usd = 2.00
+⊕⊕
+
+※※
+Step 1 — copy. Resolves the source, refuses if it is missing (lists the dir to help) and
+refuses if the destination already exists (never clobber an existing workflow). On success
+it plain-copies source -> dest. No mutation of either file's contents yet.
+※※
+
+§copy§
+bash = "set -e\nSRC=\"$SKY_DIR/$SKY_NAME.sky\"\nDST=\"$SKY_DIR/$SKY_NEW_NAME.sky\"\nif [ ! -f \"$SRC\" ]; then echo \"[clone] no source workflow at $SRC\"; echo \"[clone] available in $SKY_DIR:\"; ls \"$SKY_DIR\" 2>/dev/null || true; exit 1; fi\nif [ -e \"$DST\" ]; then echo \"[clone] destination already exists: $DST\"; exit 1; fi\ncp \"$SRC\" \"$DST\"\necho \"[clone] copied $SKY_NAME -> $SKY_NEW_NAME\""
+§§
+
+※※
+Step 2 — rewrite. Two edits to the destination, both via portable temp-file sed (no
+`sed -i`; BSD and GNU differ). First retarget the meta name to the new name. Then strip
+every `^trigger.` line with `grep -v` to a temp file and `mv` it back — this is the
+neutralization that stops the clone double-firing. With no trigger block the clone is
+manual by default.
+※※
+
+§rewrite§
+depends_on = ["copy"]
+bash = "set -e\nDST=\"$SKY_DIR/$SKY_NEW_NAME.sky\"\nsed \"s/^name = \\\"$SKY_NAME\\\"/name = \\\"$SKY_NEW_NAME\\\"/\" \"$DST\" > \"$DST.tmp\" && mv \"$DST.tmp\" \"$DST\"\ngrep -v '^trigger\\.' \"$DST\" > \"$DST.tmp\" && mv \"$DST.tmp\" \"$DST\"\nstripped=$(grep -c '^trigger\\.' \"$DST\" 2>/dev/null || echo 0)\necho \"[clone] set name -> $SKY_NEW_NAME and neutralized trigger (remaining trigger lines: $stripped)\""
+§§
+
+※※
+Step 3 — lint. A loop node: each pass reads the clone fresh, runs `sky lint`, and fixes
+every reported issue (e.g. an orphaned secrets/when reference left by the trigger strip).
+The loop.until.bash re-runs the node until lint exits 0 (max 6 passes). Loop nodes can't
+chain a session, so the prompt re-reads the file each pass.
+※※
+
+§lint§
+model = "sonnet"
+depends_on = ["rewrite"]
+skills = ["sky-workflow-authoring"]
+loop.until.bash = "sky lint \"$SKY_DIR/$SKY_NEW_NAME.sky\""
+loop.max = 6
+§§
+
+∆lint∆
+Read {{dir}}/{{new-name}}.sky, then run `sky lint {{dir}}/{{new-name}}.sky` and read its output. Fix every reported error and warning in that file, using the sky-workflow-authoring skill's SKY-WF-* code table to map each code to its fix. Context: this file is a clone of another workflow with its trigger lines stripped, so it is now a manual workflow — do NOT add a trigger back. Likely leftovers from the strip: a `when`/`secrets`/`mcp_servers` reference that pointed at trigger payload data, or a `name` mismatch. Ensure `name = "{{new-name}}"` matches the filename. Keep the workflow body in English. Re-run lint after editing. This node loops until lint exits 0 — make concrete fixes each pass. When clean, output the final lint result and the file path.
+∆∆
+
+※※
+Step 4 — describe. Best-effort `sky describe` of the finished clone for a quick
+human-readable summary (tolerated if the subcommand is unavailable), then prints done.
+※※
+
+§describe§
+depends_on = ["lint"]
+bash = "DST=\"$SKY_DIR/$SKY_NEW_NAME.sky\"\nsky describe \"$DST\" 2>/dev/null || true\necho \"[clone] done -> $DST\""
+§§
