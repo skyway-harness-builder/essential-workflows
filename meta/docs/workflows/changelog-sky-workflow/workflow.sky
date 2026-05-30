@@ -36,15 +36,15 @@ VARS
   name  workflow filename without the .sky extension (the file diffed)
 ※※
 
-※※
-diff: git working-tree vs HEAD for the target .sky; emit a stable marker when there are no uncommitted changes.
+※diff※
+Git working-tree vs HEAD for the target .sky; emit a stable marker when there are no uncommitted changes.
 ※※
 §diff§
 bash_file = "./scripts/diff.sh"
 §§
 
-※※
-describe: read the diff from the upstream node and write ONE concise changelog bullet in reviewable prose.
+※describe※
+Read the diff from the upstream node and write ONE concise changelog bullet in reviewable prose.
 ※※
 §describe§
 model = "haiku"
@@ -70,8 +70,8 @@ Be concise and specific. Do not quote raw diff lines. Do not add headings, code
 fences, or any text other than the single bullet line.
 ∆∆
 
-※※
-emit: print the bullet, then append it under a dated heading to CHANGELOG.md in the target dir.
+※emit※
+Print the bullet, then append it under a dated heading to CHANGELOG.md in the target dir.
 ※※
 §emit§
 depends_on = ["describe"]

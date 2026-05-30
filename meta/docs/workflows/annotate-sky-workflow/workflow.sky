@@ -22,14 +22,14 @@ Annotate the workflow file {{dir}}/{{name}}.sky with inline rationale comments.
 
 Steps:
 1. READ {{dir}}/{{name}}.sky in full.
-2. For each §id§ node-config block, add a concise ※※ ... ※※ comment block IMMEDIATELY BEFORE that §id§ opener line. The comment must explain:
+2. For each §id§ node-config block, add a concise ※<id>※ ... ※※ comment block IMMEDIATELY BEFORE that §id§ opener line. The id in the opener must match the node id exactly. The comment must explain:
    - the node's purpose (what it does in one line),
    - the meaning of each edge it has: depends_on (which upstreams must finish first), trigger_rule (when this node runs relative to those upstreams: all_done / all_success / one_success / one_failure), chain_from (which prior Claude session it resumes), and any when condition (the exact data condition that must hold).
 3. Use the Edit tool for every change. Do NOT use bash/sed to rewrite delimiter lines; that is fragile and will corrupt the file.
-4. PRESERVE every node, every trigger, every ∆ prompt body, and the ⊕meta⊕ block exactly. Do not rename ids, reorder nodes, change bash, or alter any prompt text. Only insert ※※ comment blocks.
-5. Keep each comment terse and machine-oriented. Skip a node only if an identical ※※ rationale already precedes it.
+4. PRESERVE every node, every trigger, every ∆ prompt body, and the ⊕meta⊕ block exactly. Do not rename ids, reorder nodes, change bash, or alter any prompt text. Only insert ※<id>※ comment blocks.
+5. Keep each comment terse and machine-oriented. Skip a node only if an identical ※<id>※ rationale already precedes it.
 
-Each ※※ block: opener ※※ alone on its line, closer ※※ alone on its line, body in between.
+Each step-associated doc block: opener ※<id>※ alone on its line (where <id> is the node id), closer ※※ alone on its line, body in between.
 ∆∆
 
 §lint§
@@ -83,19 +83,19 @@ Vars:
 The target file edited in place is "$dir/$name.sky".
 ※※
 
-※※
-node: read — verify the target .sky exists; exit 1 if missing so downstream
+※read※
+Verify the target .sky exists; exit 1 if missing so downstream
 all_success gates skip cleanly. Reports node-config block count for context.
 ※※
 
-※※
-node: annotate — sonnet w/ sky-workflow-authoring skill. Reads the file and
-inserts a ※※ rationale block before each §id§ via the Edit tool. Preserves
+※annotate※
+Sonnet w/ sky-workflow-authoring skill. Reads the file and
+inserts a ※<id>※ rationale block before each §id§ via the Edit tool. Preserves
 every node/trigger/prompt exactly. Gated all_success on read.
 ※※
 
-※※
-node: lint — sonnet loop. loop.until.bash runs `sky lint` on the file each
+※lint※
+Sonnet loop. loop.until.bash runs `sky lint` on the file each
 pass and stops at exit 0 (max 6). Fixes only lint-named issues (typically a
 malformed ※※ block) with Edit; never strips structure. Gated all_success on
 annotate.

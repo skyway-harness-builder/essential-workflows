@@ -32,8 +32,8 @@ VARS
   name  workflow name WITHOUT the .sky extension.                -> $SKY_NAME
 ※※
 
-※※
-Step 1 — resolve. Assert the target .sky exists ("$SKY_DIR/$SKY_NAME.sky"); exit 1
+※resolve※
+Assert the target .sky exists ("$SKY_DIR/$SKY_NAME.sky"); exit 1
 with a clear message if not. Then run `sky describe` best-effort for extra context the
 explain step can use. Read-only: no rm, no mutation.
 ※※
@@ -42,8 +42,8 @@ explain step can use. Read-only: no rm, no mutation.
 bash_file = "./scripts/resolve.sh"
 §§
 
-※※
-Step 2 — explain. A cheap haiku node reads the resolved .sky and writes a plain-English
+※explain※
+A cheap haiku node reads the resolved .sky and writes a plain-English
 walkthrough (triggers, node DAG, --var inputs, per-node purpose, edge meanings). Runs
 only if resolve succeeded (trigger_rule = all_success). Read-only — must not edit the
 file. The sky-workflow-authoring skill teaches it the four-delimiter format.

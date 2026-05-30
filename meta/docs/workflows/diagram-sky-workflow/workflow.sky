@@ -29,12 +29,13 @@ Steps:
    - Append `(when ...)` next to a node that has a `when` guard.
    - Note `chain_from` edges as `=chain=>` so they are distinguishable from plain `depends_on`.
    - Roots on the left / top, leaves on the right / bottom.
-5. Open the existing top ※※ … ※※ documentation block. Replace ONLY its ASCII diagram section with the diagram you built. Preserve the rest of that header verbatim: the title line, the `sky run ...` command, and every `--var` explanation. If the header has no diagram yet, insert your diagram immediately under the title line, above the run command.
-6. If the file has NO top ※※ header block at all, create one: a title line (the workflow name), the new ASCII diagram, the `sky run {{name}} --var dir=... --var name=...` command, and one `--var` line per declared var.
+5. Open the existing top ※※ … ※※ documentation block (the loose header with no id in its opener). Replace ONLY its ASCII diagram section with the diagram you built. Preserve the rest of that header verbatim: the title line, the `sky run ...` command, and every `--var` explanation. If the header has no diagram yet, insert your diagram immediately under the title line, above the run command.
+   NOTE: The file may also have per-step ※<id>※ … ※※ blocks (with an id between the ※ delimiters). Do NOT touch those — only the top loose ※※ header (the one whose opener is exactly `※※`, no id) is modified.
+6. If the file has NO top ※※ header block at all, create one: a title line (the workflow name), the new ASCII diagram, the `sky run {{name}} --var dir=... --var name=...` command, and one `--var` line per declared var. Use a loose `※※` opener (no id).
 
 Use the Edit tool to make the in-place change. Do NOT rewrite the whole file. Do NOT use bash sed/awk text-surgery on the ※※ delimiters — that is fragile and may corrupt the block. Make a single targeted Edit replacing the old diagram text with the new diagram text.
 
-Do not change any `⊕meta⊕`, `§…§`, or `∆…∆` block. Only the top ※※ header diagram changes.
+Do not change any `⊕meta⊕`, `§…§`, or `∆…∆` block, or any ※<id>※ per-step block. Only the top loose ※※ header diagram changes.
 ∆∆
 
 §lint§
