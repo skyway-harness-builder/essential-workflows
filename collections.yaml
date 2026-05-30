@@ -2,48 +2,10 @@ apiVersion: skylence.io/v1
 kind: collections
 
 collections:
-  - name: workflow-authoring
+  - name: skylence-workflows
     repo: skylence-be/workflows
-    title: "Workflow Authoring & Lifecycle"
-    description: "Create, scaffold, update, rename, clone, archive, and convert .sky workflows. Covers the full lifecycle of a workflow file from first draft to codemod and format upgrade."
+    title: "Skylence"
+    description: "Official .sky workflow and skill library from the Skylence team. Meta-workflows for creating, auditing, documenting, and managing your own .sky library."
     author:
       name: Skylence
       url: https://github.com/skylence-be
-    tags: [authoring, lifecycle, scaffolding, meta]
-    match:
-      - meta/workflows/authoring
-      - meta/skills/sky-workflow-authoring
-
-  - name: workflow-audit
-    repo: skylence-be/workflows
-    title: "Workflow Audit & Health"
-    description: "Lint every workflow, dry-run the full library, audit secrets and budgets, detect trigger conflicts, triage failed runs, and generate a graded health report."
-    author:
-      name: Skylence
-      url: https://github.com/skylence-be
-    tags: [audit, health, security, ci, meta]
-    match:
-      - meta/workflows/audit
-
-  - name: workflow-docs
-    repo: skylence-be/workflows
-    title: "Workflow Documentation"
-    description: "Auto-catalog your library, regenerate ASCII DAG diagrams, explain flows in plain English, generate changelogs, and annotate nodes with rationale comments."
-    author:
-      name: Skylence
-      url: https://github.com/skylence-be
-    tags: [docs, documentation, diagrams, meta]
-    match:
-      - meta/workflows/docs
-
-  - name: darkfactory
-    repo: skylence-be/workflows
-    title: "Dark Factory"
-    description: "Eval-driven forges that author and iterate skills and workflows against a judge-scored gate, plus GitHub board setup and org/repo hardening via gh and the GitHub API."
-    author:
-      name: Skylence
-      url: https://github.com/skylence-be
-    tags: [darkfactory, eval, forge, github, meta]
-    match:
-      - meta/workflows/darkfactory
-      - meta/skills/darkfactory-onboarding
