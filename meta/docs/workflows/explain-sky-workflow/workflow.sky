@@ -39,7 +39,7 @@ explain step can use. Read-only: no rm, no mutation.
 ※※
 
 §resolve§
-bash_file = "./resolve.sh"
+bash_file = "./scripts/resolve.sh"
 §§
 
 ※※

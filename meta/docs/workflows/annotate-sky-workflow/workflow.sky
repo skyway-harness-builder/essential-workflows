@@ -7,7 +7,7 @@ max_budget_usd = 3
 ⊕⊕
 
 §read§
-bash_file = "./read.sh"
+bash_file = "./scripts/read.sh"
 §§
 
 §annotate§

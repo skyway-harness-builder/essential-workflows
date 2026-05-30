@@ -40,7 +40,7 @@ VARS
 diff: git working-tree vs HEAD for the target .sky; emit a stable marker when there are no uncommitted changes.
 ※※
 §diff§
-bash_file = "./diff.sh"
+bash_file = "./scripts/diff.sh"
 §§
 
 ※※
@@ -75,5 +75,5 @@ emit: print the bullet, then append it under a dated heading to CHANGELOG.md in 
 ※※
 §emit§
 depends_on = ["describe"]
-bash_file = "./emit.sh"
+bash_file = "./scripts/emit.sh"
 §§

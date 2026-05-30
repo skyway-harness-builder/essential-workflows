@@ -48,7 +48,7 @@ is empty (nothing to catalog is not a failure).
 ※※
 
 §scan§
-bash_file = "./scan.sh"
+bash_file = "./scripts/scan.sh"
 §§
 
 ※※
@@ -76,5 +76,5 @@ mention every workflow file by name. Fails the run if the index is stale or part
 
 §verify§
 depends_on = ["index"]
-bash_file = "./verify.sh"
+bash_file = "./scripts/verify.sh"
 §§
