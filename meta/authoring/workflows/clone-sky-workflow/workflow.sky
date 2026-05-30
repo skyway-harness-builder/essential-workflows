@@ -65,7 +65,7 @@ it plain-copies source -> dest. No mutation of either file's contents yet.
 ※※
 
 §copy§
-bash_file = "./copy.sh"
+bash_file = "./scripts/copy.sh"
 §§
 
 ※※
@@ -78,7 +78,7 @@ manual by default.
 
 §rewrite§
 depends_on = ["copy"]
-bash_file = "./rewrite.sh"
+bash_file = "./scripts/rewrite.sh"
 §§
 
 ※※
@@ -107,5 +107,5 @@ human-readable summary (tolerated if the subcommand is unavailable), then prints
 
 §describe§
 depends_on = ["lint"]
-bash_file = "./describe.sh"
+bash_file = "./scripts/describe.sh"
 §§

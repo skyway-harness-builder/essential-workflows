@@ -72,7 +72,7 @@ or zero hits — there is nothing to codemod and nothing to approve in those cas
 ※※
 
 §scan§
-bash_file = "./scan.sh"
+bash_file = "./scripts/scan.sh"
 §§
 
 ※※
@@ -99,7 +99,7 @@ a form are touched.
 
 §apply§
 depends_on = ["gate"]
-bash_file = "./apply.sh"
+bash_file = "./scripts/apply.sh"
 §§
 
 ※※
@@ -111,5 +111,5 @@ passes — review `git diff` regardless.
 
 §verify§
 depends_on = ["apply"]
-bash_file = "./verify.sh"
+bash_file = "./scripts/verify.sh"
 §§

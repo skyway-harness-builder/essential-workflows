@@ -6,7 +6,7 @@ output_style = "terse"
 ⊕⊕
 
 §find§
-bash_file = "./find.sh"
+bash_file = "./scripts/find.sh"
 §§
 
 §gate§
@@ -20,13 +20,13 @@ wait.timeout = "1h"
 §move§
 depends_on = ["gate"]
 trigger_rule = "all_success"
-bash_file = "./move.sh"
+bash_file = "./scripts/move.sh"
 §§
 
 §verify§
 depends_on = ["move"]
 trigger_rule = "all_success"
-bash_file = "./verify.sh"
+bash_file = "./scripts/verify.sh"
 §§
 
 ※※

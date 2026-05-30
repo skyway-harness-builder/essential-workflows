@@ -45,7 +45,7 @@ lists the directory's workflows when the name doesn't match.
 ※※
 
 §find§
-bash_file = "./find.sh"
+bash_file = "./scripts/find.sh"
 §§
 
 ※※
@@ -66,5 +66,5 @@ Step 3 — remove. Deletes the file once approved.
 
 §remove§
 depends_on = ["confirm"]
-bash_file = "./remove.sh"
+bash_file = "./scripts/remove.sh"
 §§

@@ -61,7 +61,7 @@ and prints every `sky run <old>` reference that the apply step will rewrite.
 ※※
 
 §find§
-bash_file = "./find.sh"
+bash_file = "./scripts/find.sh"
 §§
 
 ※※
@@ -84,7 +84,7 @@ across every .sky in the dir. Uses temp-file sed (portable on macOS + Linux).
 
 §apply§
 depends_on = ["confirm"]
-bash_file = "./apply.sh"
+bash_file = "./scripts/apply.sh"
 §§
 
 ※※
@@ -94,5 +94,5 @@ warns about any leftover `sky run <old>` references for manual cleanup.
 
 §verify§
 depends_on = ["apply"]
-bash_file = "./verify.sh"
+bash_file = "./scripts/verify.sh"
 §§

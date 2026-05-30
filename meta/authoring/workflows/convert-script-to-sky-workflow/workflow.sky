@@ -7,7 +7,7 @@ max_budget_usd = 3
 ⊕⊕
 
 §read§
-bash_file = "./read.sh"
+bash_file = "./scripts/read.sh"
 §§
 
 §author§
@@ -62,7 +62,7 @@ Stop when `sky lint` exits 0. Report the final lint output.
 ∆∆
 
 §dryrun§
-bash_file = "./dryrun.sh"
+bash_file = "./scripts/dryrun.sh"
 depends_on = ["lint"]
 §§
 
