@@ -1,170 +1,365 @@
 apiVersion: skylence.io/v1
-version: 2.10.0
+version: 2.11.0
 updated_at: "2026-05-30"
+
+stores:
+  - name: meta
+    plugin: authoring
+    description: "Sky workflow authoring lifecycle (scaffold, update, rename, archive, clone, convert, upgrade, codemod)"
+  - name: meta
+    plugin: audit
+    description: "Sky library health: lint, audit, dry-run, secrets, triggers, budget, orphans, import, triage"
+  - name: meta
+    plugin: docs
+    description: "Sky workflow documentation: catalog, diagram, explain, changelog, annotate"
+  - name: meta
+    plugin: darkfactory
+    description: "Dark Factory onboarding + eval-driven forges"
+
 entries:
   # ── Authoring & lifecycle ──────────────────────────────────────────────
   - kind: workflow
-    path: meta/workflows/authoring/scaffold-sky-workflow.sky
-    description: "Author a new .sky workflow from a plain-English brief and lint it until clean. Fire via: sky run scaffold-sky-workflow --var name=<file> --var request=<what it should do>"
+    name: scaffold-sky-workflow
+    path: meta/authoring/workflows/scaffold-sky-workflow/workflow.sky
+    description: "Author a new .sky workflow from a plain-English brief and lint it until clean. Fire via: sky run scaffold-sky-workflow --var dir=<dir> --var name=<file> --var request=<what it should do>"
     tags: [meta, scaffold, lint, manual]
+    store: meta
+    plugin: authoring
 
   - kind: workflow
-    path: meta/workflows/authoring/update-sky-workflow.sky
+    name: update-sky-workflow
+    path: meta/authoring/workflows/update-sky-workflow/workflow.sky
     description: "Apply a change to an existing .sky workflow and lint it until clean. Fire via: sky run update-sky-workflow --var name=<file> --var request=<change>"
     tags: [meta, update, lint, manual]
+    store: meta
+    plugin: authoring
 
   - kind: workflow
-    path: meta/workflows/authoring/rename-sky-workflow.sky
+    name: rename-sky-workflow
+    path: meta/authoring/workflows/rename-sky-workflow/workflow.sky
     description: "Atomically rename a .sky: git mv, fix its meta name, and rewrite `sky run <old>` refs behind a manual gate, then lint and verify. Pure bash. Fire via: sky run rename-sky-workflow --var dir=<dir> --var name=<old> --var new-name=<new>"
     tags: [meta, rename, lifecycle, manual]
+    store: meta
+    plugin: authoring
+    scripts:
+      - meta/authoring/workflows/rename-sky-workflow/scripts/apply.sh
+      - meta/authoring/workflows/rename-sky-workflow/scripts/find.sh
+      - meta/authoring/workflows/rename-sky-workflow/scripts/verify.sh
 
   - kind: workflow
-    path: meta/workflows/authoring/clone-sky-workflow.sky
+    name: clone-sky-workflow
+    path: meta/authoring/workflows/clone-sky-workflow/workflow.sky
     description: "Duplicate a .sky as a new manual-trigger template under a new name, neutralizing the trigger so the copy never double-fires, then lint and describe. Fire via: sky run clone-sky-workflow --var dir=<dir> --var name=<src> --var new-name=<dst>"
     tags: [meta, clone, lifecycle, manual]
+    store: meta
+    plugin: authoring
+    scripts:
+      - meta/authoring/workflows/clone-sky-workflow/scripts/copy.sh
+      - meta/authoring/workflows/clone-sky-workflow/scripts/describe.sh
+      - meta/authoring/workflows/clone-sky-workflow/scripts/rewrite.sh
 
   - kind: workflow
-    path: meta/workflows/authoring/delete-sky-workflow.sky
+    name: delete-sky-workflow
+    path: meta/authoring/workflows/delete-sky-workflow/workflow.sky
     description: "Find a .sky workflow by name and delete it behind a manual approval gate. Fire via: sky run delete-sky-workflow --var name=<file>"
     tags: [meta, delete, manual]
+    store: meta
+    plugin: authoring
+    scripts:
+      - meta/authoring/workflows/delete-sky-workflow/scripts/find.sh
+      - meta/authoring/workflows/delete-sky-workflow/scripts/remove.sh
 
   - kind: workflow
-    path: meta/workflows/authoring/archive-sky-workflow.sky
+    name: archive-sky-workflow
+    path: meta/authoring/workflows/archive-sky-workflow/workflow.sky
     description: "Move a workflow into _archive/ with its trigger neutralized (reversible via mode=restore) behind a manual gate, then lint. Pure bash. Fire via: sky run archive-sky-workflow --var dir=<dir> --var name=<file> --var mode=archive|restore"
     tags: [meta, archive, lifecycle, manual]
+    store: meta
+    plugin: authoring
+    scripts:
+      - meta/authoring/workflows/archive-sky-workflow/scripts/find.sh
+      - meta/authoring/workflows/archive-sky-workflow/scripts/move.sh
+      - meta/authoring/workflows/archive-sky-workflow/scripts/verify.sh
 
   - kind: workflow
-    path: meta/workflows/authoring/codemod-sky-var.sky
+    name: codemod-sky-var
+    path: meta/authoring/workflows/codemod-sky-var/workflow.sky
     description: "Bulk-rename a --var key or node id across every .sky (templates, $SKY_ refs, node ids + edges) behind a manual gate, then lint touched files. Pure bash. Fire via: sky run codemod-sky-var --var dir=<dir> --var old=<k> --var new=<k>"
     tags: [meta, refactor, codemod, manual]
+    store: meta
+    plugin: authoring
+    scripts:
+      - meta/authoring/workflows/codemod-sky-var/scripts/apply.sh
+      - meta/authoring/workflows/codemod-sky-var/scripts/scan.sh
+      - meta/authoring/workflows/codemod-sky-var/scripts/verify.sh
 
   - kind: workflow
-    path: meta/workflows/authoring/convert-script-to-sky-workflow.sky
+    name: convert-script-to-sky-workflow
+    path: meta/authoring/workflows/convert-script-to-sky-workflow/workflow.sky
     description: "Read a shell script / Makefile target / cron line and author an equivalent .sky (body->bash, schedule->cron, env->secrets), then lint-loop and dry-run. Fire via: sky run convert-script-to-sky-workflow --var dir=<dir> --var name=<file> --var source=<file>"
     tags: [meta, convert, scaffold, manual]
+    store: meta
+    plugin: authoring
+    scripts:
+      - meta/authoring/workflows/convert-script-to-sky-workflow/scripts/dryrun.sh
+      - meta/authoring/workflows/convert-script-to-sky-workflow/scripts/read.sh
 
   - kind: workflow
-    path: meta/workflows/authoring/upgrade-sky-format.sky
+    name: upgrade-sky-format
+    path: meta/authoring/workflows/upgrade-sky-format/workflow.sky
     description: "Lint one .sky and, only when it reports problems, apply minimal format fixes (gated by trigger_rule), re-lint until clean, then show the git diff. Fire via: sky run upgrade-sky-format --var dir=<dir> --var name=<file>"
     tags: [meta, upgrade, lint, manual]
+    store: meta
+    plugin: authoring
+    scripts:
+      - meta/authoring/workflows/upgrade-sky-format/scripts/diff.sh
+      - meta/authoring/workflows/upgrade-sky-format/scripts/probe.sh
+
+  - kind: skill
+    name: sky-workflow-authoring
+    path: meta/authoring/skills/sky-workflow-authoring/SKILL.md
+    description: "Author a valid Skylence .sky workflow — four-delimiter format, trigger routing, node types, variable references, and lint error-code fixes. Self-contained; no marketplace plugin needed."
+    tags: [meta, skylence, sky, authoring, lint]
+    store: meta
+    plugin: authoring
 
   # ── Audit & health ─────────────────────────────────────────────────────
   - kind: workflow
-    path: meta/workflows/audit/audit-sky-library.sky
+    name: audit-sky-library
+    path: meta/audit/workflows/audit-sky-library/workflow.sky
     description: "Lint every .sky in a directory in one pass and report pass/fail grouped by file, exiting non-zero on any failure. Pure bash. Fire via: sky run audit-sky-library --var dir=<path>"
     tags: [meta, audit, lint, ci, manual]
+    store: meta
+    plugin: audit
+    scripts:
+      - meta/audit/workflows/audit-sky-library/scripts/lint.sh
+      - meta/audit/workflows/audit-sky-library/scripts/scan.sh
 
   - kind: workflow
-    path: meta/workflows/audit/lint-sky-library.sky
+    name: lint-sky-library
+    path: meta/audit/workflows/lint-sky-library/workflow.sky
     description: "Lint every .sky in a directory, then run a Claude fix-loop on the failing files until the whole library lints clean. Fire via: sky run lint-sky-library --var dir=<path>"
     tags: [meta, lint, fix, manual]
+    store: meta
+    plugin: audit
+    scripts:
+      - meta/audit/workflows/lint-sky-library/scripts/scan.sh
+      - meta/audit/workflows/lint-sky-library/scripts/verify.sh
 
   - kind: workflow
-    path: meta/workflows/audit/dry-run-sky-library.sky
+    name: dry-run-sky-library
+    path: meta/audit/workflows/dry-run-sky-library/workflow.sky
     description: "Run sky run --dry-run against every workflow in a directory and print a PASS/FAIL/SKIP plan matrix, exiting non-zero on any failure. Pure bash. Fire via: sky run dry-run-sky-library --var dir=<path>"
     tags: [meta, audit, dry-run, ci, manual]
+    store: meta
+    plugin: audit
+    scripts:
+      - meta/audit/workflows/dry-run-sky-library/scripts/discover.sh
+      - meta/audit/workflows/dry-run-sky-library/scripts/dryrun.sh
+      - meta/audit/workflows/dry-run-sky-library/scripts/matrix.sh
 
   - kind: workflow
-    path: meta/workflows/audit/audit-sky-secrets.sky
+    name: audit-sky-secrets
+    path: meta/audit/workflows/audit-sky-secrets/workflow.sky
     description: "Scan every .sky for secret-shaped $ENV refs in bash/http not declared in secrets[], report the undeclared ones, exit non-zero on any. Pure bash. Fire via: sky run audit-sky-secrets --var dir=<path>"
     tags: [meta, audit, secrets, security, manual]
+    store: meta
+    plugin: audit
+    scripts:
+      - meta/audit/workflows/audit-sky-secrets/scripts/scan.sh
 
   - kind: workflow
-    path: meta/workflows/audit/check-sky-trigger-conflicts.sky
+    name: check-sky-trigger-conflicts
+    path: meta/audit/workflows/check-sky-trigger-conflicts/workflow.sky
     description: "Detect workflows bound to the same non-manual trigger (sky_event, cron, or github event+action+label) that would all fire together, exit non-zero on collision. Pure bash. Fire via: sky run check-sky-trigger-conflicts --var dir=<path>"
     tags: [meta, audit, triggers, manual]
+    store: meta
+    plugin: audit
+    scripts:
+      - meta/audit/workflows/check-sky-trigger-conflicts/scripts/check.sh
 
   - kind: workflow
-    path: meta/workflows/audit/find-orphan-sky-events.sky
+    name: find-orphan-sky-events
+    path: meta/audit/workflows/find-orphan-sky-events/workflow.sky
     description: "Flag dangling event edges: sky_event triggers with no emitter and emit nodes nobody listens for, exit non-zero on any orphan. Pure bash. Fire via: sky run find-orphan-sky-events --var dir=<path>"
     tags: [meta, audit, events, manual]
+    store: meta
+    plugin: audit
+    scripts:
+      - meta/audit/workflows/find-orphan-sky-events/scripts/collect.sh
+      - meta/audit/workflows/find-orphan-sky-events/scripts/match.sh
+      - meta/audit/workflows/find-orphan-sky-events/scripts/report.sh
 
   - kind: workflow
-    path: meta/workflows/audit/find-unused-sky-workflows.sky
+    name: find-unused-sky-workflows
+    path: meta/audit/workflows/find-unused-sky-workflows/workflow.sky
     description: "Cross-reference every .sky against sky logs run history and list never-run files as deletion candidates with ready-to-paste delete commands (no auto-delete). Pure bash. Fire via: sky run find-unused-sky-workflows --var dir=<path>"
     tags: [meta, audit, cleanup, manual]
+    store: meta
+    plugin: audit
+    scripts:
+      - meta/audit/workflows/find-unused-sky-workflows/scripts/list.sh
+      - meta/audit/workflows/find-unused-sky-workflows/scripts/report.sh
+      - meta/audit/workflows/find-unused-sky-workflows/scripts/runs.sh
 
   - kind: workflow
-    path: meta/workflows/audit/audit-sky-budget.sky
+    name: audit-sky-budget
+    path: meta/audit/workflows/audit-sky-budget/workflow.sky
     description: "Estimate per-workflow spend and flag every LLM workflow missing a max_budget_usd cap, ranked by cost risk. Fire via: sky run audit-sky-budget --var dir=<path>"
     tags: [meta, audit, budget, cost, manual]
+    store: meta
+    plugin: audit
+    scripts:
+      - meta/audit/workflows/audit-sky-budget/scripts/scan.sh
 
   - kind: workflow
-    path: meta/workflows/audit/sky-library-health-report.sky
+    name: sky-library-health-report
+    path: meta/audit/workflows/sky-library-health-report/workflow.sky
     description: "Compose per-workflow lint, run-recency, and budget-cap presence into a graded red/amber/green HEALTH.md for the whole library. Fire via: sky run sky-library-health-report --var dir=<path>"
     tags: [meta, audit, health, docs, manual]
+    store: meta
+    plugin: audit
+    scripts:
+      - meta/audit/workflows/sky-library-health-report/scripts/checks.sh
+      - meta/audit/workflows/sky-library-health-report/scripts/inventory.sh
+      - meta/audit/workflows/sky-library-health-report/scripts/verify.sh
 
   - kind: workflow
-    path: meta/workflows/audit/import-sky-library.sky
+    name: import-sky-library
+    path: meta/audit/workflows/import-sky-library/workflow.sky
     description: "Validate and import a folder of foreign .sky files one-by-one, skipping lint failures, behind a manual gate, with a kept/rejected manifest. Pure bash. Fire via: sky run import-sky-library --var dir=<dir> --var source=<src>"
     tags: [meta, import, lifecycle, manual]
+    store: meta
+    plugin: audit
+    scripts:
+      - meta/audit/workflows/import-sky-library/scripts/enumerate.sh
+      - meta/audit/workflows/import-sky-library/scripts/finalize.sh
+      - meta/audit/workflows/import-sky-library/scripts/validate.sh
+      - meta/audit/workflows/import-sky-library/scripts/verify.sh
 
   - kind: workflow
-    path: meta/workflows/audit/triage-failed-sky-run.sky
+    name: triage-failed-sky-run
+    path: meta/audit/workflows/triage-failed-sky-run/workflow.sky
     description: "Read a failed run's logs + the .sky source, pinpoint the failing node and root cause, and propose (not apply) a fix diff plus the update command. Fire via: sky run triage-failed-sky-run --var dir=<dir> --var name=<file> --var run=<run-id>"
     tags: [meta, debug, triage, manual]
+    store: meta
+    plugin: audit
+    scripts:
+      - meta/audit/workflows/triage-failed-sky-run/scripts/fetch.sh
 
   # ── Documentation ──────────────────────────────────────────────────────
   - kind: workflow
-    path: meta/workflows/docs/catalog-sky-library.sky
+    name: catalog-sky-library
+    path: meta/docs/workflows/catalog-sky-library/workflow.sky
     description: "Regenerate a browsable INDEX.md for a .sky directory (name, trigger, vars, DAG, budget) with a bash coverage check that every file is listed. Fire via: sky run catalog-sky-library --var dir=<path>"
     tags: [meta, docs, catalog, manual]
+    store: meta
+    plugin: docs
+    scripts:
+      - meta/docs/workflows/catalog-sky-library/scripts/scan.sh
+      - meta/docs/workflows/catalog-sky-library/scripts/verify.sh
 
   - kind: workflow
-    path: meta/workflows/docs/diagram-sky-workflow.sky
+    name: diagram-sky-workflow
+    path: meta/docs/workflows/diagram-sky-workflow/workflow.sky
     description: "Regenerate the ※※ ASCII DAG header for one .sky from its actual node graph, write it back in place, then lint. Fire via: sky run diagram-sky-workflow --var dir=<dir> --var name=<file>"
     tags: [meta, docs, diagram, manual]
+    store: meta
+    plugin: docs
 
   - kind: workflow
-    path: meta/workflows/docs/explain-sky-workflow.sky
+    name: explain-sky-workflow
+    path: meta/docs/workflows/explain-sky-workflow/workflow.sky
     description: "Read one .sky and emit a plain-English walkthrough of its trigger, node DAG, vars, and per-node behavior. Fire via: sky run explain-sky-workflow --var dir=<dir> --var name=<file>"
     tags: [meta, docs, explain, manual]
+    store: meta
+    plugin: docs
+    scripts:
+      - meta/docs/workflows/explain-sky-workflow/scripts/resolve.sh
 
   - kind: workflow
-    path: meta/workflows/docs/changelog-sky-workflow.sky
+    name: changelog-sky-workflow
+    path: meta/docs/workflows/changelog-sky-workflow/workflow.sky
     description: "Diff a .sky against its last committed version and append a plain-English changelog entry to CHANGELOG.md. Fire via: sky run changelog-sky-workflow --var dir=<dir> --var name=<file>"
     tags: [meta, docs, changelog, manual]
+    store: meta
+    plugin: docs
+    scripts:
+      - meta/docs/workflows/changelog-sky-workflow/scripts/diff.sh
+      - meta/docs/workflows/changelog-sky-workflow/scripts/emit.sh
 
   - kind: workflow
-    path: meta/workflows/docs/annotate-sky-workflow.sky
+    name: annotate-sky-workflow
+    path: meta/docs/workflows/annotate-sky-workflow/workflow.sky
     description: "Insert inline ※※ rationale comments before each node explaining its purpose and edges, then lint. Fire via: sky run annotate-sky-workflow --var dir=<dir> --var name=<file>"
     tags: [meta, docs, annotate, manual]
-
-  # ── Skill ──────────────────────────────────────────────────────────────
-  - kind: skill
-    path: meta/skills/sky-workflow-authoring/SKILL.md
-    name: sky-workflow-authoring
-    description: "Author a valid Skylence .sky workflow — four-delimiter format, trigger routing, node types, variable references, and lint error-code fixes. Self-contained; no marketplace plugin needed."
-    tags: [meta, skylence, sky, authoring, lint]
+    store: meta
+    plugin: docs
+    scripts:
+      - meta/docs/workflows/annotate-sky-workflow/scripts/read.sh
 
   # ── Dark Factory (assisted-mode dev ladder + eval-driven forges) ────────
   - kind: workflow
-    path: meta/workflows/darkfactory/skill-forge.sky
     name: skill-forge
+    path: meta/darkfactory/workflows/skill-forge/workflow.sky
     description: "Drive one of YOUR skills (a .claude/skills/<name>/SKILL.md plus bundled scripts) toward a measurable bar: loop generate → exercise → judge until a judge-scored eval gate passes (fail-closed), then stage a PR for a human to merge. The eval-driven cousin of one-shot scaffold-sky-workflow. Runs against your repo; all mutation in a throwaway worktree. v1 does not execute model-generated scripts (static bash -n / node --check only). Bounded by max_budget_usd + loop.max; idempotent. Fire via: sky run skill-forge --var skill_name=<name>"
     tags: [meta, forge, skills, eval, manual]
+    store: meta
+    plugin: darkfactory
+    scripts:
+      - meta/darkfactory/workflows/skill-forge/scripts/finalize.sh
+      - meta/darkfactory/workflows/skill-forge/scripts/gate.sh
+      - meta/darkfactory/workflows/skill-forge/scripts/lint-scripts.sh
+      - meta/darkfactory/workflows/skill-forge/scripts/read-skill.sh
 
   - kind: workflow
-    path: meta/workflows/darkfactory/workflow-forge.sky
     name: workflow-forge
+    path: meta/darkfactory/workflows/workflow-forge/workflow.sky
     description: "Author a target .sky workflow from a plain-English intent, then drive it through sky's own gates — sky lint (clean) + sky run --dry-run — looping author→lint→lint-fix until clean, dry-run it (never executed for real in v1), have a judge score it against the intent with a fail-closed gate, then open a staged PR under worktree isolation. The eval-driven cousin of one-shot update-sky-workflow. Bounded by max_budget_usd + loop.max. Fire via: sky run workflow-forge --var intent=\"…\""
     tags: [meta, forge, workflows, eval, manual]
+    store: meta
+    plugin: darkfactory
+    scripts:
+      - meta/darkfactory/workflows/workflow-forge/scripts/cleanup.sh
+      - meta/darkfactory/workflows/workflow-forge/scripts/dry-run.sh
+      - meta/darkfactory/workflows/workflow-forge/scripts/gate.sh
+      - meta/darkfactory/workflows/workflow-forge/scripts/lint.sh
+      - meta/darkfactory/workflows/workflow-forge/scripts/write-candidate.sh
 
-  # ── Dark Factory onboarding (rung 0 — board prep) ───────────────────────
   - kind: workflow
-    path: meta/workflows/darkfactory/board-prep.sky
     name: board-prep
-    description: "Dark Factory rung 0 (onboarding, GitHub): idempotently create the 9 lifecycle labels (labels.yaml) on the caller's repo, link a GitHub Project to the repo, verify the project carries the dark-factory field schema (Status Icebox→Done plus Priority/Size/Idea Stage/Bug Stage, from the Skylence project template), and print the manual UI steps the GitHub API cannot do (auto-add workflow + label→Status automation). A project template carries board STRUCTURE but never repo labels or auto-add wiring — this fills that gap. Pure bash + gh, deterministic, fail-closed, idempotent. Fire via: sky run board-prep --var project=<project-number> [--var owner=<org-or-user>] [--var repo=<owner/name>]"
+    path: meta/darkfactory/workflows/board-prep/workflow.sky
+    description: "Dark Factory rung 0 (onboarding, GitHub): idempotently create the 9 lifecycle labels (data/labels.yaml) on the caller's repo, link a GitHub Project to the repo, verify the project carries the dark-factory field schema (Status Icebox→Done plus Priority/Size/Idea Stage/Bug Stage, from the Skylence project template), and print the manual UI steps the GitHub API cannot do (auto-add workflow + label→Status automation). A project template carries board STRUCTURE but never repo labels or auto-add wiring — this fills that gap. Pure bash + gh, deterministic, fail-closed, idempotent. Fire via: sky run board-prep --var project=<project-number> [--var owner=<org-or-user>] [--var repo=<owner/name>]"
     tags: [meta, darkfactory, onboarding, github, board, manual]
-
-  - kind: skill
-    path: meta/skills/darkfactory-onboarding/SKILL.md
-    name: darkfactory-onboarding
-    description: "Onboard a repo + its GitHub Project into the Dark Factory — the rung-0 board convention: the 9-label lifecycle (labels.yaml), the GitHub Project field schema from the Skylence project template (Status Icebox→Done + Priority/Size/Idea Stage/Bug Stage), the label→Status mapping, and what a project template carries vs what you wire by hand. Pairs with the board-prep workflow. Self-contained; no marketplace plugin needed."
-    tags: [meta, darkfactory, onboarding, github, skill]
+    store: meta
+    plugin: darkfactory
+    scripts:
+      - meta/darkfactory/workflows/board-prep/scripts/fields.sh
+      - meta/darkfactory/workflows/board-prep/scripts/labels.sh
+      - meta/darkfactory/workflows/board-prep/scripts/link.sh
+      - meta/darkfactory/workflows/board-prep/scripts/preflight.sh
+      - meta/darkfactory/workflows/board-prep/scripts/report.sh
 
   - kind: workflow
-    path: meta/workflows/darkfactory/github-settings.sky
     name: github-settings
+    path: meta/darkfactory/workflows/github-settings/workflow.sky
     description: "Apply best-practice GitHub settings via gh — two scopes in one workflow: org/account-level general defaults (default_repository_permission, web_commit_signoff_required, org Dependabot defaults for new repos; paid: org advanced-security/secret-scanning defaults) AND repository hardening (squash-only merges, auto-merge, delete-branch-on-merge, allow-update-branch, Dependabot alerts; advanced: branch protection + secret scanning). Scope: --var scope=general|repo|both (default both). Tier prose: --var tier=free|paid (paid/pro/team/enterprise/ghas/advanced all count as paid). Org general requires ORG OWNER; skipped with reason for personal accounts or non-owners. Fail-closed, idempotent, pure bash + gh, no LLM. Fire via: sky run github-settings --var scope=both --var tier=free|paid [--var org=<org>] [--var repo=owner/name]"
     tags: [meta, darkfactory, onboarding, github, settings, security, manual]
+    store: meta
+    plugin: darkfactory
+    scripts:
+      - meta/darkfactory/workflows/github-settings/scripts/orggeneral.sh
+      - meta/darkfactory/workflows/github-settings/scripts/preflight.sh
+      - meta/darkfactory/workflows/github-settings/scripts/repodependabot.sh
+      - meta/darkfactory/workflows/github-settings/scripts/repogeneral.sh
+      - meta/darkfactory/workflows/github-settings/scripts/repoprotection.sh
+      - meta/darkfactory/workflows/github-settings/scripts/report.sh
+      - meta/darkfactory/workflows/github-settings/scripts/reposecrets.sh
+
+  - kind: skill
+    name: darkfactory-onboarding
+    path: meta/darkfactory/skills/darkfactory-onboarding/SKILL.md
+    description: "Onboard a repo + its GitHub Project into the Dark Factory — the rung-0 board convention: the 9-label lifecycle (data/labels.yaml), the GitHub Project field schema from the Skylence project template (Status Icebox→Done + Priority/Size/Idea Stage/Bug Stage), the label→Status mapping, and what a project template carries vs what you wire by hand. Pairs with the board-prep workflow. Self-contained; no marketplace plugin needed."
+    tags: [meta, darkfactory, onboarding, github, skill]
+    store: meta
+    plugin: darkfactory
