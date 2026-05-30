@@ -1,0 +1,125 @@
+※※
+# board-prep — Dark Factory rung 0 (onboarding), GitHub path
+
+Idempotent, ASSISTED-MODE onboarding that prepares a repo + its GitHub Project for the
+Dark Factory ladder. GENERIC: runs against the CALLER's repo (the run's working dir) and a
+GitHub Project you pass by number. Pure bash + `gh`, deterministic, fail-closed — no LLM,
+no budget.
+
+WHY this exists (the researched gap): a GitHub Projects v2 **template** reproduces board
+STRUCTURE (the Status single-select + its options, other custom fields, views) but it does
+NOT carry — and no project copy/template ever can — the two things onboarding actually
+needs wired per repo:
+  • repo-scoped LABELS  (labels live on the repository, not the project), and
+  • the AUTO-ADD workflow (explicitly excluded from copy/template; has no public API).
+So this workflow fills exactly that gap: it creates the 9 lifecycle labels on the repo,
+links the project to the repo, verifies the project carries the dark-factory field schema
+(from the Skylence project template), and prints the two MANUAL UI steps the API can't do.
+
+Two vocabularies it reconciles:
+  • LABELS  (repo, what the ladder rungs key off):  labels.yaml — triaging · accepted ·
+    ready-for-sky · in-progress · needs-review · approved · needs-fix · rejected · escalated
+  • COLUMNS (project Status field, the human Kanban, from org project #1 "Skylence project
+    template"):  Icebox · Backlog · Ready · Agent Running · Awaiting Review ·
+    Revisions Requested · Done   (+ Priority / Size / Idea Stage / Bug Stage custom fields)
+The label→column mapping lives in the `darkfactory-onboarding` skill and in the report.
+
+  (sky run board-prep --var project=<n> [--var owner=<org-or-user>] [--var repo=<owner/name>])
+        │
+        ▼
+   ┌──────────────┐  bash + gh. Resolve OWNER/REPO (--var repo or `gh repo view`), require
+   │  preflight   │  --var project=<n>, verify project access (needs gh `project` scope).
+   └──────────────┘  Fail-closed: any missing → exit 1. Emits {owner,repo,project} JSON.
+        │ depends_on (preflight)
+        ├───────────────┬───────────────┐
+        ▼               ▼               ▼
+   ┌──────────┐   ┌──────────┐   ┌──────────────┐
+   │  labels  │   │  link    │   │   fields     │  bash + gh, all idempotent / read-only:
+   └──────────┘   └──────────┘   └──────────────┘  labels = `gh label create --force` ×9;
+   create 9        `gh project    verify Status options + the custom fields exist on the
+   lifecycle       link` the      linked project (advisory — never mutates the project).
+   labels on       project to
+   the repo        the repo
+        └───────────────┴───────────────┘
+                        │ depends_on [labels, link, fields], trigger_rule all_done
+                        ▼
+                 ┌──────────────┐  bash. Summarize what was done + print the 2 MANUAL UI
+                 │   report     │  steps with no API: (1) enable Auto-add filtered to this
+                 └──────────────┘  repo, (2) wire the label→Status column automation.
+
+SAFETY:
+  - Idempotent: `gh label create --force` upserts; re-linking an already-linked project is a no-op.
+  - Read-only on the project's fields (the `fields` node only verifies; it never edits the schema).
+  - Fail-closed: a missing --var project, an unresolvable repo, or no project access aborts at preflight.
+  - Uses the run environment's ambient `gh` auth; needs the `project` scope for the project calls.
+※※
+
+⊕meta⊕
+name = "board-prep"
+description = "Dark Factory rung 0 (onboarding, GitHub): idempotently create the 9 lifecycle labels (labels.yaml) on the caller's repo, link a GitHub Project to the repo, verify the project carries the dark-factory field schema (Status: Icebox→Done plus Priority/Size/Idea Stage/Bug Stage, from the Skylence project template), and print the manual UI steps the GitHub API cannot do (auto-add workflow + label→Status automation). A project template carries board STRUCTURE but never repo labels or auto-add wiring — this fills that gap. Pure bash + gh, deterministic, fail-closed, idempotent. Fire via: sky run board-prep --var project=<project-number> [--var owner=<org-or-user>] [--var repo=<owner/name>]"
+trigger.manual = true
+output_style = "terse"
+⊕⊕
+
+※※
+Step 1 — preflight. DETERMINISTIC bash + gh, no LLM. Resolve the target and fail-closed before
+any mutation. OWNER/REPO come from --var (→ $SKY_OWNER / $SKY_REPO) or, when REPO is unset, from
+`gh repo view` in the working dir; OWNER defaults to REPO's owner. PROJECT ($SKY_PROJECT, a
+GitHub Project NUMBER) is REQUIRED. Project access is checked with `gh project view` (which needs
+the `project` auth scope). Emits ONE JSON line {owner,repo,project} consumed downstream via jq.
+{{var}} is NOT used — bash reads the $SKY_* env channel directly and shell-quotes every expansion.
+※※
+
+§preflight§
+bash = "set -u\ncommand -v gh >/dev/null 2>&1 || { echo 'DF_BOARDPREP_FAILED: gh not on PATH' >&2; exit 1; }\nPROJECT=\"${SKY_PROJECT:-}\"\necho \"$PROJECT\" | grep -qE '^[0-9]+$' || { echo 'DF_BOARDPREP_FAILED: --var project=<number> required' >&2; exit 1; }\nREPO=\"${SKY_REPO:-}\"\n[ -n \"$REPO\" ] || REPO=$(gh repo view --json nameWithOwner -q '.nameWithOwner' 2>/dev/null)\necho \"$REPO\" | grep -qE '^[^/]+/[^/]+$' || { echo 'DF_BOARDPREP_FAILED: set --var repo=owner/name or run inside a repo' >&2; exit 1; }\nOWNER=\"${SKY_OWNER:-}\"\n[ -n \"$OWNER\" ] || OWNER=$(echo \"$REPO\" | cut -d/ -f1)\ngh project view \"$PROJECT\" --owner \"$OWNER\" >/dev/null 2>&1 || { echo \"DF_BOARDPREP_FAILED: no access to project $PROJECT under $OWNER (need gh project scope)\" >&2; exit 1; }\njq -n --arg owner \"$OWNER\" --arg repo \"$REPO\" --arg project \"$PROJECT\" '{owner:$owner,repo:$repo,project:$project}'"
+§§
+
+※※
+Step 2 — labels. DETERMINISTIC bash + gh, no LLM. Create the 9 repo-scoped lifecycle labels from
+labels.yaml on the target repo. `gh label create --force` is an idempotent UPSERT (creates, or
+overwrites color/description if the label already exists), so re-runs are safe. Labels are the one
+thing no project template can ever provide (they are repo-scoped). REPO comes from preflight's JSON.
+※※
+
+§labels§
+depends_on = ["preflight"]
+bash = "set -u\nREPO=$(echo \"${SKY_OUTPUT_PREFLIGHT:-}\" | jq -r '.repo // empty')\n[ -n \"$REPO\" ] || { echo 'DF_BOARDPREP_FAILED: no repo from preflight' >&2; exit 1; }\nmk() { gh label create \"$1\" --color \"$2\" --description \"$3\" --repo \"$REPO\" --force >/dev/null 2>&1 && echo \"  ok $1\" || echo \"  warn could not ensure $1\"; }\nmk triaging fbca04 'Issue is being classified'\nmk accepted 0e8a16 'Approved for the factory to attempt'\nmk rejected ffffff 'Will not be worked on by the factory'\nmk ready-for-sky 1d76db 'Queued for an implementation run'\nmk in-progress 0052cc 'Sky is implementing'\nmk needs-review e4882a 'PR open, awaiting human spot-check / validator'\nmk approved 2ea44f 'Validator + human passed'\nmk needs-fix d93f0b 'Validator/human bounced it back'\nmk escalated b60205 'Routed to a human (low confidence / high stakes)'\necho \"labels: ensured 9 lifecycle labels on $REPO\""
+§§
+
+※※
+Step 3 — link. DETERMINISTIC bash + gh, no LLM. Link the project to the repo so the board can pull
+the repo's items. `gh project link` is idempotent in effect — an already-linked project is reported,
+not treated as an error. OWNER/REPO/PROJECT come from preflight's JSON.
+※※
+
+§link§
+depends_on = ["preflight"]
+bash = "set -u\nOWNER=$(echo \"${SKY_OUTPUT_PREFLIGHT:-}\" | jq -r '.owner // empty')\nREPO=$(echo \"${SKY_OUTPUT_PREFLIGHT:-}\" | jq -r '.repo // empty')\nPROJECT=$(echo \"${SKY_OUTPUT_PREFLIGHT:-}\" | jq -r '.project // empty')\nOUT=$(gh project link \"$PROJECT\" --owner \"$OWNER\" --repo \"$REPO\" 2>&1) && echo \"link: project $PROJECT linked to $REPO\" || echo \"link: note ($OUT) — an already-linked project is fine\""
+§§
+
+※※
+Step 4 — fields. DETERMINISTIC bash + gh, no LLM. READ-ONLY verification: does the linked project
+carry the dark-factory field schema from the Skylence project template? Reports any missing custom
+field (Status / Priority / Size / Idea Stage / Bug Stage) and any missing Status COLUMN option
+(Icebox … Done). It NEVER edits the project — creating/altering single-select fields is the
+template's job; this only tells you whether the template was applied. grep is a substring check
+(advisory). FL falls back to {} if the field-list call has no access.
+※※
+
+§fields§
+depends_on = ["preflight"]
+bash = "set -u\nOWNER=$(echo \"${SKY_OUTPUT_PREFLIGHT:-}\" | jq -r '.owner // empty')\nPROJECT=$(echo \"${SKY_OUTPUT_PREFLIGHT:-}\" | jq -r '.project // empty')\nFL=$(gh project field-list \"$PROJECT\" --owner \"$OWNER\" --format json 2>/dev/null || echo '{}')\nMISSF=''\nfor f in Status Priority Size 'Idea Stage' 'Bug Stage'; do echo \"$FL\" | grep -q \"$f\" || MISSF=\"$MISSF $f;\"; done\nMISSS=''\nfor s in Icebox Backlog Ready 'Agent Running' 'Awaiting Review' 'Revisions Requested' Done; do echo \"$FL\" | grep -q \"$s\" || MISSS=\"$MISSS $s;\"; done\necho \"fields_missing: ${MISSF:-none}\"\necho \"status_options_missing: ${MISSS:-none}\""
+§§
+
+※※
+Step 5 — report. DETERMINISTIC bash, no LLM. The single leaf — depends on labels+link+fields with
+trigger_rule all_done so it always summarizes. Echoes each upstream node's output, then prints the
+two MANUAL Projects-UI steps that have NO public API: (1) enable Auto-add filtered to this repo,
+(2) wire the label→Status column automation (the mapping the ladder + the human board share).
+※※
+
+§report§
+depends_on = ["labels", "link", "fields"]
+trigger_rule = "all_done"
+bash = "set -u\necho '=== Dark Factory board-prep (GitHub) — summary ==='\necho \"${SKY_OUTPUT_LABELS:-}\"\necho \"${SKY_OUTPUT_LINK:-}\"\necho \"${SKY_OUTPUT_FIELDS:-}\"\necho ''\necho '=== Manual steps the GitHub API cannot do (one-time, in the Projects UI) ==='\necho '1. Auto-add: Project -> ... -> Workflows -> Auto-add to project -> set the repository filter to this repo -> Save and turn on. (Never carried by a template; no public API.)'\necho '2. Label -> Status column automation (mirror factory state onto the board):'\necho '     ready-for-sky -> Ready | in-progress -> Agent Running | needs-review -> Awaiting Review | needs-fix -> Revisions Requested | approved -> Done'\necho '   Wire via Project Workflows (UI). Full mapping + rationale in the darkfactory-onboarding skill.'\necho '3. If a custom field is missing above: create the project from the Skylence project template (org project #1), which carries Status + Priority/Size/Idea Stage/Bug Stage.'"
+§§

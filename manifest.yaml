@@ -1,5 +1,5 @@
 apiVersion: skylence.io/v1
-version: 2.7.0
+version: 2.8.0
 updated_at: "2026-05-30"
 entries:
   # ── Authoring & lifecycle ──────────────────────────────────────────────
@@ -149,3 +149,16 @@ entries:
     name: workflow-forge
     description: "Author a target .sky workflow from a plain-English intent, then drive it through sky's own gates — sky lint (clean) + sky run --dry-run — looping author→lint→lint-fix until clean, dry-run it (never executed for real in v1), have a judge score it against the intent with a fail-closed gate, then open a staged PR under worktree isolation. The eval-driven cousin of one-shot update-sky-workflow. Bounded by max_budget_usd + loop.max. Fire via: sky run workflow-forge --var intent=\"…\""
     tags: [meta, forge, workflows, eval, manual]
+
+  # ── Dark Factory onboarding (rung 0 — board prep) ───────────────────────
+  - kind: workflow
+    path: meta/workflows/darkfactory/board-prep.sky
+    name: board-prep
+    description: "Dark Factory rung 0 (onboarding, GitHub): idempotently create the 9 lifecycle labels (labels.yaml) on the caller's repo, link a GitHub Project to the repo, verify the project carries the dark-factory field schema (Status Icebox→Done plus Priority/Size/Idea Stage/Bug Stage, from the Skylence project template), and print the manual UI steps the GitHub API cannot do (auto-add workflow + label→Status automation). A project template carries board STRUCTURE but never repo labels or auto-add wiring — this fills that gap. Pure bash + gh, deterministic, fail-closed, idempotent. Fire via: sky run board-prep --var project=<project-number> [--var owner=<org-or-user>] [--var repo=<owner/name>]"
+    tags: [meta, darkfactory, onboarding, github, board, manual]
+
+  - kind: skill
+    path: meta/skills/darkfactory-onboarding/SKILL.md
+    name: darkfactory-onboarding
+    description: "Onboard a repo + its GitHub Project into the Dark Factory — the rung-0 board convention: the 9-label lifecycle (labels.yaml), the GitHub Project field schema from the Skylence project template (Status Icebox→Done + Priority/Size/Idea Stage/Bug Stage), the label→Status mapping, and what a project template carries vs what you wire by hand. Pairs with the board-prep workflow. Self-contained; no marketplace plugin needed."
+    tags: [meta, darkfactory, onboarding, github, skill]
