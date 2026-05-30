@@ -6,17 +6,17 @@ output_style = "terse"
 ⊕⊕
 
 §list§
-bash_file = "./list.sh"
+bash_file = "./scripts/list.sh"
 §§
 
 §runs§
 depends_on = ["list"]
-bash_file = "./runs.sh"
+bash_file = "./scripts/runs.sh"
 §§
 
 §report§
 depends_on = ["list", "runs"]
-bash_file = "./report.sh"
+bash_file = "./scripts/report.sh"
 §§
 
 ※※

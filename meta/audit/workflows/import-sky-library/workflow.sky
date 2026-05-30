@@ -6,12 +6,12 @@ output_style = "terse"
 ⊕⊕
 
 §enumerate§
-bash_file = "./import-sky-library-enumerate.sh"
+bash_file = "./scripts/enumerate.sh"
 §§
 
 §validate§
 depends_on = ["enumerate"]
-bash_file = "./import-sky-library-validate.sh"
+bash_file = "./scripts/validate.sh"
 §§
 
 §gate§
@@ -23,12 +23,12 @@ wait.timeout = "1h"
 
 §finalize§
 depends_on = ["gate"]
-bash_file = "./import-sky-library-finalize.sh"
+bash_file = "./scripts/finalize.sh"
 §§
 
 §verify§
 depends_on = ["finalize"]
-bash_file = "./import-sky-library-verify.sh"
+bash_file = "./scripts/verify.sh"
 §§
 
 ※※

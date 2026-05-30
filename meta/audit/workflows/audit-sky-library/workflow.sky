@@ -42,7 +42,7 @@ notes it and stops cleanly (nothing to audit is not a failure).
 ※※
 
 §scan§
-bash_file = "./audit-sky-library-scan.sh"
+bash_file = "./scripts/scan.sh"
 §§
 
 ※※
@@ -53,5 +53,5 @@ report is printed here next to each result.
 
 §lint§
 depends_on = ["scan"]
-bash_file = "./audit-sky-library-lint.sh"
+bash_file = "./scripts/lint.sh"
 §§

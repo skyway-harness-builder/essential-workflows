@@ -7,7 +7,7 @@ max_budget_usd = 3.00
 ⊕⊕
 
 §scan§
-bash_file = "./scan.sh"
+bash_file = "./scripts/scan.sh"
 §§
 
 §fix§
@@ -48,7 +48,7 @@ Re-lint each file you touched after editing. When `sky lint` exits 0 on every pr
 
 §verify§
 depends_on = ["fix"]
-bash_file = "./verify.sh"
+bash_file = "./scripts/verify.sh"
 loop.until.bash = "DIR=\"$SKY_DIR\"\nfor f in \"$DIR\"/*.sky; do\n  [ -e \"$f\" ] || continue\n  sky lint \"$f\" >/dev/null 2>&1 || exit 1\ndone\nexit 0"
 loop.max = 6
 §§

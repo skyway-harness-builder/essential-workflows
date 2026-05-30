@@ -7,7 +7,7 @@ max_budget_usd = 1
 ⊕⊕
 
 §scan§
-bash_file = "./scan.sh"
+bash_file = "./scripts/scan.sh"
 §§
 
 §report§

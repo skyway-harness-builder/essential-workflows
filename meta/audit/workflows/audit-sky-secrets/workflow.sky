@@ -47,5 +47,5 @@ SKY-WF-055 on itself.
 ※※
 
 §scan§
-bash_file = "./scan.sh"
+bash_file = "./scripts/scan.sh"
 §§

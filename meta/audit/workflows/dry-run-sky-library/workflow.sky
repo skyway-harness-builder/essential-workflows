@@ -6,16 +6,16 @@ output_style = "terse"
 ⊕⊕
 
 §discover§
-bash_file = "./discover.sh"
+bash_file = "./scripts/discover.sh"
 §§
 
 §dryrun§
-bash_file = "./dryrun.sh"
+bash_file = "./scripts/dryrun.sh"
 depends_on = ["discover"]
 §§
 
 §matrix§
-bash_file = "./matrix.sh"
+bash_file = "./scripts/matrix.sh"
 depends_on = ["dryrun"]
 §§
 

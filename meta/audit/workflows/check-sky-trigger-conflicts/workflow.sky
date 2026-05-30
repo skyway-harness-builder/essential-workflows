@@ -38,5 +38,5 @@ contributes at most one signature per trigger kind; manual triggers are skipped.
 ※※
 
 §check§
-bash_file = "./check.sh"
+bash_file = "./scripts/check.sh"
 §§

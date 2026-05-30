@@ -6,17 +6,17 @@ output_style = "terse"
 ⊕⊕
 
 §collect§
-bash_file = "./collect.sh"
+bash_file = "./scripts/collect.sh"
 §§
 
 §match§
 depends_on = ["collect"]
-bash_file = "./match.sh"
+bash_file = "./scripts/match.sh"
 §§
 
 §report§
 depends_on = ["match"]
-bash_file = "./report.sh"
+bash_file = "./scripts/report.sh"
 §§
 
 ※※

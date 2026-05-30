@@ -7,7 +7,7 @@ max_budget_usd = 2.0
 ⊕⊕
 
 §fetch§
-bash_file = "./fetch.sh"
+bash_file = "./scripts/fetch.sh"
 §§
 
 §diagnose§
