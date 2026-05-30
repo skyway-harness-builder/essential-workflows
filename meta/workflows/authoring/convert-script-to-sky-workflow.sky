@@ -7,7 +7,7 @@ max_budget_usd = 3
 ⊕⊕
 
 §read§
-bash = "set -e\nif [ -z \"$SKY_SOURCE\" ]; then echo 'source var is empty' >&2; exit 1; fi\nif [ ! -f \"$SKY_SOURCE\" ]; then echo \"source not found: $SKY_SOURCE\" >&2; exit 1; fi\necho \"=== source: $SKY_SOURCE ===\"\ncat \"$SKY_SOURCE\""
+bash_file = "./read.sh"
 §§
 
 §author§
@@ -62,7 +62,7 @@ Stop when `sky lint` exits 0. Report the final lint output.
 ∆∆
 
 §dryrun§
-bash = "cd \"$SKY_DIR\" && sky run \"$SKY_NAME\" --dry-run 2>&1 || true"
+bash_file = "./dryrun.sh"
 depends_on = ["lint"]
 §§
 

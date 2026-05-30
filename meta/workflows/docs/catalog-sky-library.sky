@@ -48,7 +48,7 @@ is empty (nothing to catalog is not a failure).
 ※※
 
 §scan§
-bash = "set -e\nif [ ! -d \"$SKY_DIR\" ]; then echo \"[catalog] no such dir: $SKY_DIR\"; exit 1; fi\nN=$(find \"$SKY_DIR\" -maxdepth 1 -name '*.sky' | wc -l | tr -d ' ')\necho \"[catalog] indexing $N workflow(s) in $SKY_DIR\""
+bash_file = "./scan.sh"
 §§
 
 ※※
@@ -76,5 +76,5 @@ mention every workflow file by name. Fails the run if the index is stale or part
 
 §verify§
 depends_on = ["index"]
-bash = "set -e\nIDX=\"$SKY_DIR/INDEX.md\"\nif [ ! -s \"$IDX\" ]; then echo \"[catalog] INDEX.md missing or empty\"; exit 1; fi\nmissing=0\nfor f in \"$SKY_DIR\"/*.sky; do\n  [ -e \"$f\" ] || continue\n  b=$(basename \"$f\" .sky)\n  if ! grep -q \"$b\" \"$IDX\"; then echo \"[catalog] not listed: $b\"; missing=$((missing+1)); fi\ndone\nif [ \"$missing\" -gt 0 ]; then echo \"[catalog] $missing workflow(s) missing from INDEX.md\"; exit 1; fi\necho \"[catalog] INDEX.md covers all workflows -> $IDX\""
+bash_file = "./verify.sh"
 §§

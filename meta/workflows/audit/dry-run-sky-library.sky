@@ -6,16 +6,16 @@ output_style = "terse"
 ⊕⊕
 
 §discover§
-bash = "set -u\nDIR=\"$SKY_DIR\"\nif [ -z \"$DIR\" ]; then echo 'ERROR: --var dir is required' >&2; exit 2; fi\nif [ ! -d \"$DIR\" ]; then echo \"ERROR: dir not a directory: $DIR\" >&2; exit 2; fi\nfound=0\nfor f in \"$DIR\"/*.sky; do\n  [ -e \"$f\" ] || continue\n  base=\"$(basename \"$f\")\"\n  name=\"${base%.sky}\"\n  printf '%s\\t%s\\n' \"$name\" \"$f\"\n  found=$((found + 1))\ndone\nif [ \"$found\" -eq 0 ]; then echo \"ERROR: no .sky files in $DIR\" >&2; exit 2; fi\necho \"discovered $found workflow(s) in $DIR\" >&2"
+bash_file = "./discover.sh"
 §§
 
 §dryrun§
-bash = "set -u\nDIR=\"$SKY_DIR\"\nSKY_BIN=\"${SKY_CLI:-sky}\"\nprintf '%s\\n' \"$SKY_OUTPUT_DISCOVER\" | while IFS='\t' read -r name path; do\n  [ -n \"$name\" ] || continue\n  case \"$name\" in discovered\\ *) continue ;; esac\n  out=\"$(\"$SKY_BIN\" run \"$path\" --dry-run 2>&1)\"; code=$?\n  if [ \"$code\" -ne 0 ] && printf '%s\\n' \"$out\" | grep -qiE 'unknown flag|unknown.*dry-run|--dry-run'; then\n    out=\"$(cd \"$DIR\" && \"$SKY_BIN\" run \"$name\" --dry-run 2>&1)\"; code=$?\n  fi\n  firsterr=\"$(printf '%s\\n' \"$out\" | grep -iE 'error|fail|missing|required|undefined|unresolved' | head -n 1)\"\n  [ -n \"$firsterr\" ] || firsterr=\"$(printf '%s\\n' \"$out\" | head -n 1)\"\n  if [ \"$code\" -eq 0 ]; then\n    status='PASS'\n  elif printf '%s\\n' \"$out\" | grep -qiE 'required var|missing var|--vars|undefined var|unresolved var|template var'; then\n    status='SKIP'\n  else\n    status='FAIL'\n  fi\n  printf '%s\\t%s\\t%s\\n' \"$status\" \"$name\" \"$firsterr\"\ndone"
+bash_file = "./dryrun.sh"
 depends_on = ["discover"]
 §§
 
 §matrix§
-bash = "set -u\nrows=\"$SKY_OUTPUT_DRYRUN\"\npass=0; fail=0; skip=0\nprintf '%-6s  %-32s  %s\\n' 'PLAN' 'WORKFLOW' 'FIRST DIAGNOSTIC'\nprintf '%-6s  %-32s  %s\\n' '------' '--------------------------------' '----------------'\nprintf '%s\\n' \"$rows\" | while IFS='\t' read -r status name detail; do\n  [ -n \"$status\" ] || continue\n  printf '%-6s  %-32s  %s\\n' \"$status\" \"$name\" \"$detail\"\ndone\nwhile IFS='\t' read -r status name detail; do\n  [ -n \"$status\" ] || continue\n  case \"$status\" in\n    PASS) pass=$((pass + 1)) ;;\n    FAIL) fail=$((fail + 1)) ;;\n    SKIP) skip=$((skip + 1)) ;;\n  esac\ndone <<EOF\n$rows\nEOF\ntotal=$((pass + fail + skip))\nprintf '\\nsummary: %d total  %d PASS  %d FAIL  %d SKIP\\n' \"$total\" \"$pass\" \"$fail\" \"$skip\"\nif [ \"$fail\" -gt 0 ]; then\n  echo \"result: FAIL ($fail workflow(s) failed to plan)\" >&2\n  exit 1\nfi\necho 'result: OK (no FAIL)'"
+bash_file = "./matrix.sh"
 depends_on = ["dryrun"]
 §§
 

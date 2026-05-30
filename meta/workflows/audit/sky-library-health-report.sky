@@ -7,13 +7,13 @@ max_budget_usd = 0.5
 ⊕⊕
 
 §inventory§
-bash = "set -eu\nDIR=\"$SKY_DIR\"\nif [ -z \"$DIR\" ]; then echo 'ERROR: --var dir is required' >&2; exit 2; fi\nif [ ! -d \"$DIR\" ]; then echo \"ERROR: not a directory: $DIR\" >&2; exit 2; fi\nN=0\nfor f in \"$DIR\"/*.sky; do\n  [ -e \"$f\" ] || continue\n  echo \"$f\"\n  N=$((N+1))\ndone\nif [ \"$N\" -eq 0 ]; then echo \"ERROR: no .sky files in $DIR\" >&2; exit 2; fi\necho \"inventory: $N workflow(s) in $DIR\" >&2"
+bash_file = "./inventory.sh"
 §§
 
 §checks§
 depends_on = ["inventory"]
 trigger_rule = "all_success"
-bash = "set -u\nDIR=\"$SKY_DIR\"\nprintf 'workflow\\tlint\\tllm_uncapped\\tlast_run\\n'\nfor f in \"$DIR\"/*.sky; do\n  [ -e \"$f\" ] || continue\n  BASE=$(basename \"$f\" .sky)\n  if sky lint \"$f\" >/dev/null 2>&1; then LINT=pass; else LINT=fail; fi\n  HAS_CLAUDE=no\n  if grep -Eq '^[[:space:]]*model[[:space:]]*=' \"$f\"; then HAS_CLAUDE=yes; fi\n  HAS_CAP=no\n  if grep -Eq '^[[:space:]]*max_budget_usd[[:space:]]*=' \"$f\"; then HAS_CAP=yes; fi\n  if [ \"$HAS_CLAUDE\" = yes ] && [ \"$HAS_CAP\" = no ]; then UNCAPPED=yes; else UNCAPPED=no; fi\n  LAST=never\n  REC=$(sky logs 2>/dev/null | grep -F \"$BASE\" | head -n 1 || true)\n  if [ -n \"$REC\" ]; then LAST=seen; fi\n  printf '%s\\t%s\\t%s\\t%s\\n' \"$BASE\" \"$LINT\" \"$UNCAPPED\" \"$LAST\"\ndone"
+bash_file = "./checks.sh"
 §§
 
 §render§
@@ -44,7 +44,7 @@ Keep it under one screen. Terse. No preamble in your chat reply; just write the 
 §verify§
 depends_on = ["render"]
 trigger_rule = "all_success"
-bash = "set -eu\nDIR=\"$SKY_DIR\"\nOUT=\"$DIR/HEALTH.md\"\nif [ ! -s \"$OUT\" ]; then echo \"ERROR: render did not produce $OUT\" >&2; exit 1; fi\necho \"wrote $OUT ($(wc -l < \"$OUT\" | tr -d ' ') lines)\""
+bash_file = "./verify.sh"
 §§
 
 ※※

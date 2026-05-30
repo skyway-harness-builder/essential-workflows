@@ -7,7 +7,7 @@ max_budget_usd = 2.0
 ⊕⊕
 
 §fetch§
-bash = "set -e\nSKY_FILE=\"$SKY_DIR/$SKY_NAME.sky\"\nif [ ! -f \"$SKY_FILE\" ]; then\n  echo \"NOT_FOUND: $SKY_FILE\"\n  exit 1\nfi\nif [ -z \"$SKY_RUN\" ]; then\n  echo \"NO_RUN_ID\"\n  exit 1\nfi\necho \"=== run id ===\"\necho \"$SKY_RUN\"\necho \"=== run logs (best-effort) ===\"\nsky logs \"$SKY_RUN\" 2>&1 || echo \"LOGS_UNAVAILABLE: $SKY_RUN\"\necho \"=== workflow source: $SKY_FILE ===\"\ncat \"$SKY_FILE\""
+bash_file = "./fetch.sh"
 §§
 
 §diagnose§

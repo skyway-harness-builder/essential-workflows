@@ -40,7 +40,7 @@ VARS
 diff: git working-tree vs HEAD for the target .sky; emit a stable marker when there are no uncommitted changes.
 ※※
 §diff§
-bash = "set -u\nFILE=\"$SKY_NAME.sky\"\nif [ ! -f \"$SKY_DIR/$FILE\" ]; then echo \"error: $SKY_DIR/$FILE not found\" >&2; exit 1; fi\nif ! git -C \"$SKY_DIR\" rev-parse --git-dir >/dev/null 2>&1; then echo \"error: $SKY_DIR is not a git working tree\" >&2; exit 1; fi\nDIFF=$(git -C \"$SKY_DIR\" diff HEAD -- \"$FILE\" 2>/dev/null)\nif [ -z \"$DIFF\" ]; then echo \"NO_UNCOMMITTED_CHANGES\"; else printf '%s\\n' \"$DIFF\"; fi"
+bash_file = "./diff.sh"
 §§
 
 ※※
@@ -75,5 +75,5 @@ emit: print the bullet, then append it under a dated heading to CHANGELOG.md in 
 ※※
 §emit§
 depends_on = ["describe"]
-bash = "set -u\nBULLET=\"$SKY_OUTPUT_DESCRIBE\"\nLOG=\"$SKY_DIR/CHANGELOG.md\"\nDATE=$(date +%Y-%m-%d)\nif [ ! -f \"$LOG\" ]; then printf '# Changelog\\n' > \"$LOG\"; fi\nprintf '%s\\n' \"$BULLET\"\nprintf '\\n## %s - %s\\n%s\\n' \"$DATE\" \"$SKY_NAME\" \"$BULLET\" >> \"$LOG\"\necho \"appended entry for $SKY_NAME to $LOG\""
+bash_file = "./emit.sh"
 §§

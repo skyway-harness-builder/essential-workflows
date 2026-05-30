@@ -65,7 +65,7 @@ it plain-copies source -> dest. No mutation of either file's contents yet.
 ※※
 
 §copy§
-bash = "set -e\nSRC=\"$SKY_DIR/$SKY_NAME.sky\"\nDST=\"$SKY_DIR/$SKY_NEW_NAME.sky\"\nif [ ! -f \"$SRC\" ]; then echo \"[clone] no source workflow at $SRC\"; echo \"[clone] available in $SKY_DIR:\"; ls \"$SKY_DIR\" 2>/dev/null || true; exit 1; fi\nif [ -e \"$DST\" ]; then echo \"[clone] destination already exists: $DST\"; exit 1; fi\ncp \"$SRC\" \"$DST\"\necho \"[clone] copied $SKY_NAME -> $SKY_NEW_NAME\""
+bash_file = "./copy.sh"
 §§
 
 ※※
@@ -78,7 +78,7 @@ manual by default.
 
 §rewrite§
 depends_on = ["copy"]
-bash = "set -e\nDST=\"$SKY_DIR/$SKY_NEW_NAME.sky\"\nsed \"s/^name = \\\"$SKY_NAME\\\"/name = \\\"$SKY_NEW_NAME\\\"/\" \"$DST\" > \"$DST.tmp\" && mv \"$DST.tmp\" \"$DST\"\ngrep -v '^trigger\\.' \"$DST\" > \"$DST.tmp\" && mv \"$DST.tmp\" \"$DST\"\nstripped=$(grep -c '^trigger\\.' \"$DST\" 2>/dev/null || echo 0)\necho \"[clone] set name -> $SKY_NEW_NAME and neutralized trigger (remaining trigger lines: $stripped)\""
+bash_file = "./rewrite.sh"
 §§
 
 ※※
@@ -107,5 +107,5 @@ human-readable summary (tolerated if the subcommand is unavailable), then prints
 
 §describe§
 depends_on = ["lint"]
-bash = "DST=\"$SKY_DIR/$SKY_NEW_NAME.sky\"\nsky describe \"$DST\" 2>/dev/null || true\necho \"[clone] done -> $DST\""
+bash_file = "./describe.sh"
 §§

@@ -45,7 +45,7 @@ lists the directory's workflows when the name doesn't match.
 ※※
 
 §find§
-bash = "F=\"$SKY_DIR/$SKY_NAME.sky\"\nif [ ! -f \"$F\" ]; then\n  echo \"[delete] no workflow at $F\"\n  echo \"[delete] available in $SKY_DIR:\"\n  ls \"$SKY_DIR\" 2>/dev/null || true\n  exit 1\nfi\necho \"[delete] found $F\""
+bash_file = "./find.sh"
 §§
 
 ※※
@@ -66,5 +66,5 @@ Step 3 — remove. Deletes the file once approved.
 
 §remove§
 depends_on = ["confirm"]
-bash = "F=\"$SKY_DIR/$SKY_NAME.sky\"\nrm \"$F\" && echo \"[delete] removed $F\""
+bash_file = "./remove.sh"
 §§

@@ -61,7 +61,7 @@ and prints every `sky run <old>` reference that the apply step will rewrite.
 ※※
 
 §find§
-bash = "OLD=\"$SKY_DIR/$SKY_NAME.sky\"\nNEW=\"$SKY_DIR/$SKY_NEW_NAME.sky\"\nif [ ! -f \"$OLD\" ]; then echo \"[rename] no workflow at $OLD\"; echo \"[rename] available in $SKY_DIR:\"; ls \"$SKY_DIR\" 2>/dev/null || true; exit 1; fi\nif [ -e \"$NEW\" ]; then echo \"[rename] target already exists: $NEW\"; exit 1; fi\necho \"[rename] $SKY_NAME -> $SKY_NEW_NAME\"\necho \"[rename] 'sky run $SKY_NAME' references in $SKY_DIR:\"\ngrep -rn \"sky run $SKY_NAME\" \"$SKY_DIR\" 2>/dev/null || echo \"  (none)\""
+bash_file = "./find.sh"
 §§
 
 ※※
@@ -84,7 +84,7 @@ across every .sky in the dir. Uses temp-file sed (portable on macOS + Linux).
 
 §apply§
 depends_on = ["confirm"]
-bash = "set -e\nOLD=\"$SKY_DIR/$SKY_NAME.sky\"\nNEW=\"$SKY_DIR/$SKY_NEW_NAME.sky\"\ngit mv \"$OLD\" \"$NEW\" 2>/dev/null || mv \"$OLD\" \"$NEW\"\nsed \"s/^name = \\\"$SKY_NAME\\\"/name = \\\"$SKY_NEW_NAME\\\"/\" \"$NEW\" > \"$NEW.tmp\" && mv \"$NEW.tmp\" \"$NEW\"\nfor f in \"$SKY_DIR\"/*.sky; do\n  [ -e \"$f\" ] || continue\n  sed \"s|sky run $SKY_NAME|sky run $SKY_NEW_NAME|g\" \"$f\" > \"$f.tmp\" && mv \"$f.tmp\" \"$f\"\ndone\necho \"[rename] applied $SKY_NAME -> $SKY_NEW_NAME\""
+bash_file = "./apply.sh"
 §§
 
 ※※
@@ -94,5 +94,5 @@ warns about any leftover `sky run <old>` references for manual cleanup.
 
 §verify§
 depends_on = ["apply"]
-bash = "set -e\nNEW=\"$SKY_DIR/$SKY_NEW_NAME.sky\"\nsky lint \"$NEW\"\nleft=$(grep -rl \"sky run $SKY_NAME\" \"$SKY_DIR\" 2>/dev/null || true)\nif [ -n \"$left\" ]; then echo \"[rename] WARNING leftover 'sky run $SKY_NAME' refs in:\"; echo \"$left\" | sed 's/^/    /'; fi\necho \"[rename] done -> $NEW\""
+bash_file = "./verify.sh"
 §§

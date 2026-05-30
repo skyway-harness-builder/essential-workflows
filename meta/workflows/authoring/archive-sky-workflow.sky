@@ -6,7 +6,7 @@ output_style = "terse"
 ⊕⊕
 
 §find§
-bash = "set -eu\nDIR=\"$SKY_DIR\"\nNAME=\"$SKY_NAME\"\nMODE=\"${SKY_MODE:-archive}\"\nif [ \"$MODE\" != \"archive\" ] && [ \"$MODE\" != \"restore\" ]; then\n  echo \"ERROR: mode must be 'archive' or 'restore', got '$MODE'\" >&2\n  exit 1\nfi\nif [ \"$MODE\" = \"restore\" ]; then\n  SOURCE=\"$DIR/_archive/$NAME.sky\"\n  DEST=\"$DIR/$NAME.sky\"\nelse\n  SOURCE=\"$DIR/$NAME.sky\"\n  DEST=\"$DIR/_archive/$NAME.sky\"\nfi\nif [ ! -f \"$SOURCE\" ]; then\n  echo \"ERROR: source not found: $SOURCE\" >&2\n  exit 1\nfi\nif [ -e \"$DEST\" ]; then\n  echo \"ERROR: destination already exists: $DEST\" >&2\n  exit 1\nfi\necho \"mode=$MODE\"\necho \"source=$SOURCE\"\necho \"dest=$DEST\""
+bash_file = "./find.sh"
 §§
 
 §gate§
@@ -20,13 +20,13 @@ wait.timeout = "1h"
 §move§
 depends_on = ["gate"]
 trigger_rule = "all_success"
-bash = "set -eu\nDIR=\"$SKY_DIR\"\nNAME=\"$SKY_NAME\"\nMODE=\"${SKY_MODE:-archive}\"\nif [ \"$MODE\" = \"restore\" ]; then\n  SOURCE=\"$DIR/_archive/$NAME.sky\"\n  DEST=\"$DIR/$NAME.sky\"\nelse\n  SOURCE=\"$DIR/$NAME.sky\"\n  DEST=\"$DIR/_archive/$NAME.sky\"\nfi\nif [ \"$MODE\" = \"archive\" ]; then\n  mkdir -p \"$DIR/_archive\"\n  grep -v '^trigger\\.' \"$SOURCE\" > \"$SOURCE.tmp\"\n  mv \"$SOURCE.tmp\" \"$SOURCE\"\nfi\nif command -v git >/dev/null 2>&1 && git -C \"$DIR\" rev-parse --is-inside-work-tree >/dev/null 2>&1; then\n  git -C \"$DIR\" mv \"$SOURCE\" \"$DEST\" || mv \"$SOURCE\" \"$DEST\"\nelse\n  mv \"$SOURCE\" \"$DEST\"\nfi\necho \"moved $SOURCE -> $DEST\""
+bash_file = "./move.sh"
 §§
 
 §verify§
 depends_on = ["move"]
 trigger_rule = "all_success"
-bash = "set -eu\nDIR=\"$SKY_DIR\"\nNAME=\"$SKY_NAME\"\nMODE=\"${SKY_MODE:-archive}\"\nif [ \"$MODE\" = \"restore\" ]; then\n  DEST=\"$DIR/$NAME.sky\"\nelse\n  DEST=\"$DIR/_archive/$NAME.sky\"\nfi\nif [ ! -f \"$DEST\" ]; then\n  echo \"ERROR: moved file not found at $DEST\" >&2\n  exit 1\nfi\nsky lint \"$DEST\""
+bash_file = "./verify.sh"
 §§
 
 ※※

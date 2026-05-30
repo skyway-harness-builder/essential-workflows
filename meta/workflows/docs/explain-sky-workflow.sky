@@ -39,7 +39,7 @@ explain step can use. Read-only: no rm, no mutation.
 ※※
 
 §resolve§
-bash = "set -eu\nF=\"$SKY_DIR/$SKY_NAME.sky\"\nif [ ! -f \"$F\" ]; then\n  echo \"ERROR: no such .sky file: $F\" >&2\n  exit 1\nfi\necho \"resolved: $F\"\necho \"--- sky describe (best-effort) ---\"\nsky describe \"$F\" 2>/dev/null || echo \"(sky describe unavailable; explain will read the file directly)\""
+bash_file = "./resolve.sh"
 §§
 
 ※※

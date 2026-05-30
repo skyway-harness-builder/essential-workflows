@@ -42,7 +42,7 @@ notes it and stops cleanly (nothing to audit is not a failure).
 ※※
 
 §scan§
-bash = "set -e\nif [ ! -d \"$SKY_DIR\" ]; then echo \"[audit] no such dir: $SKY_DIR\"; exit 1; fi\nN=$(find \"$SKY_DIR\" -maxdepth 1 -name '*.sky' | wc -l | tr -d ' ')\necho \"[audit] $N workflow(s) in $SKY_DIR\"\nif [ \"$N\" -eq 0 ]; then echo \"[audit] nothing to lint\"; fi"
+bash_file = "./audit-sky-library-scan.sh"
 §§
 
 ※※
@@ -53,5 +53,5 @@ report is printed here next to each result.
 
 §lint§
 depends_on = ["scan"]
-bash = "fail=0\npass=0\nfor f in \"$SKY_DIR\"/*.sky; do\n  [ -e \"$f\" ] || continue\n  if out=$(sky lint \"$f\" 2>&1); then\n    pass=$((pass+1))\n    echo \"OK    $(basename \"$f\")\"\n  else\n    fail=$((fail+1))\n    echo \"FAIL  $(basename \"$f\")\"\n    echo \"$out\" | sed 's/^/        /'\n  fi\ndone\necho \"[audit] $pass passed, $fail failed\"\nif [ \"$fail\" -gt 0 ]; then exit 1; fi"
+bash_file = "./audit-sky-library-lint.sh"
 §§

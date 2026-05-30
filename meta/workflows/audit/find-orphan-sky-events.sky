@@ -6,17 +6,17 @@ output_style = "terse"
 ⊕⊕
 
 §collect§
-bash = "set -u\nDIR=\"$SKY_DIR\"\nif [ ! -d \"$DIR\" ]; then printf 'error: dir not found: %s\\n' \"$DIR\" >&2; exit 2; fi\nLISTENS=\"$(mktemp /tmp/sky-orphan-listens.XXXXXX)\"\nEMITS=\"$(mktemp /tmp/sky-orphan-emits.XXXXXX)\"\nprintf '%s\\n' \"$LISTENS\" > /tmp/sky-orphan-listens.path\nprintf '%s\\n' \"$EMITS\" > /tmp/sky-orphan-emits.path\nfound=0\nfor f in \"$DIR\"/*.sky; do\n  [ -e \"$f\" ] || continue\n  found=1\n  base=\"$(basename \"$f\")\"\n  grep -oE 'trigger\\\\.sky_event\\\\.event[[:space:]]*=[[:space:]]*\"[^\"]+\"' \"$f\" | sed -E 's/.*\"([^\"]+)\".*/\\\\1/' | while IFS= read -r ev; do [ -n \"$ev\" ] && printf '%s\\t%s\\n' \"$ev\" \"$base\"; done >> \"$LISTENS\"\n  grep -E '(^|[^[:alnum:]_])emit([.[:space:]=]|$)' \"$f\" | while IFS= read -r line; do ev=\"$(printf '%s\\n' \"$line\" | sed -E 's/payload[[:space:]]*=.*$//' | grep -oE '\"[^\"]+\"' | tail -1 | tr -d '\"')\"; [ -n \"$ev\" ] && printf '%s\\t%s\\n' \"$ev\" \"$base\"; done >> \"$EMITS\"\ndone\nif [ \"$found\" -eq 0 ]; then printf 'error: no .sky files in %s\\n' \"$DIR\" >&2; exit 2; fi\nprintf 'collected: %s listener edge(s), %s emit edge(s)\\n' \"$(wc -l < \"$LISTENS\" | tr -d ' ')\" \"$(wc -l < \"$EMITS\" | tr -d ' ')\""
+bash_file = "./collect.sh"
 §§
 
 §match§
 depends_on = ["collect"]
-bash = "set -u\nLISTENS=\"$(cat /tmp/sky-orphan-listens.path)\"\nEMITS=\"$(cat /tmp/sky-orphan-emits.path)\"\nDEAD_LISTENERS=\"$(mktemp /tmp/sky-orphan-dead-listeners.XXXXXX)\"\nDEAD_SIGNALS=\"$(mktemp /tmp/sky-orphan-dead-signals.XXXXXX)\"\nprintf '%s\\n' \"$DEAD_LISTENERS\" > /tmp/sky-orphan-dead-listeners.path\nprintf '%s\\n' \"$DEAD_SIGNALS\" > /tmp/sky-orphan-dead-signals.path\nL_NAMES=\"$(mktemp /tmp/sky-orphan-lnames.XXXXXX)\"\nE_NAMES=\"$(mktemp /tmp/sky-orphan-enames.XXXXXX)\"\ncut -f1 \"$LISTENS\" | sort -u > \"$L_NAMES\"\ncut -f1 \"$EMITS\" | sort -u > \"$E_NAMES\"\ncomm -23 \"$L_NAMES\" \"$E_NAMES\" | while IFS= read -r ev; do [ -n \"$ev\" ] && grep -F \"$(printf '%s\\t' \"$ev\")\" \"$LISTENS\"; done > \"$DEAD_LISTENERS\"\ncomm -23 \"$E_NAMES\" \"$L_NAMES\" | while IFS= read -r ev; do [ -n \"$ev\" ] && grep -F \"$(printf '%s\\t' \"$ev\")\" \"$EMITS\"; done > \"$DEAD_SIGNALS\"\nrm \"$L_NAMES\"\nrm \"$E_NAMES\"\nprintf 'matched: %s dead listener(s), %s dead signal(s)\\n' \"$(wc -l < \"$DEAD_LISTENERS\" | tr -d ' ')\" \"$(wc -l < \"$DEAD_SIGNALS\" | tr -d ' ')\""
+bash_file = "./match.sh"
 §§
 
 §report§
 depends_on = ["match"]
-bash = "set -u\nDEAD_LISTENERS=\"$(cat /tmp/sky-orphan-dead-listeners.path)\"\nDEAD_SIGNALS=\"$(cat /tmp/sky-orphan-dead-signals.path)\"\nLISTENS=\"$(cat /tmp/sky-orphan-listens.path)\"\nEMITS=\"$(cat /tmp/sky-orphan-emits.path)\"\nrc=0\nprintf '=== orphan sky_event report ===\\n'\nprintf '\\n-- DEAD LISTENERS (trigger.sky_event with no emitter) --\\n'\nif [ -s \"$DEAD_LISTENERS\" ]; then\n  while IFS=\"$(printf '\\t')\" read -r ev file; do printf '  %s  <-  %s (listens, never emitted)\\n' \"$ev\" \"$file\"; done < \"$DEAD_LISTENERS\"\n  rc=1\nelse\n  printf '  none\\n'\nfi\nprintf '\\n-- DEAD SIGNALS (emit with no listener) --\\n'\nif [ -s \"$DEAD_SIGNALS\" ]; then\n  while IFS=\"$(printf '\\t')\" read -r ev file; do printf '  %s  ->  %s (emitted, never listened)\\n' \"$ev\" \"$file\"; done < \"$DEAD_SIGNALS\"\n  rc=1\nelse\n  printf '  none\\n'\nfi\nrm \"$DEAD_LISTENERS\"\nrm \"$DEAD_SIGNALS\"\nrm \"$LISTENS\"\nrm \"$EMITS\"\nrm /tmp/sky-orphan-listens.path\nrm /tmp/sky-orphan-emits.path\nrm /tmp/sky-orphan-dead-listeners.path\nrm /tmp/sky-orphan-dead-signals.path\nif [ \"$rc\" -ne 0 ]; then printf '\\nFAIL: orphan event edges found.\\n' >&2; else printf '\\nOK: no orphan event edges.\\n'; fi\nexit \"$rc\""
+bash_file = "./report.sh"
 §§
 
 ※※

@@ -7,7 +7,7 @@ max_budget_usd = 3.00
 ⊕⊕
 
 §scan§
-bash = "set -u\nDIR=\"$SKY_DIR\"\nif [ -z \"$DIR\" ]; then echo 'ERROR: --var dir is required' >&2; exit 2; fi\nif [ ! -d \"$DIR\" ]; then echo \"ERROR: not a directory: $DIR\" >&2; exit 2; fi\nFAIL_COUNT=0\nTOTAL=0\nfor f in \"$DIR\"/*.sky; do\n  [ -e \"$f\" ] || continue\n  TOTAL=$((TOTAL + 1))\n  if ! OUT=$(sky lint \"$f\" 2>&1); then\n    FAIL_COUNT=$((FAIL_COUNT + 1))\n    echo \"FAIL: $f\"\n    printf '%s\\n' \"$OUT\" | grep -E 'SKY-WF-[0-9]+' || printf '%s\\n' \"$OUT\"\n  fi\ndone\nif [ \"$TOTAL\" -eq 0 ]; then echo \"ERROR: no .sky files found in $DIR\" >&2; exit 2; fi\necho \"---\"\necho \"scanned=$TOTAL failing=$FAIL_COUNT\"\nif [ \"$FAIL_COUNT\" -gt 0 ]; then exit 1; fi\nexit 0"
+bash_file = "./scan.sh"
 §§
 
 §fix§
@@ -48,7 +48,7 @@ Re-lint each file you touched after editing. When `sky lint` exits 0 on every pr
 
 §verify§
 depends_on = ["fix"]
-bash = "DIR=\"$SKY_DIR\"\nFAIL=0\nfor f in \"$DIR\"/*.sky; do\n  [ -e \"$f\" ] || continue\n  if ! sky lint \"$f\" >/dev/null 2>&1; then\n    FAIL=$((FAIL + 1))\n    echo \"still failing: $f\"\n  fi\ndone\nif [ \"$FAIL\" -gt 0 ]; then echo \"verify: $FAIL file(s) still failing\"; exit 1; fi\necho 'verify: all .sky files lint clean'\nexit 0"
+bash_file = "./verify.sh"
 loop.until.bash = "DIR=\"$SKY_DIR\"\nfor f in \"$DIR\"/*.sky; do\n  [ -e \"$f\" ] || continue\n  sky lint \"$f\" >/dev/null 2>&1 || exit 1\ndone\nexit 0"
 loop.max = 6
 §§

@@ -7,7 +7,7 @@ max_budget_usd = 1
 ⊕⊕
 
 §scan§
-bash = "set -eu\nDIR=\"${SKY_DIR:-.sky/workflows}\"\nif [ ! -d \"$DIR\" ]; then echo \"no such dir: $DIR\" >&2; exit 1; fi\nfound=0\nfor f in \"$DIR\"/*.sky; do\n  [ -e \"$f\" ] || continue\n  found=$((found + 1))\n  name=$(basename \"$f\" .sky)\n  prompt_blocks=$(grep -cE '^∆[A-Za-z0-9_-]+∆$' \"$f\" || true)\n  model_nodes=$(grep -cE '^[[:space:]]*model[[:space:]]*=' \"$f\" || true)\n  claude_nodes=$prompt_blocks\n  if [ \"$model_nodes\" -gt \"$claude_nodes\" ]; then claude_nodes=$model_nodes; fi\n  if grep -qE '^[[:space:]]*max_budget_usd[[:space:]]*=' \"$f\"; then has_cap=yes; else has_cap=no; fi\n  models=$(grep -hoE 'model[[:space:]]*=[[:space:]]*\"(haiku|sonnet|opus)\"' \"$f\" | sed -E 's/.*\"(haiku|sonnet|opus)\"/\\1/' | sort -u | paste -sd, - || true)\n  [ -n \"$models\" ] || models=none\n  printf '%s\\t%s\\t%s\\t%s\\n' \"$name\" \"$claude_nodes\" \"$has_cap\" \"$models\"\ndone\nif [ \"$found\" -eq 0 ]; then echo \"no .sky files in: $DIR\" >&2; exit 1; fi"
+bash_file = "./scan.sh"
 §§
 
 §report§

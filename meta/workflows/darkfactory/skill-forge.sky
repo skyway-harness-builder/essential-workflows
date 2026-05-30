@@ -120,7 +120,7 @@ because skill names there are not {{var}}-templated. No destructive commands (re
 ※※
 
 §read-skill§
-bash = "set -u\nNAME=\"${SKY_SKILL_NAME:-}\"\nif [ -z \"$NAME\" ]; then echo 'SKILL_FORGE_FAILED: skill_name var is required (sky run skill-forge --var skill_name=<name>)' >&2; exit 1; fi\nREPO=\"${SKY_SKILL_REPO:-$PWD}\"\nif [ ! -d \"$REPO/.git\" ]; then echo \"SKILL_FORGE_FAILED: $REPO is not a git checkout\" >&2; exit 1; fi\nDIR=\"$REPO/.claude/skills/$NAME\"\nif [ ! -f \"$DIR/SKILL.md\" ]; then echo \"SKILL_FORGE_FAILED: no SKILL.md at $DIR\" >&2; exit 1; fi\necho '=== skill-source ==='\necho \"skill_name=$NAME\"\necho \"skill_repo=$REPO\"\necho \"skill_dir=$DIR\"\necho '--- inventory ---'\n( cd \"$DIR\" && find . -type f | sort )\necho '--- SKILL.md ---'\ncat \"$DIR/SKILL.md\"\nfor f in $(cd \"$DIR\" && find . -type f ! -name 'SKILL.md' | sort); do\n  REL=\"${f#./}\"\n  echo \"--- script: $REL ---\"\n  cat \"$DIR/$REL\"\ndone\necho '=== end skill-source ==='"
+bash_file = "./read-skill.sh"
 §§
 
 ※※
@@ -257,7 +257,7 @@ runs a cheap, bounded improve loop. The costlier mistake is gated against.
 
 §gate§
 depends_on = ["judge"]
-bash = "set -u\nV=$(printf '%s' \"$SKY_OUTPUT_JUDGE\" | grep -oE 'SKY_FORGE delivers=(true|false)' | tail -1 | grep -oE '(true|false)$')\nif [ \"$V\" = \"true\" ]; then echo '{\"delivers\":\"true\"}'; else echo '{\"delivers\":\"false\"}'; fi"
+bash_file = "./gate.sh"
 §§
 
 ※※
@@ -330,7 +330,7 @@ the improved files live in improve's worktree, so finalize re-runs the authorita
 
 §lint-scripts§
 depends_on = ["improve"]
-bash = "set -u\nP=\"$SKY_OUTPUT_READ_SKILL\"\nDIR=$(printf '%s' \"$P\" | sed -n 's/^skill_dir=//p' | head -1)\nif [ -z \"$DIR\" ] || [ ! -d \"$DIR\" ]; then echo 'lint-scripts: skill_dir unresolved — deferring all checks to CI'; exit 0; fi\necho '=== static-script-checks ==='\nFOUND=0\nwhile IFS= read -r f; do\n  FOUND=1\n  case \"$f\" in\n    *.sh) if bash -n \"$f\" 2>/tmp/sky-forge-lint.err; then echo \"OK   bash -n $f\"; else echo \"FAIL bash -n $f\"; cat /tmp/sky-forge-lint.err; fi ;;\n    *.js|*.mjs|*.cjs) if command -v node >/dev/null 2>&1; then if node --check \"$f\" 2>/tmp/sky-forge-lint.err; then echo \"OK   node --check $f\"; else echo \"FAIL node --check $f\"; cat /tmp/sky-forge-lint.err; fi; else echo \"DEFER no node toolchain: $f (CI checks it)\"; fi ;;\n    *.go) echo \"DEFER no Go toolchain in container: $f (CI checks it)\" ;;\n    *) echo \"DEFER no in-container static check: $f (CI checks it)\" ;;\n  esac\ndone <<EOF\n$(cd \"$DIR\" && find . -type f ! -name 'SKILL.md' | sed \"s@^\\.@$DIR@\")\nEOF\nif [ \"$FOUND\" = 0 ]; then echo 'no bundled scripts — SKILL.md only'; fi\necho '=== end static-script-checks ==='"
+bash_file = "./lint-scripts.sh"
 §§
 
 ※※
@@ -347,5 +347,5 @@ of improve's prompt-level boundary). No destructive shell patterns. SKILL_REPO/s
 §finalize§
 depends_on = ["lint-scripts"]
 isolation = "worktree"
-bash = "set -u\nNAME=\"${SKY_SKILL_NAME:-}\"\nREPO=\"${SKY_SKILL_REPO:-$PWD}\"\nREL=\".claude/skills/$NAME\"\nDIR=\"$REPO/$REL\"\nif [ -z \"$NAME\" ] || [ ! -d \"$DIR\" ]; then echo \"SKILL_FORGE_FAILED: skill_dir $DIR missing\" >&2; exit 1; fi\ncd \"$REPO\" || { echo 'SKILL_FORGE_FAILED: cd repo' >&2; exit 1; }\nif git diff --quiet -- \"$REL\" && git diff --cached --quiet -- \"$REL\"; then echo 'already passing — no changes under skill_dir, no PR'; exit 0; fi\nSTAGED=$(git status --porcelain -- \"$REL\" | awk '{print $2}')\nfor p in $STAGED; do\n  case \"$p\" in\n    MISSION.md|FACTORY_RULES.md|.github/*|.sky/*|*/learnings/*|.claude/skills/*/learnings/*) echo \"SKILL_FORGE_FAILED: protected path staged: $p\" >&2; exit 1 ;;\n  esac\ndone\nBR=\"skill-forge/$NAME-$(date -u +%Y%m%d-%H%M%S)\"\ngit checkout -b \"$BR\" || { echo 'SKILL_FORGE_FAILED: branch' >&2; exit 1; }\ngit add -- \"$REL\" || { echo 'SKILL_FORGE_FAILED: add' >&2; exit 1; }\ngit commit -m \"skill-forge: improve $NAME skill toward eval bar\" -m 'Staged by skill-forge meta-workflow. CI is the quality gate; human merge required.' || { echo 'SKILL_FORGE_FAILED: commit' >&2; exit 1; }\ngit push -u origin \"$BR\" || { echo 'SKILL_FORGE_FAILED: push' >&2; exit 1; }\nURL=$(gh pr create --title \"skill-forge: improve $NAME skill\" --body \"Automated skill-forge pass on the \\`$NAME\\` skill. All edits scoped to \\`$REL\\`. Static script checks ran in-container (bash -n / node --check); other languages defer to CI. CI IS THE QUALITY GATE — review + merge by a human. Protected files (MISSION.md, FACTORY_RULES.md, .github/, .sky/, learnings) were guarded and never staged.\" 2>&1) && echo \"PR: $URL\" || echo \"pr-create note: $URL\""
+bash_file = "./finalize.sh"
 §§

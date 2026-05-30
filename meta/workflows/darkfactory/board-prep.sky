@@ -71,7 +71,7 @@ the `project` auth scope). Emits ONE JSON line {owner,repo,project} consumed dow
 ※※
 
 §preflight§
-bash = "set -u\ncommand -v gh >/dev/null 2>&1 || { echo 'DF_BOARDPREP_FAILED: gh not on PATH' >&2; exit 1; }\nPROJECT=\"${SKY_PROJECT:-}\"\necho \"$PROJECT\" | grep -qE '^[0-9]+$' || { echo 'DF_BOARDPREP_FAILED: --var project=<number> required' >&2; exit 1; }\nREPO=\"${SKY_REPO:-}\"\n[ -n \"$REPO\" ] || REPO=$(gh repo view --json nameWithOwner -q '.nameWithOwner' 2>/dev/null)\necho \"$REPO\" | grep -qE '^[^/]+/[^/]+$' || { echo 'DF_BOARDPREP_FAILED: set --var repo=owner/name or run inside a repo' >&2; exit 1; }\nOWNER=\"${SKY_OWNER:-}\"\n[ -n \"$OWNER\" ] || OWNER=$(echo \"$REPO\" | cut -d/ -f1)\ngh project view \"$PROJECT\" --owner \"$OWNER\" >/dev/null 2>&1 || { echo \"DF_BOARDPREP_FAILED: no access to project $PROJECT under $OWNER (need gh project scope)\" >&2; exit 1; }\njq -n --arg owner \"$OWNER\" --arg repo \"$REPO\" --arg project \"$PROJECT\" '{owner:$owner,repo:$repo,project:$project}'"
+bash_file = "./preflight.sh"
 §§
 
 ※※
@@ -83,7 +83,7 @@ thing no project template can ever provide (they are repo-scoped). REPO comes fr
 
 §labels§
 depends_on = ["preflight"]
-bash = "set -u\nREPO=$(echo \"${SKY_OUTPUT_PREFLIGHT:-}\" | jq -r '.repo // empty')\n[ -n \"$REPO\" ] || { echo 'DF_BOARDPREP_FAILED: no repo from preflight' >&2; exit 1; }\nmk() { gh label create \"$1\" --color \"$2\" --description \"$3\" --repo \"$REPO\" --force >/dev/null 2>&1 && echo \"  ok $1\" || echo \"  warn could not ensure $1\"; }\nmk triaging fbca04 'Issue is being classified'\nmk accepted 0e8a16 'Approved for the factory to attempt'\nmk rejected ffffff 'Will not be worked on by the factory'\nmk ready-for-sky 1d76db 'Queued for an implementation run'\nmk in-progress 0052cc 'Sky is implementing'\nmk needs-review e4882a 'PR open, awaiting human spot-check / validator'\nmk approved 2ea44f 'Validator + human passed'\nmk needs-fix d93f0b 'Validator/human bounced it back'\nmk escalated b60205 'Routed to a human (low confidence / high stakes)'\necho \"labels: ensured 9 lifecycle labels on $REPO\""
+bash_file = "./labels.sh"
 §§
 
 ※※
@@ -94,7 +94,7 @@ not treated as an error. OWNER/REPO/PROJECT come from preflight's JSON.
 
 §link§
 depends_on = ["preflight"]
-bash = "set -u\nOWNER=$(echo \"${SKY_OUTPUT_PREFLIGHT:-}\" | jq -r '.owner // empty')\nREPO=$(echo \"${SKY_OUTPUT_PREFLIGHT:-}\" | jq -r '.repo // empty')\nPROJECT=$(echo \"${SKY_OUTPUT_PREFLIGHT:-}\" | jq -r '.project // empty')\nOUT=$(gh project link \"$PROJECT\" --owner \"$OWNER\" --repo \"$REPO\" 2>&1) && echo \"link: project $PROJECT linked to $REPO\" || echo \"link: note ($OUT) — an already-linked project is fine\""
+bash_file = "./link.sh"
 §§
 
 ※※
@@ -108,7 +108,7 @@ template's job; this only tells you whether the template was applied. grep is a 
 
 §fields§
 depends_on = ["preflight"]
-bash = "set -u\nOWNER=$(echo \"${SKY_OUTPUT_PREFLIGHT:-}\" | jq -r '.owner // empty')\nPROJECT=$(echo \"${SKY_OUTPUT_PREFLIGHT:-}\" | jq -r '.project // empty')\nFL=$(gh project field-list \"$PROJECT\" --owner \"$OWNER\" --format json 2>/dev/null || echo '{}')\nMISSF=''\nfor f in Status Priority Size 'Idea Stage' 'Bug Stage'; do echo \"$FL\" | grep -q \"$f\" || MISSF=\"$MISSF $f;\"; done\nMISSS=''\nfor s in Icebox Backlog Ready 'Agent Running' 'Awaiting Review' 'Revisions Requested' Done; do echo \"$FL\" | grep -q \"$s\" || MISSS=\"$MISSS $s;\"; done\necho \"fields_missing: ${MISSF:-none}\"\necho \"status_options_missing: ${MISSS:-none}\""
+bash_file = "./fields.sh"
 §§
 
 ※※
@@ -121,5 +121,5 @@ two MANUAL Projects-UI steps that have NO public API: (1) enable Auto-add filter
 §report§
 depends_on = ["labels", "link", "fields"]
 trigger_rule = "all_done"
-bash = "set -u\necho '=== Dark Factory board-prep (GitHub) — summary ==='\necho \"${SKY_OUTPUT_LABELS:-}\"\necho \"${SKY_OUTPUT_LINK:-}\"\necho \"${SKY_OUTPUT_FIELDS:-}\"\necho ''\necho '=== Manual steps the GitHub API cannot do (one-time, in the Projects UI) ==='\necho '1. Auto-add: Project -> ... -> Workflows -> Auto-add to project -> set the repository filter to this repo -> Save and turn on. (Never carried by a template; no public API.)'\necho '2. Label -> Status column automation (mirror factory state onto the board):'\necho '     ready-for-sky -> Ready | in-progress -> Agent Running | needs-review -> Awaiting Review | needs-fix -> Revisions Requested | approved -> Done'\necho '   Wire via Project Workflows (UI). Full mapping + rationale in the darkfactory-onboarding skill.'\necho '3. If a custom field is missing above: create the project from the Skylence project template (org project #1), which carries Status + Priority/Size/Idea Stage/Bug Stage.'"
+bash_file = "./report.sh"
 §§

@@ -53,7 +53,7 @@ hard error (exit 1) with a clear message.
 ※※
 
 §probe§
-bash = "set -u\nF=\"$SKY_DIR/$SKY_NAME.sky\"\nif [ ! -f \"$F\" ]; then echo \"[upgrade] not found: $F\" >&2; exit 1; fi\nsky lint \"$F\"\nRC=$?\nif [ \"$RC\" -eq 0 ]; then echo \"[upgrade] $SKY_NAME.sky already clean — nothing to upgrade\"; else echo \"[upgrade] $SKY_NAME.sky has lint issues — fixing\"; fi\nexit \"$RC\""
+bash_file = "./probe.sh"
 §§
 
 ※※
@@ -90,5 +90,5 @@ so you can see exactly what changed. The diff is empty when the file was already
 §diff§
 depends_on = ["probe", "fix"]
 trigger_rule = "all_done"
-bash = "set -u\ngit -C \"$SKY_DIR\" diff -- \"$SKY_NAME.sky\" 2>/dev/null || true"
+bash_file = "./diff.sh"
 §§

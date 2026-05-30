@@ -7,7 +7,7 @@ max_budget_usd = 3
 ⊕⊕
 
 §read§
-bash = "set -eu\nF=\"$SKY_DIR/$SKY_NAME.sky\"\nif [ ! -f \"$F\" ]; then\n  echo \"not found: $F\" >&2\n  exit 1\nfi\necho \"target: $F\"\ngrep -c '^§' \"$F\" | sed 's/^/node-config blocks: /'"
+bash_file = "./read.sh"
 §§
 
 §annotate§

@@ -1,6 +1,50 @@
 apiVersion: skylence.io/v1
 version: 2.10.0
 updated_at: "2026-05-30"
+
+collections:
+  - name: workflow-authoring
+    title: "Workflow Authoring & Lifecycle"
+    description: "Create, scaffold, update, rename, clone, archive, and convert .sky workflows. Covers the full lifecycle of a workflow file from first draft to codemod and format upgrade."
+    author:
+      name: Skylence
+      url: https://github.com/skylence-be
+    tags: [authoring, lifecycle, scaffolding, meta]
+    match:
+      - meta/workflows/authoring
+      - meta/skills/sky-workflow-authoring
+
+  - name: workflow-audit
+    title: "Workflow Audit & Health"
+    description: "Lint every workflow, dry-run the full library, audit secrets and budgets, detect trigger conflicts, triage failed runs, and generate a graded health report."
+    author:
+      name: Skylence
+      url: https://github.com/skylence-be
+    tags: [audit, health, security, ci, meta]
+    match:
+      - meta/workflows/audit
+
+  - name: workflow-docs
+    title: "Workflow Documentation"
+    description: "Auto-catalog your library, regenerate ASCII DAG diagrams, explain flows in plain English, generate changelogs, and annotate nodes with rationale comments."
+    author:
+      name: Skylence
+      url: https://github.com/skylence-be
+    tags: [docs, documentation, diagrams, meta]
+    match:
+      - meta/workflows/docs
+
+  - name: darkfactory
+    title: "Dark Factory"
+    description: "Eval-driven forges that author and iterate skills and workflows against a judge-scored gate, plus GitHub board setup and org/repo hardening via gh and the GitHub API."
+    author:
+      name: Skylence
+      url: https://github.com/skylence-be
+    tags: [darkfactory, eval, forge, github, meta]
+    match:
+      - meta/workflows/darkfactory
+      - meta/skills/darkfactory-onboarding
+
 entries:
   # ── Authoring & lifecycle ──────────────────────────────────────────────
   - kind: workflow

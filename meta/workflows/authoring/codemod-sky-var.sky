@@ -72,7 +72,7 @@ or zero hits — there is nothing to codemod and nothing to approve in those cas
 ※※
 
 §scan§
-bash = "set -u\nif [ ! -d \"$SKY_DIR\" ]; then echo \"[codemod] no such dir: $SKY_DIR\" >&2; exit 1; fi\nif [ -z \"$SKY_OLD\" ] || [ -z \"$SKY_NEW\" ]; then echo \"[codemod] both --var old and --var new are required\" >&2; exit 1; fi\nU_OLD=$(printf '%s' \"$SKY_OLD\" | tr 'a-z-' 'A-Z_')\nU_NEW=$(printf '%s' \"$SKY_NEW\" | tr 'a-z-' 'A-Z_')\nPAT=\"\\{\\{$SKY_OLD\\}\\}|\\\\\\$SKY_$U_OLD([^A-Za-z0-9_]|\\$)|§$SKY_OLD§|∆$SKY_OLD∆|\\\"$SKY_OLD\\\"\"\necho \"[codemod] $SKY_OLD -> $SKY_NEW\"\necho \"[codemod] forms: {{$SKY_OLD}} -> {{$SKY_NEW}} | \\$SKY_$U_OLD -> \\$SKY_$U_NEW | §$SKY_OLD§/∆$SKY_OLD∆ -> §$SKY_NEW§/∆$SKY_NEW∆ | \\\"$SKY_OLD\\\" id-refs -> \\\"$SKY_NEW\\\"\"\nhits=0\nfor f in \"$SKY_DIR\"/*.sky; do\n  [ -e \"$f\" ] || continue\n  out=$(grep -nE \"$PAT\" \"$f\" 2>/dev/null || true)\n  if [ -n \"$out\" ]; then\n    hits=$((hits+1))\n    echo \"--- $(basename \"$f\")\"\n    printf '%s\\n' \"$out\" | sed 's/^/    /'\n  fi\ndone\nif [ \"$hits\" -eq 0 ]; then echo \"[codemod] no occurrences of '$SKY_OLD' (any form) in $SKY_DIR — nothing to do\"; exit 1; fi\necho \"[codemod] $hits file(s) affected — review above, then approve the gate\""
+bash_file = "./scan.sh"
 §§
 
 ※※
@@ -99,7 +99,7 @@ a form are touched.
 
 §apply§
 depends_on = ["gate"]
-bash = "set -eu\nU_OLD=$(printf '%s' \"$SKY_OLD\" | tr 'a-z-' 'A-Z_')\nU_NEW=$(printf '%s' \"$SKY_NEW\" | tr 'a-z-' 'A-Z_')\nPAT=\"\\{\\{$SKY_OLD\\}\\}|\\\\\\$SKY_$U_OLD([^A-Za-z0-9_]|\\$)|§$SKY_OLD§|∆$SKY_OLD∆|\\\"$SKY_OLD\\\"\"\ntouched=0\nfor f in \"$SKY_DIR\"/*.sky; do\n  [ -e \"$f\" ] || continue\n  if ! grep -qE \"$PAT\" \"$f\" 2>/dev/null; then continue; fi\n  sed \"s/{{$SKY_OLD}}/{{$SKY_NEW}}/g; s/\\$SKY_$U_OLD\\([^A-Za-z0-9_]\\)/\\$SKY_$U_NEW\\1/g; s/\\$SKY_$U_OLD\\$/\\$SKY_$U_NEW/g; s/§$SKY_OLD§/§$SKY_NEW§/g; s/∆$SKY_OLD∆/∆$SKY_NEW∆/g; s/\\\"$SKY_OLD\\\"/\\\"$SKY_NEW\\\"/g\" \"$f\" > \"$f.tmp\" && mv \"$f.tmp\" \"$f\"\n  touched=$((touched+1))\n  echo \"[codemod] rewrote $(basename \"$f\")\"\ndone\necho \"$touched\" > /tmp/codemod-sky-var.touched\necho \"[codemod] applied $SKY_OLD -> $SKY_NEW in $touched file(s)\""
+bash_file = "./apply.sh"
 §§
 
 ※※
@@ -111,5 +111,5 @@ passes — review `git diff` regardless.
 
 §verify§
 depends_on = ["apply"]
-bash = "fail=0\npass=0\nfor f in \"$SKY_DIR\"/*.sky; do\n  [ -e \"$f\" ] || continue\n  if out=$(sky lint \"$f\" 2>&1); then\n    pass=$((pass+1))\n    echo \"OK    $(basename \"$f\")\"\n  else\n    fail=$((fail+1))\n    echo \"FAIL  $(basename \"$f\")\"\n    printf '%s\\n' \"$out\" | sed 's/^/        /'\n  fi\ndone\nrm /tmp/codemod-sky-var.touched 2>/dev/null || true\necho \"[codemod] lint: $pass passed, $fail failed\"\nif [ \"$fail\" -gt 0 ]; then echo \"[codemod] a touched file no longer lints — review git diff and revert if needed\"; exit 1; fi\necho \"[codemod] all files lint clean after codemod\""
+bash_file = "./verify.sh"
 §§

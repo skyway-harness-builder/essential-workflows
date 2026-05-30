@@ -6,17 +6,17 @@ output_style = "terse"
 ⊕⊕
 
 §list§
-bash = "set -eu\nDIR=\"$SKY_DIR\"\nif [ -z \"$DIR\" ]; then echo 'ERROR: --var dir is required' >&2; exit 1; fi\nif [ ! -d \"$DIR\" ]; then echo \"ERROR: not a directory: $DIR\" >&2; exit 1; fi\nFOUND=0\nfor f in \"$DIR\"/*.sky; do\n  [ -e \"$f\" ] || continue\n  b=\"$(basename \"$f\" .sky)\"\n  echo \"$b\"\n  FOUND=$((FOUND + 1))\ndone\nif [ \"$FOUND\" -eq 0 ]; then echo \"ERROR: no .sky files in $DIR\" >&2; exit 1; fi\necho \"---\" >&2\necho \"listed $FOUND workflow file(s) in $DIR\" >&2"
+bash_file = "./list.sh"
 §§
 
 §runs§
 depends_on = ["list"]
-bash = "set -u\nLOG=\"$(mktemp /tmp/sky-runlog.XXXXXX)\"\n# 'sky logs' format is not contractually stable; capture defensively and never let a nonzero exit kill discovery.\nif ! sky logs > \"$LOG\" 2>/dev/null; then\n  echo 'WARN: sky logs returned nonzero or is unavailable; treating history as empty' >&2\n  : > \"$LOG\"\nfi\nLINES=\"$(wc -l < \"$LOG\" | tr -d ' ')\"\nif [ \"$LINES\" = \"0\" ]; then\n  echo 'WARN: no run history parsed; every workflow will be reported as NEVER (advisory only)' >&2\nfi\ncat \"$LOG\"\nrm \"$LOG\"\necho \"---\" >&2\necho \"captured $LINES line(s) of run history\" >&2"
+bash_file = "./runs.sh"
 §§
 
 §report§
 depends_on = ["list", "runs"]
-bash = "set -u\nDIR=\"$SKY_DIR\"\nFILES=\"$SKY_OUTPUT_LIST\"\nHISTORY=\"$SKY_OUTPUT_RUNS\"\nHIST_LC=\"$(printf '%s' \"$HISTORY\" | tr '[:upper:]' '[:lower:]')\"\nNEVER=0\nSEEN=0\necho '# find-unused-sky-workflows report'\necho \"# dir: $DIR\"\necho '# status legend: SEEN-IN-LOGS = name appears in sky logs; NEVER = name absent from sky logs'\necho '# NOTE advisory only: NEVER depends on log retention and on workflow name == filename. Nothing is deleted.'\necho '---'\nprintf '%s\\n' \"$FILES\" | while IFS= read -r name; do\n  [ -n \"$name\" ] || continue\n  needle=\"$(printf '%s' \"$name\" | tr '[:upper:]' '[:lower:]')\"\n  if printf '%s' \"$HIST_LC\" | grep -F -q -- \"$needle\"; then\n    echo \"SEEN-IN-LOGS   $name\"\n  else\n    echo \"NEVER          $name\"\n    echo \"  candidate: sky run delete-sky-workflow --var dir=\\\"$DIR\\\" --var name=$name\"\n  fi\ndone\necho '---'\n# Recompute counts in the parent shell (the while-loop ran in a subshell via the pipe).\nfor name in $FILES; do\n  [ -n \"$name\" ] || continue\n  needle=\"$(printf '%s' \"$name\" | tr '[:upper:]' '[:lower:]')\"\n  if printf '%s' \"$HIST_LC\" | grep -F -q -- \"$needle\"; then\n    SEEN=$((SEEN + 1))\n  else\n    NEVER=$((NEVER + 1))\n  fi\ndone\necho \"summary: $SEEN seen-in-logs, $NEVER never-run candidate(s)\"\necho 'discovery only; exit 0 regardless of findings'\nexit 0"
+bash_file = "./report.sh"
 §§
 
 ※※
