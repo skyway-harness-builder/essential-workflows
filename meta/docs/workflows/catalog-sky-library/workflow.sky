@@ -31,7 +31,7 @@ Run it (state which directory to catalog with --var dir):
 
 Install the skill it formats with (once):
 
-  sky examples install sky-workflow-authoring
+  sky library install sky-workflow-authoring
 ※※
 
 ⊕meta⊕

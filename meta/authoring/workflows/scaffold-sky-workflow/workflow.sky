@@ -37,7 +37,7 @@ only the ※※ comment blocks may be in the brief's language.
 
 Required skill — install before first run (no marketplace plugin needed):
 
-  sky examples install sky-workflow-authoring
+  sky library install sky-workflow-authoring
 ※※
 
 ⊕meta⊕

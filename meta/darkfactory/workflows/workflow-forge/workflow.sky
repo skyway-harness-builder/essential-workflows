@@ -119,7 +119,7 @@ DAG (v1 — gate on lint + dry-run only; never execute the generated workflow)
 PR ROUTING (operator decision; v1 default)
 ────────────────────────────────────────────────────────────────────────────────────────
 The TARGET repo depends on the workflow's audience:
-  - public-meta workflow  → skylence-be/workflows        (end-user `sky examples` source)
+  - public-meta workflow  → skylence-be/workflows        (end-user `sky library` source)
   - internal/dogfood      → skylence-be/workflows-internal (this repo)
   - demo/example          → skylence-be/workflow-examples
 v1 DEFAULTS to opening the PR against workflows-internal and surfaces the routing call to the
@@ -395,7 +395,7 @@ The validated candidate is at `.sky/workflows/forge-candidate.sky`. Its ⊕meta�
 Do exactly this:
 1. Pick the REAL workflow name: a kebab-case name derived from the intent (e.g. `greet-operator`). The file's ⊕meta⊕ `name =` MUST equal the new filename stem.
 2. Decide the routing and target repo. The rule:
-   - public-meta workflow (end users would want it via `sky examples`) → skylence-be/workflows
+   - public-meta workflow (end users would want it via `sky library`) → skylence-be/workflows
    - internal dogfood/self-improvement → skylence-be/workflows-internal (THIS repo)
    - demo/example → skylence-be/workflow-examples
    v1 default: open the PR against THIS repo (workflows-internal). State your routing recommendation explicitly in the PR body so the operator can move it if the audience is really public/demo.

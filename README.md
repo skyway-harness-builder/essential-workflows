@@ -3,11 +3,11 @@
 Community workflow library for [Skylence](https://github.com/skylence-be/binary). Install any workflow directly from the CLI:
 
 ```sh
-sky examples list
-sky examples install scaffold-sky-workflow
+sky library list
+sky library install scaffold-sky-workflow
 ```
 
-This repo is the default remote source bundled with `sky`. Run `sky examples update` to pull the latest workflows.
+This repo is the default remote source bundled with `sky`. Run `sky library update` to pull the latest workflows.
 
 ## Layout
 
@@ -79,8 +79,8 @@ Meta-workflows for managing your own `.sky` library — create, update, rename, 
 | `upgrade-sky-format` | Lint a `.sky` and apply minimal format fixes when it reports problems. `--var dir=<dir> --var name=<file>` |
 
 ```sh
-sky examples install scaffold-sky-workflow
-sky examples install sky-workflow-authoring   # skill scaffold + update depend on
+sky library install scaffold-sky-workflow
+sky library install sky-workflow-authoring   # skill scaffold + update depend on
 sky run scaffold-sky-workflow \
   --var dir=".sky/workflows" \
   --var name="deploy-on-tag" \
@@ -133,8 +133,8 @@ Eval-driven forges and onboarding workflows for the Dark Factory dev ladder.
 A workflow declares `skills = [...]` on a node; `sky` injects the named `.claude/skills/<name>/SKILL.md` into that node's system prompt. Install a skill the same way as a workflow — no marketplace plugin required:
 
 ```sh
-sky examples install sky-workflow-authoring
-sky examples install darkfactory-onboarding
+sky library install sky-workflow-authoring
+sky library install darkfactory-onboarding
 ```
 
 | Name | Description |
@@ -147,7 +147,7 @@ sky examples install darkfactory-onboarding
 To add a private org repo alongside this one, set `examples.sources` in `~/.sky/config.yaml`:
 
 ```yaml
-examples:
+library:
   sources:
     - repo: skylence-be/workflows   # keep the default
     - repo: myorg/workflows-internal
