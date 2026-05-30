@@ -3,6 +3,7 @@ kind: collections
 
 collections:
   - name: workflow-authoring
+    repo: skylence-be/workflows
     title: "Workflow Authoring & Lifecycle"
     description: "Create, scaffold, update, rename, clone, archive, and convert .sky workflows. Covers the full lifecycle of a workflow file from first draft to codemod and format upgrade."
     author:
@@ -14,6 +15,7 @@ collections:
       - meta/skills/sky-workflow-authoring
 
   - name: workflow-audit
+    repo: skylence-be/workflows
     title: "Workflow Audit & Health"
     description: "Lint every workflow, dry-run the full library, audit secrets and budgets, detect trigger conflicts, triage failed runs, and generate a graded health report."
     author:
@@ -24,6 +26,7 @@ collections:
       - meta/workflows/audit
 
   - name: workflow-docs
+    repo: skylence-be/workflows
     title: "Workflow Documentation"
     description: "Auto-catalog your library, regenerate ASCII DAG diagrams, explain flows in plain English, generate changelogs, and annotate nodes with rationale comments."
     author:
@@ -34,6 +37,7 @@ collections:
       - meta/workflows/docs
 
   - name: darkfactory
+    repo: skylence-be/workflows
     title: "Dark Factory"
     description: "Eval-driven forges that author and iterate skills and workflows against a judge-scored gate, plus GitHub board setup and org/repo hardening via gh and the GitHub API."
     author:

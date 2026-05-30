@@ -61,3 +61,17 @@ examples:
 This is a [GitHub template repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-repository-from-a-template). Fork it to build your own private library; open a PR here to contribute a workflow back to the community.
 
 Assets are grouped by **domain folder**, each holding `workflows/` and `skills/` subfolders. The first domain is `meta/` (managing your own `.sky` library); add more as needed (e.g. `git/`, `release/`). The on-disk layout is organizational only — `sky examples install` routes each asset by its `kind`, not its path. To add one: drop the file under the right domain folder, add a `manifest.yaml` entry (nested `path:` + a domain tag), and bump `version` + `updated_at`.
+
+### CI gate
+
+Every `.sky` file is linted by [`skylence-be/sky-lint-action`](https://github.com/skylence-be/sky-lint-action) on each push and pull request. **PRs with a failing lint check cannot be merged.** This gate also controls visibility on [skylence.be/workflows](https://skylence.be/workflows): the website loader checks the CI status of each repo's `main` branch at build time and skips any repo where `sky-lint` is not passing. Fix lint errors first — `sky lint <file>` locally, or open a PR and let the action report the exact error codes.
+
+### Contributing from your own repo
+
+The collections registry (`collections.yaml`) can reference external GitHub repos alongside this one. If you maintain a public `.sky` library and want it listed on the community page:
+
+1. Set up `sky-lint-action` in your repo's CI (see `.github/workflows/sky-lint.yml` in this repo as a template).
+2. Add a `manifest.yaml` and `collections.yaml` following the same schema used here.
+3. Open a PR to this repo adding your collection entry to `collections.yaml` with your `repo:` field set.
+
+Your collection will only appear on the website while your repo's `sky-lint` CI is green on `main`. If it goes red, it is automatically hidden until fixed.
