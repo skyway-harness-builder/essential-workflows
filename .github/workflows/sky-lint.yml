@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: skylence-be/sky-lint-action@v2.0.0
+      - uses: skylence-be/sky-lint-action@v2
         with:
           # The action word-splits + glob-expands $paths (no globstar). First glob
           # covers flat domain workflows; second covers category subdirs
