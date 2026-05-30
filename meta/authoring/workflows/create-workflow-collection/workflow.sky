@@ -1,0 +1,96 @@
+※※
+# create-workflow-collection
+
+Scaffold a brand-new community workflow collection from the
+`skylence-be/community-workflow-collection-skeleton` GitHub template, configure it
+non-interactively using the provided vars, and push the first commit.
+
+  (manual run: --var vendor, [repo, org, vendor-name, description])
+         │
+         ▼
+   ┌───────────┐  gh not installed → exit 1
+   │ preflight │  not authed → exit 1; vendor missing → exit 1
+   └───────────┘  prints resolved: org, repo, vendor, vendor-name
+         │
+         ▼
+   ┌────────┐  gh repo create <org>/<repo> --template community-workflow-collection-skeleton
+   │ create │  --public --description <desc>
+   └────────┘  fails if the repo already exists
+         │
+         ▼
+   ┌───────┐  git clone → tmp dir; python3 token replacements;
+   │ setup │  rename workflows/__vendor__/ → workflows/<vendor>/;
+   └───────┘  strip <!--delete--> from README; git commit + push; rm tmp
+         │
+         ▼
+   ┌────────┐  print repo URL + sky library add command + next steps
+   │ report │
+   └────────┘
+
+Run it:
+
+  sky run create-workflow-collection \
+    --var vendor=acme-corp \
+    --var repo=acme-workflows \
+    --var org=acme-org \
+    --var vendor-name="Acme Corp" \
+    --var description="Acme's internal .sky workflow library"
+
+  - vendor       required — kebab-case slug used in paths and manifest tags
+  - repo         GitHub repo name to create (default: <vendor>-workflows)
+  - org          GitHub org or user that owns the new repo (default: authenticated user)
+  - vendor-name  display label for the vendor (default: same as vendor)
+  - description  short one-line description for the GitHub repo and README
+※※
+
+⊕meta⊕
+name = "create-workflow-collection"
+description = "Scaffold a new community workflow collection from the skylence-be/community-workflow-collection-skeleton template, configure it, and push the first commit. Fire via: sky run create-workflow-collection --var vendor=<slug> [--var repo=<name>] [--var org=<org>] [--var vendor-name=<label>] [--var description=<text>]"
+trigger.manual = true
+output_style = "terse"
+⊕⊕
+
+※※
+Step 1 — preflight. Validates that `gh` is installed and authenticated, that the
+required `vendor` var is present, and prints the resolved configuration (filling
+in defaults for the optional vars) so the operator can confirm before any remote
+work is done.
+※※
+
+§preflight§
+bash_file = "./scripts/preflight.sh"
+§§
+
+※※
+Step 2 — create. Creates the GitHub repo from the
+`skylence-be/community-workflow-collection-skeleton` template using `gh repo create
+--template`. Fails immediately if the repo already exists (never clobbers).
+※※
+
+§create§
+depends_on = ["preflight"]
+bash_file = "./scripts/create.sh"
+§§
+
+※※
+Step 3 — setup. Clones the new repo into a tmp directory, performs the same
+token replacements that `configure.sh` would do interactively (vendor slug, vendor
+name, author info, description, today's date), renames the `workflows/__vendor__/`
+placeholder directory, strips the `<!--delete-->` onboarding block from README.md,
+and pushes the initial configured commit. Removes the tmp clone on exit.
+※※
+
+§setup§
+depends_on = ["create"]
+bash_file = "./scripts/setup.sh"
+§§
+
+※※
+Step 4 — report. Prints the repo URL, the `sky library add` command for local
+installation, and the suggested next steps for adding the first real workflow.
+※※
+
+§report§
+depends_on = ["setup"]
+bash_file = "./scripts/report.sh"
+§§
