@@ -1,0 +1,51 @@
+⊕meta⊕
+name = "annotate-sky-library"
+description = "Scan a library directory for unannotated workflow.sky files and invoke annotate-sky-workflow for each one in sequence."
+output_style = "terse"
+⊕⊕
+
+§scan§
+bash_file = "./scripts/scan.sh"
+§§
+
+§annotate-all§
+depends_on = ["scan"]
+trigger_rule = "all_success"
+bash_file = "./scripts/annotate-all.sh"
+§§
+
+※※
+annotate-sky-library — batch-annotate every unannotated workflow.sky in a library.
+
+"Unannotated" = the file contains no ※<id>※ opener pattern (regex: ※[alnum_-]+※).
+
+Flow:
+
+  scan ──▶ annotate-all
+  (bash:    (bash: for each unannotated dir,
+   walk      invoke annotate-sky-workflow
+   $SKY_DIR  sequentially until all done)
+   filter)
+
+  scan     exits 0 with empty output if all workflows are already annotated.
+  annotate-all  gated all_success on scan; exits early on empty $SKY_OUTPUT_SCAN.
+
+Vars:
+  dir   root of the library to scan (e.g. meta/authoring/workflows) → $SKY_DIR
+
+Run:
+  sky run annotate-sky-library --var dir=meta/authoring/workflows
+※※
+
+※scan※
+Walks $SKY_DIR recursively for workflow.sky files (sorted). Filters to those
+with no ※<id>※ annotation opener. Emits one workflow parent directory per line.
+Empty output = all workflows already annotated; annotate-all exits cleanly.
+※※
+
+※annotate-all※
+Reads $SKY_OUTPUT_SCAN line by line. For each unannotated workflow directory,
+invokes annotate-sky-workflow synchronously:
+  sky run annotate-sky-workflow --vars "dir=<wf_dir>,name=workflow"
+Sequential — one run finishes before the next starts. Gated all_success on scan.
+※※
