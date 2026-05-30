@@ -1,0 +1,12 @@
+# Pre-commit gate: lint staged .sky workflow files with the local `sky` binary
+# before they can be committed, so a broken workflow never lands in git.
+#
+# The .sky files here live under meta/workflows/<cat>/ (not the conventional
+# .sky/workflows/ location), so `sky lint --repo .` would not find them.
+# Instead we lint the explicitly staged files: `{staged_files}` expands to the
+# staged paths matching `glob`, and `sky lint <file>...` accepts multiple paths.
+pre-commit:
+  jobs:
+    - name: sky lint
+      glob: "**/*.sky"
+      run: sky lint {staged_files}
