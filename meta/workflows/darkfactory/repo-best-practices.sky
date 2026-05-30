@@ -1,0 +1,132 @@
+※※
+# repo-best-practices — GitHub repo settings hardening (free + paid, combined)
+
+Apply best-practice GitHub repository SETTINGS via `gh`. GENERIC: runs against the CALLER's
+repo (the run's working dir, or `--var repo=owner/name`). Pure bash + `gh`, deterministic,
+fail-closed, idempotent. No LLM, no budget.
+
+ONE workflow, BOTH tiers. You pass your plan as prose — `--var tier=free` (default) or
+`--var tier=paid` (anything matching paid/pro/team/enterprise/ghas/advanced counts as paid).
+The split mirrors what GitHub actually gates:
+
+  ALWAYS (free, any visibility) — applied unconditionally:
+    • merge hygiene: squash-only, auto-merge on, delete-branch-on-merge
+    • Dependabot: vulnerability alerts + automated security updates
+
+  ADVANCED (free on PUBLIC repos; needs a PAID plan on PRIVATE repos) — applied when
+  tier=paid OR the repo is public; otherwise SKIPPED and reported:
+    • branch protection on the default branch (≥1 PR review, dismiss stale, linear history,
+      no force-push, conversation resolution required)
+    • secret scanning + push protection
+
+So a public repo gets everything on free; a private repo on free gets the universal set and a
+clear list of what to re-run with `--var tier=paid` after upgrading.
+
+  (sky run repo-best-practices --var tier=free|paid [--var repo=owner/name])
+        │
+        ▼
+   ┌──────────────┐  bash + gh. Resolve repo, REQUIRE admin, read visibility + default branch,
+   │  preflight   │  normalize tier, compute advanced = (tier==paid OR public). Fail-closed.
+   └──────────────┘  Emits {repo,visibility,default_branch,tier,advanced} JSON.
+        │ depends_on (preflight)
+        ├───────────────┬───────────────┬───────────────┐
+        ▼               ▼               ▼ when advanced  ▼ when advanced
+   ┌──────────┐   ┌────────────┐   ┌────────────┐   ┌────────────┐
+   │  merge   │   │ dependabot │   │ protection │   │  secrets   │
+   └──────────┘   └────────────┘   └────────────┘   └────────────┘
+   squash-only,    vuln alerts +    branch protect   secret scanning
+   auto-merge,     auto security    default branch   + push protection
+   del-branch      updates          (paid/public)    (paid/public)
+        └───────────────┴───────────────┴───────────────┘
+                        │ depends_on [all], trigger_rule all_done
+                        ▼
+                 ┌──────────────┐  bash. Summary + which advanced items were applied vs
+                 │   report     │  SKIPPED (and how to apply them) + manual follow-ups.
+                 └──────────────┘
+
+SAFETY:
+  - Fail-closed: aborts at preflight unless the caller is ADMIN on the repo.
+  - Idempotent: every call is a settings upsert; re-running converges to the same state.
+  - enforce_admins is left OFF so onboarding cannot lock the admin out (report says to turn it on).
+  - Advanced mutations fail GRACEFULLY (warn, never crash) when the plan/visibility doesn't allow them.
+  - Uses the run environment's ambient `gh` auth (needs admin + repo/security scopes).
+※※
+
+⊕meta⊕
+name = "repo-best-practices"
+description = "Apply best-practice GitHub repository SETTINGS via gh, both tiers in one workflow. Universal (free, any visibility): squash-only merges, auto-merge, delete-branch-on-merge, Dependabot alerts + security updates. Advanced (free on PUBLIC repos, needs a PAID plan on PRIVATE): default-branch protection (≥1 review, linear history, no force-push, conversation resolution) + secret scanning & push protection — applied when tier=paid OR the repo is public, else reported as skipped. Pass your plan as prose via --var tier (free|paid; paid/pro/team/enterprise/ghas/advanced all count as paid). Pure bash + gh, deterministic, fail-closed, idempotent, requires admin. Fire via: sky run repo-best-practices --var tier=free|paid [--var repo=owner/name]"
+trigger.manual = true
+output_style = "terse"
+⊕⊕
+
+※※
+Step 1 — preflight. DETERMINISTIC bash + gh, no LLM. Resolve REPO (--var repo → $SKY_REPO, else
+`gh repo view`), REQUIRE the caller be ADMIN (fail-closed), read visibility + default branch,
+normalize the prose tier ($SKY_TIER, default free; paid|pro|team|enterprise|ghas|advanced ⇒ paid),
+and compute advanced = (tier==paid OR visibility==public). Emits ONE JSON line consumed downstream
+via jq. {{var}} is NOT used — bash reads $SKY_* directly and shell-quotes every expansion.
+※※
+
+§preflight§
+bash = "set -u\ncommand -v gh >/dev/null 2>&1 || { echo 'DF_BESTPRACTICES_FAILED: gh not on PATH' >&2; exit 1; }\nREPO=\"${SKY_REPO:-}\"\n[ -n \"$REPO\" ] || REPO=$(gh repo view --json nameWithOwner -q '.nameWithOwner' 2>/dev/null)\necho \"$REPO\" | grep -qE '^[^/]+/[^/]+$' || { echo 'DF_BESTPRACTICES_FAILED: set --var repo=owner/name or run inside a repo' >&2; exit 1; }\nINFO=$(gh repo view \"$REPO\" --json visibility,viewerPermission,defaultBranchRef 2>/dev/null) || { echo \"DF_BESTPRACTICES_FAILED: no access to $REPO\" >&2; exit 1; }\nPERM=$(echo \"$INFO\" | jq -r '.viewerPermission // empty')\n[ \"$PERM\" = ADMIN ] || { echo \"DF_BESTPRACTICES_FAILED: need ADMIN on $REPO (have ${PERM:-none})\" >&2; exit 1; }\nVIS=$(echo \"$INFO\" | jq -r '.visibility // empty | ascii_downcase')\nDEF=$(echo \"$INFO\" | jq -r '.defaultBranchRef.name // empty')\n[ -n \"$DEF\" ] || DEF=main\nTIER_RAW=\"${SKY_TIER:-free}\"\nTIER=free\necho \"$TIER_RAW\" | grep -qiE 'paid|pro|team|enterprise|ghas|advanced' && TIER=paid\nADV=false\n{ [ \"$TIER\" = paid ] || [ \"$VIS\" = public ]; } && ADV=true\njq -n --arg repo \"$REPO\" --arg vis \"$VIS\" --arg def \"$DEF\" --arg tier \"$TIER\" --arg adv \"$ADV\" '{repo:$repo,visibility:$vis,default_branch:$def,tier:$tier,advanced:$adv}'"
+§§
+
+※※
+Step 2 — merge. DETERMINISTIC bash + gh, no LLM. Universal merge hygiene (works on every plan +
+visibility): squash-only (disable merge-commit + rebase), auto-merge enabled, delete head branch
+on merge. Idempotent. REPO comes from preflight's JSON.
+※※
+
+§merge§
+depends_on = ["preflight"]
+bash = "set -u\nREPO=$(echo \"${SKY_OUTPUT_PREFLIGHT:-}\" | jq -r '.repo // empty')\ngh repo edit \"$REPO\" --enable-squash-merge --enable-merge-commit=false --enable-rebase-merge=false --delete-branch-on-merge --enable-auto-merge >/dev/null 2>&1 && echo \"merge: squash-only + auto-merge + delete-branch-on-merge set on $REPO\" || echo \"merge: WARN could not edit repo settings (need admin)\""
+§§
+
+※※
+Step 3 — dependabot. DETERMINISTIC bash + gh, no LLM. Universal supply-chain hygiene: enable
+Dependabot vulnerability alerts and automated security updates (both free, any visibility).
+Each call is an idempotent PUT.
+※※
+
+§dependabot§
+depends_on = ["preflight"]
+bash = "set -u\nREPO=$(echo \"${SKY_OUTPUT_PREFLIGHT:-}\" | jq -r '.repo // empty')\ngh api -X PUT \"repos/$REPO/vulnerability-alerts\" >/dev/null 2>&1 && echo \"  ok Dependabot vulnerability alerts\" || echo \"  warn vulnerability alerts\"\ngh api -X PUT \"repos/$REPO/automated-security-fixes\" >/dev/null 2>&1 && echo \"  ok Dependabot security updates\" || echo \"  warn automated security fixes\""
+§§
+
+※※
+Step 4 — protection. DETERMINISTIC bash + gh, no LLM. ADVANCED: branch protection on the default
+branch. Runs only when advanced==true (tier=paid OR public repo). Requires admin + a paid plan for
+PRIVATE repos; fails gracefully with a re-run hint otherwise. The protection body is built with
+`jq -n` (no shell-quoting of JSON) and PUT via `gh api --input -`. enforce_admins is OFF on purpose.
+※※
+
+§protection§
+depends_on = ["preflight"]
+when = "$preflight.output.advanced == 'true'"
+bash = "set -u\nREPO=$(echo \"${SKY_OUTPUT_PREFLIGHT:-}\" | jq -r '.repo // empty')\nDEF=$(echo \"${SKY_OUTPUT_PREFLIGHT:-}\" | jq -r '.default_branch // empty')\n[ -n \"$DEF\" ] || DEF=main\nBODY=$(jq -n '{required_status_checks:null,enforce_admins:false,required_pull_request_reviews:{required_approving_review_count:1,dismiss_stale_reviews:true,require_code_owner_reviews:false},restrictions:null,required_linear_history:true,allow_force_pushes:false,allow_deletions:false,required_conversation_resolution:true}')\necho \"$BODY\" | gh api -X PUT \"repos/$REPO/branches/$DEF/protection\" --input - >/dev/null 2>&1 && echo \"protection: applied on $DEF (>=1 PR review, dismiss stale, linear history, no force-push, conversation resolution)\" || echo \"protection: WARN not applied — needs admin + a PAID plan on PRIVATE repos (public is free). Re-run with --var tier=paid after upgrading.\""
+§§
+
+※※
+Step 5 — secrets. DETERMINISTIC bash + gh, no LLM. ADVANCED: enable secret scanning + push
+protection. Runs only when advanced==true. Free on PUBLIC repos; PRIVATE repos need GitHub Advanced
+Security — so this fails gracefully (warn) where GHAS is absent. Body built with `jq -n`, PATCH via
+`gh api --input -`.
+※※
+
+§secrets§
+depends_on = ["preflight"]
+when = "$preflight.output.advanced == 'true'"
+bash = "set -u\nREPO=$(echo \"${SKY_OUTPUT_PREFLIGHT:-}\" | jq -r '.repo // empty')\nBODY=$(jq -n '{security_and_analysis:{secret_scanning:{status:\"enabled\"},secret_scanning_push_protection:{status:\"enabled\"}}}')\necho \"$BODY\" | gh api -X PATCH \"repos/$REPO\" --input - >/dev/null 2>&1 && echo \"secrets: secret scanning + push protection enabled\" || echo \"secrets: WARN not enabled — public is free; PRIVATE needs GitHub Advanced Security. Skipped gracefully.\""
+§§
+
+※※
+Step 6 — report. DETERMINISTIC bash, no LLM. The single leaf — depends on all four with
+trigger_rule all_done so it always summarizes. Echoes each node's output; when advanced==false it
+states protection+secrets were SKIPPED and how to apply them; then prints manual follow-ups.
+※※
+
+§report§
+depends_on = ["merge", "dependabot", "protection", "secrets"]
+trigger_rule = "all_done"
+bash = "set -u\nP=\"${SKY_OUTPUT_PREFLIGHT:-}\"\nREPO=$(echo \"$P\" | jq -r '.repo // empty')\nVIS=$(echo \"$P\" | jq -r '.visibility // empty')\nTIER=$(echo \"$P\" | jq -r '.tier // empty')\nADV=$(echo \"$P\" | jq -r '.advanced // empty')\necho '=== GitHub repo best-practices — summary ==='\necho \"repo: $REPO | visibility: $VIS | tier: $TIER | advanced-applied: $ADV\"\necho \"${SKY_OUTPUT_MERGE:-}\"\necho \"${SKY_OUTPUT_DEPENDABOT:-}\"\nif [ \"$ADV\" = true ]; then echo \"${SKY_OUTPUT_PROTECTION:-}\"; echo \"${SKY_OUTPUT_SECRETS:-}\"; else echo 'protection + secret-scanning: SKIPPED (free tier + private repo). These are free on PUBLIC repos and on PAID plans for private — re-run with --var tier=paid after upgrading.'; fi\necho ''\necho '=== Manual / next ==='\necho '- Required status checks: add your CI check names to branch protection once CI exists (required_status_checks is null = none enforced yet).'\necho '- CODEOWNERS: add a CODEOWNERS file and set require_code_owner_reviews=true to enforce per-path reviewers.'\necho '- enforce_admins is OFF (so onboarding cannot lock you out) — turn it ON for a true factory.'"
+§§

@@ -1,5 +1,5 @@
 apiVersion: skylence.io/v1
-version: 2.8.0
+version: 2.9.0
 updated_at: "2026-05-30"
 entries:
   # ── Authoring & lifecycle ──────────────────────────────────────────────
@@ -162,3 +162,9 @@ entries:
     name: darkfactory-onboarding
     description: "Onboard a repo + its GitHub Project into the Dark Factory — the rung-0 board convention: the 9-label lifecycle (labels.yaml), the GitHub Project field schema from the Skylence project template (Status Icebox→Done + Priority/Size/Idea Stage/Bug Stage), the label→Status mapping, and what a project template carries vs what you wire by hand. Pairs with the board-prep workflow. Self-contained; no marketplace plugin needed."
     tags: [meta, darkfactory, onboarding, github, skill]
+
+  - kind: workflow
+    path: meta/workflows/darkfactory/repo-best-practices.sky
+    name: repo-best-practices
+    description: "Apply best-practice GitHub repository settings via gh, both tiers in one workflow. Universal (free, any visibility): squash-only merges, auto-merge, delete-branch-on-merge, Dependabot alerts + security updates. Advanced (free on PUBLIC repos, needs a PAID plan on PRIVATE): default-branch protection (≥1 review, linear history, no force-push, conversation resolution) + secret scanning & push protection — applied when tier=paid OR the repo is public, else reported as skipped. Pass your plan as prose via --var tier (free|paid; paid/pro/team/enterprise/ghas/advanced count as paid). Pure bash + gh, deterministic, fail-closed, idempotent, requires admin. Fire via: sky run repo-best-practices --var tier=free|paid [--var repo=<owner/name>]"
+    tags: [meta, darkfactory, onboarding, github, settings, security, manual]
