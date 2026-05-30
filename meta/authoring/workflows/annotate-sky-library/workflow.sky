@@ -1,0 +1,55 @@
+※※
+# annotate-sky-library
+
+Batch-annotate every unannotated `workflow.sky` in a directory tree in one shot.
+
+Scans `dir` recursively for `workflow.sky` files that contain no `※id※` step-annotation
+block (i.e. no `/※\w+※/` match), then runs `annotate-sky-workflow` for each in sequence.
+
+  (manual run: --var dir=<root>)
+        │
+        ▼
+    ┌──────┐  walk dir; filter workflow.sky files that lack ※id※ blocks
+    │ scan │  output: one parent-dir per line, or "NONE" if everything is already annotated
+    └──────┘
+        │
+        ▼
+    ┌──────────┐  for each dir in scan output:
+    │ run-each │    sky run annotate-sky-workflow --var dir=<dir> --var name=workflow
+    └──────────┘  immediate no-op when scan output is "NONE"
+
+Run:
+  sky run annotate-sky-library --var dir=meta/authoring/workflows
+
+Vars:
+  dir   root of the library to scan (e.g. meta/authoring/workflows). → $SKY_DIR
+※※
+
+⊕meta⊕
+name = "annotate-sky-library"
+description = "Scan a directory for workflow.sky files missing ※id※ step-annotations and run annotate-sky-workflow for each in sequence. Fire via: sky run annotate-sky-library --var dir=<root>"
+trigger.manual = true
+output_style = "terse"
+max_budget_usd = 30
+⊕⊕
+
+※scan※
+Bash: walk $SKY_DIR; for each workflow.sky, check if any line matches ※[alnum_]+※;
+collect parent-dirs of files that have no such match; print them one per line, or
+print "NONE" if all files are already annotated. Exits 1 when dir is missing.
+※※
+
+§scan§
+bash_file = "./scripts/scan.sh"
+§§
+
+※run-each※
+Bash: depends_on scan. Read $SKY_OUTPUT_SCAN line by line; for each dir call
+sky run annotate-sky-workflow --var dir=<dir> --var name=workflow. Exits 0
+immediately (no-op) when scan output is "NONE".
+※※
+
+§run-each§
+depends_on = ["scan"]
+bash_file = "./scripts/run-each.sh"
+§§
