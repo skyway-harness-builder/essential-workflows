@@ -11,3 +11,10 @@ jobs:
       - uses: skylence-be/sky-lint-action@v2
         with:
           paths: "**/*.sky"
+
+  manifest-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Validate manifest.yaml
+        run: bash scripts/validate-manifest.sh

@@ -10,3 +10,6 @@ pre-commit:
     - name: sky lint
       glob: "**/*.sky"
       run: sky lint {staged_files}
+    - name: manifest validate
+      glob: "manifest.yaml"
+      run: bash scripts/validate-manifest.sh
