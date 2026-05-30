@@ -10,7 +10,7 @@ if git diff --quiet -- "$REL" && git diff --cached --quiet -- "$REL"; then echo 
 STAGED=$(git status --porcelain -- "$REL" | awk '{print $2}')
 for p in $STAGED; do
   case "$p" in
-    MISSION.md|FACTORY_RULES.md|.github/*|.sky/*|*/learnings/*|.claude/skills/*/learnings/*) echo "SKILL_FORGE_FAILED: protected path staged: $p" >&2; exit 1 ;;
+    MISSION.md|FACTORY_RULES.md|.github/*|.sky/*|.claude/skills/*/learnings/*|*/learnings/*) echo "SKILL_FORGE_FAILED: protected path staged: $p" >&2; exit 1 ;;
   esac
 done
 BR="skill-forge/$NAME-$(date -u +%Y%m%d-%H%M%S)"

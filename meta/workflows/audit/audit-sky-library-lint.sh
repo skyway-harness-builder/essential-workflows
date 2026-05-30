@@ -9,7 +9,7 @@ for f in "$SKY_DIR"/*.sky; do
   else
     fail=$((fail+1))
     echo "FAIL  $(basename "$f")"
-    echo "$out" | sed 's/^/        /'
+    while IFS= read -r line; do echo "        $line"; done <<< "$out"
   fi
 done
 echo "[audit] $pass passed, $fail failed"
