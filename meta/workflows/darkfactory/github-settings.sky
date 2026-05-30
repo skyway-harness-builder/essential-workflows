@@ -1,0 +1,181 @@
+※※
+# github-settings — GitHub org/account + repo settings hardening (free + paid, two scopes)
+
+Apply best-practice GitHub SETTINGS via `gh` — TWO SCOPES in one workflow: org/account-level
+general defaults AND repository-level hardening. GENERIC: resolves repo from the run's working
+dir (or `--var repo=owner/name`) and org from the repo owner (or `--var org=<org>`). Pure bash
++ `gh`, deterministic, fail-closed, idempotent. No LLM, no budget.
+
+SCOPE — what to apply, controlled by `--var scope=general|repo|both` (default `both`):
+  • general — org/account-wide defaults (default_repository_permission, web_commit_signoff_required,
+    Dependabot defaults for NEW repos). Requires the caller to be an ORG OWNER on $ORG.
+    Skipped (with reason) when the target is a personal account or the caller is not an owner.
+  • repo    — per-repository hardening on the target repo. Requires ADMIN on the repo.
+  • both    — (default) apply both in one run.
+
+TIER — pass your plan as prose via `--var tier=free|paid` (default `free`). Anything matching
+paid/pro/team/enterprise/ghas/advanced is normalized to `paid`. The split mirrors what GitHub gates:
+
+  ALWAYS (free, any visibility) — applied unconditionally when in scope:
+    • Org general (scope=general|both): default_repository_permission=read,
+      web_commit_signoff_required=true, dependabot alerts + security updates for NEW repos.
+    • Repo (scope=repo|both): squash-only merges, auto-merge, delete-branch-on-merge,
+      allow-update-branch, issues+wiki+projects enabled; Dependabot alerts + auto-fixes on repo.
+
+  ADVANCED (free on PUBLIC repos; needs a PAID plan on PRIVATE) — applied when tier=paid OR public:
+    • Org general (paid only): advanced_security_enabled_for_new_repositories,
+      secret_scanning_enabled_for_new_repositories,
+      secret_scanning_push_protection_enabled_for_new_repositories.
+    • Repo: branch protection on the default branch (>=1 PR review, dismiss stale, linear history,
+      no force-push, conversation resolution required); secret scanning + push protection.
+
+  NOT SETTABLE via API (reported only):
+    • two_factor_requirement_enabled — read-only in the org PATCH endpoint; reported as current value.
+
+  (sky run github-settings --var scope=general|repo|both --var tier=free|paid
+                            [--var org=<org>] [--var repo=owner/name])
+        │
+        ▼
+   ┌──────────────┐  bash + gh. Resolve REPO/OWNER/ORG, normalize SCOPE + TIER, read visibility
+   │  preflight   │  + viewerPermission + defaultBranchRef. Detect org vs user, check caller role.
+   └──────────────┘  Compute do_repo, do_general, advanced, repo_advanced. Fail-closed. Emits JSON.
+        │ depends_on (preflight)
+        ├──────────────┬──────────────┬──────────────────────────┬──────────────────────┐
+        │ when         │ when         │ when                     │ when                 │ when
+        │ do_general   │ do_repo      │ do_repo                  │ repo_advanced        │ repo_advanced
+        ▼              ▼              ▼                           ▼                      ▼
+   ┌──────────┐  ┌──────────┐  ┌──────────────┐  ┌────────────────────┐  ┌──────────────────┐
+   │orggeneral│  │repogeneral│  │repodependabot│  │  repoprotection    │  │   reposecrets    │
+   └──────────┘  └──────────┘  └──────────────┘  └────────────────────┘  └──────────────────┘
+   org-wide       repo merge    Dependabot vuln    branch protection        secret scanning
+   defaults       hygiene +     alerts + auto-     default branch           + push protection
+   (paid fields   features      fixes (free,       (paid/public only)       (paid/public only)
+   gated in bash) (universal)   universal)
+        └──────────────┴──────────────┴──────────────────────────┴──────────────────────┘
+                        │ depends_on [all], trigger_rule all_done
+                        ▼
+                 ┌──────────────┐  bash. Summarize applied vs SKIPPED per scope + tier;
+                 │   report     │  echo general_skip_reason; manual follow-ups.
+                 └──────────────┘
+
+SAFETY:
+  - Fail-closed: aborts at preflight unless the caller is ADMIN on the repo (when do_repo) and/or
+    an ORG OWNER (when do_general). Exits 1 with a clear reason when nothing is actionable.
+  - Idempotent: every call is a settings upsert; re-running converges to the same state.
+  - enforce_admins is left OFF so onboarding cannot lock the admin out (report says to enable it).
+  - two_factor_requirement_enabled is NOT set via PATCH (read-only in the API) — current value is
+    reported so you can enable it manually in org settings.
+  - Advanced mutations fail GRACEFULLY (warn, never crash) when the plan/visibility doesn't allow them.
+  - Uses the run environment's ambient `gh` auth (needs admin + repo + security + read:org scopes).
+※※
+
+⊕meta⊕
+name = "github-settings"
+description = "Apply best-practice GitHub settings via gh — two scopes in one workflow: org/account-level general defaults (default_repository_permission, web_commit_signoff_required, org Dependabot defaults for new repos; paid: org advanced-security/secret-scanning defaults) AND repository hardening (squash-only merges, auto-merge, delete-branch-on-merge, allow-update-branch, Dependabot alerts; advanced: branch protection + secret scanning). Scope: --var scope=general|repo|both (default both). Tier prose: --var tier=free|paid (paid/pro/team/enterprise/ghas/advanced all count as paid). Org general requires ORG OWNER; skipped with reason for personal accounts or non-owners. Fail-closed, idempotent, pure bash + gh, no LLM. Fire via: sky run github-settings --var scope=both --var tier=free|paid [--var org=<org>] [--var repo=owner/name]"
+trigger.manual = true
+output_style = "terse"
+⊕⊕
+
+※※
+Step 1 — preflight. DETERMINISTIC bash + gh, no LLM. Resolve REPO (--var repo -> $SKY_REPO, else
+`gh repo view`), OWNER (left part of REPO), ORG (--var org -> $SKY_ORG, else OWNER). Normalize
+SCOPE ($SKY_SCOPE: general|repo|both, default both) and TIER ($SKY_TIER: paid prose -> "paid",
+else "free"). Read repo visibility + viewerPermission + defaultBranchRef. Compute booleans:
+  do_repo      = scope in {repo, both}
+  want_general = scope in {general, both}
+  advanced     = tier==paid OR visibility==public
+  do_general   = want_general AND gh api orgs/$ORG succeeds (is an org)
+                 AND gh api user/memberships/orgs/$ORG .role == "admin" (caller is owner)
+  repo_advanced = do_repo AND advanced
+Fail-closed: if do_repo, require ADMIN on the repo. If scope=general-only and do_general is false,
+exit 1. If neither do_repo nor do_general, exit 1. Emits ONE JSON line with all gating booleans
+as "true"/"false" strings. {{var}} is NOT used — bash reads $SKY_* directly and shell-quotes every
+expansion.
+※※
+
+§preflight§
+bash = "set -u\ncommand -v gh >/dev/null 2>&1 || { echo 'GH_SETTINGS_FAILED: gh not on PATH' >&2; exit 1; }\ncommand -v jq >/dev/null 2>&1 || { echo 'GH_SETTINGS_FAILED: jq not on PATH' >&2; exit 1; }\nSCOPE_RAW=\"${SKY_SCOPE:-both}\"\ncase \"$SCOPE_RAW\" in general|repo|both) SCOPE=\"$SCOPE_RAW\" ;; *) echo 'GH_SETTINGS_FAILED: --var scope must be general, repo, or both' >&2; exit 1 ;; esac\nTIER_RAW=\"${SKY_TIER:-free}\"\nTIER=free\necho \"$TIER_RAW\" | grep -qiE 'paid|pro|team|enterprise|ghas|advanced' && TIER=paid\nREPO=\"${SKY_REPO:-}\"\n[ -n \"$REPO\" ] || REPO=$(gh repo view --json nameWithOwner -q '.nameWithOwner' 2>/dev/null)\necho \"$REPO\" | grep -qE '^[^/]+/[^/]+$' || { echo 'GH_SETTINGS_FAILED: set --var repo=owner/name or run inside a repo' >&2; exit 1; }\nOWNER=$(echo \"$REPO\" | cut -d/ -f1)\nORG=\"${SKY_ORG:-$OWNER}\"\ncase \"$SCOPE\" in\nrepo|both)\n  INFO=$(gh repo view \"$REPO\" --json visibility,viewerPermission,defaultBranchRef 2>/dev/null) || { echo \"GH_SETTINGS_FAILED: no access to $REPO\" >&2; exit 1; }\n  PERM=$(echo \"$INFO\" | jq -r '.viewerPermission // empty')\n  [ \"$PERM\" = ADMIN ] || { echo \"GH_SETTINGS_FAILED: need ADMIN on $REPO (have ${PERM:-none}). Use --var scope=general to skip repo steps.\" >&2; exit 1; }\n  VIS=$(echo \"$INFO\" | jq -r '.visibility // empty | ascii_downcase')\n  DEF=$(echo \"$INFO\" | jq -r '.defaultBranchRef.name // empty')\n  [ -n \"$DEF\" ] || DEF=main\n  DO_REPO=true\n  ;;\n*)\n  VIS=unknown\n  DEF=unknown\n  PERM=N/A\n  DO_REPO=false\n  ;;\nesac\nWANT_GEN=false\ncase \"$SCOPE\" in general|both) WANT_GEN=true ;; esac\nGEN_SKIP=''\nDO_GEN=false\nif [ \"$WANT_GEN\" = true ]; then\n  if ! gh api \"orgs/$ORG\" >/dev/null 2>&1; then\n    GEN_SKIP=\"$ORG is a personal account, not an org — org general settings skipped\"\n  else\n    MEM_ROLE=$(gh api \"user/memberships/orgs/$ORG\" --jq '.role // empty' 2>/dev/null)\n    if [ \"$MEM_ROLE\" = admin ]; then\n      DO_GEN=true\n    else\n      GEN_SKIP=\"caller is not an org owner on $ORG (role=${MEM_ROLE:-none}) — org general settings skipped\"\n    fi\n  fi\nfi\nADV=false\n{ [ \"$TIER\" = paid ] || [ \"$VIS\" = public ]; } && ADV=true\nREPO_ADV=false\n{ [ \"$DO_REPO\" = true ] && [ \"$ADV\" = true ]; } && REPO_ADV=true\nif [ \"$DO_REPO\" = false ] && [ \"$DO_GEN\" = false ]; then\n  echo \"GH_SETTINGS_FAILED: nothing to apply — scope=$SCOPE, do_repo=false, do_general=false. Reason: ${GEN_SKIP:-check scope/permissions}\" >&2; exit 1\nfi\nif [ \"$SCOPE\" = general ] && [ \"$DO_GEN\" = false ]; then\n  echo \"GH_SETTINGS_FAILED: scope=general but org general is not actionable: $GEN_SKIP\" >&2; exit 1\nfi\njq -n \\\n  --arg repo \"$REPO\" --arg owner \"$OWNER\" --arg org \"$ORG\" \\\n  --arg vis \"$VIS\" --arg def \"$DEF\" --arg tier \"$TIER\" --arg scope \"$SCOPE\" \\\n  --arg do_repo \"$DO_REPO\" --arg do_general \"$DO_GEN\" \\\n  --arg advanced \"$ADV\" --arg repo_advanced \"$REPO_ADV\" \\\n  --arg general_skip_reason \"$GEN_SKIP\" \\\n  '{repo:$repo,owner:$owner,org:$org,visibility:$vis,default_branch:$def,tier:$tier,scope:$scope,do_repo:$do_repo,do_general:$do_general,advanced:$advanced,repo_advanced:$repo_advanced,general_skip_reason:$general_skip_reason}'"
+§§
+
+※※
+Step 2 — orggeneral. DETERMINISTIC bash + gh, no LLM. Runs only when do_general==true.
+PATCH orgs/$ORG with a jq -n body. Free/always fields: default_repository_permission=read,
+web_commit_signoff_required=true, dependabot_alerts_enabled_for_new_repositories=true,
+dependabot_security_updates_enabled_for_new_repositories=true. Paid-only fields (read tier from
+preflight JSON; branch in bash): advanced_security_enabled_for_new_repositories=true,
+secret_scanning_enabled_for_new_repositories=true,
+secret_scanning_push_protection_enabled_for_new_repositories=true.
+two_factor_requirement_enabled is NOT set (read-only in PATCH) — GET current value and report only.
+Fails gracefully (warn, never crash).
+※※
+
+§orggeneral§
+depends_on = ["preflight"]
+when = "$preflight.output.do_general == 'true'"
+bash = "set -u\nP=\"${SKY_OUTPUT_PREFLIGHT:-}\"\nORG=$(echo \"$P\" | jq -r '.org // empty')\nTIER=$(echo \"$P\" | jq -r '.tier // empty')\nTFA=$(gh api \"orgs/$ORG\" --jq '.two_factor_requirement_enabled // \"unknown\"' 2>/dev/null)\nif [ \"$TIER\" = paid ]; then\n  BODY=$(jq -n '{default_repository_permission:\"read\",web_commit_signoff_required:true,dependabot_alerts_enabled_for_new_repositories:true,dependabot_security_updates_enabled_for_new_repositories:true,advanced_security_enabled_for_new_repositories:true,secret_scanning_enabled_for_new_repositories:true,secret_scanning_push_protection_enabled_for_new_repositories:true}')\nelse\n  BODY=$(jq -n '{default_repository_permission:\"read\",web_commit_signoff_required:true,dependabot_alerts_enabled_for_new_repositories:true,dependabot_security_updates_enabled_for_new_repositories:true}')\nfi\nOUT=$(echo \"$BODY\" | gh api -X PATCH \"orgs/$ORG\" --input - 2>&1)\nif echo \"$OUT\" | grep -q '\"id\"'; then\n  echo \"orggeneral: org defaults applied on $ORG (tier=$TIER)\"\n  echo \"  ok default_repository_permission=read, web_commit_signoff_required=true, dependabot defaults for new repos\"\n  [ \"$TIER\" = paid ] && echo \"  ok advanced_security/secret_scanning/push_protection enabled for new repos (paid)\"\nelse\n  echo \"orggeneral: WARN could not PATCH org settings on $ORG — $OUT\"\nfi\necho \"  info two_factor_requirement_enabled=$TFA (read-only in the org PATCH API — enable via org Settings > Security if needed)\""
+§§
+
+※※
+Step 3 — repogeneral. DETERMINISTIC bash + gh, no LLM. Runs only when do_repo==true. Universal
+repo merge hygiene + feature flags: squash-only (disable merge-commit + rebase), auto-merge,
+delete-branch-on-merge, allow-update-branch (keeps branches up-to-date with base), issues+wiki+
+projects enabled. Idempotent gh repo edit. REPO comes from preflight JSON.
+※※
+
+§repogeneral§
+depends_on = ["preflight"]
+when = "$preflight.output.do_repo == 'true'"
+bash = "set -u\nREPO=$(echo \"${SKY_OUTPUT_PREFLIGHT:-}\" | jq -r '.repo // empty')\ngh repo edit \"$REPO\" --enable-squash-merge --enable-merge-commit=false --enable-rebase-merge=false --enable-auto-merge --delete-branch-on-merge --allow-update-branch --enable-issues --enable-wiki --enable-projects >/dev/null 2>&1 \\\n  && echo \"repogeneral: merge hygiene + features set on $REPO (squash-only, auto-merge, delete-branch, allow-update-branch, issues/wiki/projects enabled)\" \\\n  || echo \"repogeneral: WARN could not edit repo settings — need admin on $REPO\""
+§§
+
+※※
+Step 4 — repodependabot. DETERMINISTIC bash + gh, no LLM. Runs only when do_repo==true. Universal
+supply-chain hygiene: enable Dependabot vulnerability alerts and automated security updates (both
+free, any visibility). Each call is an idempotent PUT with no body.
+※※
+
+§repodependabot§
+depends_on = ["preflight"]
+when = "$preflight.output.do_repo == 'true'"
+bash = "set -u\nREPO=$(echo \"${SKY_OUTPUT_PREFLIGHT:-}\" | jq -r '.repo // empty')\ngh api -X PUT \"repos/$REPO/vulnerability-alerts\" >/dev/null 2>&1 && echo \"  ok Dependabot vulnerability alerts\" || echo \"  warn vulnerability alerts\"\ngh api -X PUT \"repos/$REPO/automated-security-fixes\" >/dev/null 2>&1 && echo \"  ok Dependabot automated security fixes\" || echo \"  warn automated security fixes\"\necho \"repodependabot: Dependabot enabled on $REPO\""
+§§
+
+※※
+Step 5 — repoprotection. DETERMINISTIC bash + gh, no LLM. ADVANCED: branch protection on the
+default branch. Runs only when repo_advanced==true (do_repo AND (tier=paid OR public repo)).
+Requires admin + a paid plan for PRIVATE repos; fails gracefully with a re-run hint otherwise.
+The protection body is built with `jq -n` (no shell-quoting of JSON) and PUT via `gh api --input -`.
+enforce_admins is OFF on purpose (so onboarding cannot lock the admin out).
+※※
+
+§repoprotection§
+depends_on = ["preflight"]
+when = "$preflight.output.repo_advanced == 'true'"
+bash = "set -u\nREPO=$(echo \"${SKY_OUTPUT_PREFLIGHT:-}\" | jq -r '.repo // empty')\nDEF=$(echo \"${SKY_OUTPUT_PREFLIGHT:-}\" | jq -r '.default_branch // empty')\n[ -n \"$DEF\" ] || DEF=main\nBODY=$(jq -n '{required_status_checks:null,enforce_admins:false,required_pull_request_reviews:{required_approving_review_count:1,dismiss_stale_reviews:true,require_code_owner_reviews:false},restrictions:null,required_linear_history:true,allow_force_pushes:false,allow_deletions:false,required_conversation_resolution:true}')\necho \"$BODY\" | gh api -X PUT \"repos/$REPO/branches/$DEF/protection\" --input - >/dev/null 2>&1 \\\n  && echo \"repoprotection: applied on $DEF (>=1 PR review, dismiss stale, linear history, no force-push, conversation resolution)\" \\\n  || echo \"repoprotection: WARN not applied — needs admin + a PAID plan on PRIVATE repos (public is free). Re-run with --var tier=paid after upgrading.\""
+§§
+
+※※
+Step 6 — reposecrets. DETERMINISTIC bash + gh, no LLM. ADVANCED: enable secret scanning + push
+protection. Runs only when repo_advanced==true. Free on PUBLIC repos; PRIVATE repos need GitHub
+Advanced Security — fails gracefully (warn) where GHAS is absent. Body built with `jq -n`, PATCH
+via `gh api --input -`.
+※※
+
+§reposecrets§
+depends_on = ["preflight"]
+when = "$preflight.output.repo_advanced == 'true'"
+bash = "set -u\nREPO=$(echo \"${SKY_OUTPUT_PREFLIGHT:-}\" | jq -r '.repo // empty')\nBODY=$(jq -n '{security_and_analysis:{secret_scanning:{status:\"enabled\"},secret_scanning_push_protection:{status:\"enabled\"}}}')\necho \"$BODY\" | gh api -X PATCH \"repos/$REPO\" --input - >/dev/null 2>&1 \\\n  && echo \"reposecrets: secret scanning + push protection enabled\" \\\n  || echo \"reposecrets: WARN not enabled — public is free; PRIVATE needs GitHub Advanced Security. Skipped gracefully.\""
+§§
+
+※※
+Step 7 — report. DETERMINISTIC bash, no LLM. The single leaf — depends on ALL prior nodes with
+trigger_rule all_done so it always summarizes regardless of which nodes ran. Echoes each node's
+output; reports what was applied vs SKIPPED per scope + tier; prints general_skip_reason if set;
+lists manual follow-ups that the API cannot do.
+※※
+
+§report§
+depends_on = ["orggeneral", "repogeneral", "repodependabot", "repoprotection", "reposecrets"]
+trigger_rule = "all_done"
+bash = "set -u\nP=\"${SKY_OUTPUT_PREFLIGHT:-}\"\nREPO=$(echo \"$P\" | jq -r '.repo // empty')\nORG=$(echo \"$P\" | jq -r '.org // empty')\nVIS=$(echo \"$P\" | jq -r '.visibility // empty')\nTIER=$(echo \"$P\" | jq -r '.tier // empty')\nSCOPE=$(echo \"$P\" | jq -r '.scope // empty')\nADV=$(echo \"$P\" | jq -r '.advanced // empty')\nDO_REPO=$(echo \"$P\" | jq -r '.do_repo // empty')\nDO_GEN=$(echo \"$P\" | jq -r '.do_general // empty')\nREPO_ADV=$(echo \"$P\" | jq -r '.repo_advanced // empty')\nGEN_SKIP=$(echo \"$P\" | jq -r '.general_skip_reason // empty')\necho '=== GitHub settings — summary ==='\necho \"scope: $SCOPE | repo: $REPO | org: $ORG | visibility: $VIS | tier: $TIER | advanced: $ADV\"\nif [ \"$DO_GEN\" = true ]; then\n  echo '--- org general ---'\n  echo \"${SKY_OUTPUT_ORGGENERAL:-}\"\nelse\n  echo \"--- org general: SKIPPED${GEN_SKIP:+ — $GEN_SKIP}\"\nfi\nif [ \"$DO_REPO\" = true ]; then\n  echo '--- repo ---'\n  echo \"${SKY_OUTPUT_REPOGENERAL:-}\"\n  echo \"${SKY_OUTPUT_REPODEPENDABOT:-}\"\n  if [ \"$REPO_ADV\" = true ]; then\n    echo \"${SKY_OUTPUT_REPOPROTECTION:-}\"\n    echo \"${SKY_OUTPUT_REPOSECRETS:-}\"\n  else\n    echo 'repoprotection + reposecrets: SKIPPED (free tier + private repo). Free on PUBLIC; needs PAID plan on PRIVATE — re-run with --var tier=paid after upgrading.'\n  fi\nelse\n  echo \"--- repo: SKIPPED (scope=$SCOPE, do_repo=false)\"\nfi\necho ''\necho '=== Manual / next ==='\necho '- two_factor_requirement_enabled: set via org Settings > Security > Require 2FA (read-only in the org PATCH API).'\necho '- Required status checks: add your CI check names to branch protection once CI exists (required_status_checks is null = none enforced yet).'\necho '- CODEOWNERS: add a CODEOWNERS file and set require_code_owner_reviews=true for per-path reviewers.'\necho \"- enforce_admins is OFF (so onboarding cannot lock you out) — enable for a true factory: gh api -X PATCH repos/$REPO/branches/<branch>/protection/enforce_admins -f enabled=true\"\necho '- Ruleset (optional): replace classic branch protection with a repository ruleset for merge queue, bypass lists, required workflows.'"
+§§

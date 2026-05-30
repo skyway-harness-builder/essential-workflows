@@ -1,5 +1,5 @@
 apiVersion: skylence.io/v1
-version: 2.9.0
+version: 2.10.0
 updated_at: "2026-05-30"
 entries:
   # ── Authoring & lifecycle ──────────────────────────────────────────────
@@ -164,7 +164,7 @@ entries:
     tags: [meta, darkfactory, onboarding, github, skill]
 
   - kind: workflow
-    path: meta/workflows/darkfactory/repo-best-practices.sky
-    name: repo-best-practices
-    description: "Apply best-practice GitHub repository settings via gh, both tiers in one workflow. Universal (free, any visibility): squash-only merges, auto-merge, delete-branch-on-merge, Dependabot alerts + security updates. Advanced (free on PUBLIC repos, needs a PAID plan on PRIVATE): default-branch protection (≥1 review, linear history, no force-push, conversation resolution) + secret scanning & push protection — applied when tier=paid OR the repo is public, else reported as skipped. Pass your plan as prose via --var tier (free|paid; paid/pro/team/enterprise/ghas/advanced count as paid). Pure bash + gh, deterministic, fail-closed, idempotent, requires admin. Fire via: sky run repo-best-practices --var tier=free|paid [--var repo=<owner/name>]"
+    path: meta/workflows/darkfactory/github-settings.sky
+    name: github-settings
+    description: "Apply best-practice GitHub settings via gh — two scopes in one workflow: org/account-level general defaults (default_repository_permission, web_commit_signoff_required, org Dependabot defaults for new repos; paid: org advanced-security/secret-scanning defaults) AND repository hardening (squash-only merges, auto-merge, delete-branch-on-merge, allow-update-branch, Dependabot alerts; advanced: branch protection + secret scanning). Scope: --var scope=general|repo|both (default both). Tier prose: --var tier=free|paid (paid/pro/team/enterprise/ghas/advanced all count as paid). Org general requires ORG OWNER; skipped with reason for personal accounts or non-owners. Fail-closed, idempotent, pure bash + gh, no LLM. Fire via: sky run github-settings --var scope=both --var tier=free|paid [--var org=<org>] [--var repo=owner/name]"
     tags: [meta, darkfactory, onboarding, github, settings, security, manual]
