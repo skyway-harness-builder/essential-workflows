@@ -17,7 +17,7 @@ links the project to the repo, verifies the project carries the dark-factory fie
 (from the Skylence project template), and prints the two MANUAL UI steps the API can't do.
 
 Two vocabularies it reconciles:
-  • LABELS  (repo, what the ladder rungs key off):  labels.yaml — triaging · accepted ·
+  • LABELS  (repo, what the ladder rungs key off):  data/labels.yaml — triaging · accepted ·
     ready-for-sky · in-progress · needs-review · approved · needs-fix · rejected · escalated
   • COLUMNS (project Status field, the human Kanban, from org project #1 "Skylence project
     template"):  Icebox · Backlog · Ready · Agent Running · Awaiting Review ·
@@ -56,7 +56,7 @@ SAFETY:
 
 ⊕meta⊕
 name = "board-prep"
-description = "Dark Factory rung 0 (onboarding, GitHub): idempotently create the 9 lifecycle labels (labels.yaml) on the caller's repo, link a GitHub Project to the repo, verify the project carries the dark-factory field schema (Status: Icebox→Done plus Priority/Size/Idea Stage/Bug Stage, from the Skylence project template), and print the manual UI steps the GitHub API cannot do (auto-add workflow + label→Status automation). A project template carries board STRUCTURE but never repo labels or auto-add wiring — this fills that gap. Pure bash + gh, deterministic, fail-closed, idempotent. Fire via: sky run board-prep --var project=<project-number> [--var owner=<org-or-user>] [--var repo=<owner/name>]"
+description = "Dark Factory rung 0 (onboarding, GitHub): idempotently create the 9 lifecycle labels (data/labels.yaml) on the caller's repo, link a GitHub Project to the repo, verify the project carries the dark-factory field schema (Status: Icebox→Done plus Priority/Size/Idea Stage/Bug Stage, from the Skylence project template), and print the manual UI steps the GitHub API cannot do (auto-add workflow + label→Status automation). A project template carries board STRUCTURE but never repo labels or auto-add wiring — this fills that gap. Pure bash + gh, deterministic, fail-closed, idempotent. Fire via: sky run board-prep --var project=<project-number> [--var owner=<org-or-user>] [--var repo=<owner/name>]"
 trigger.manual = true
 output_style = "terse"
 ⊕⊕
@@ -71,19 +71,19 @@ the `project` auth scope). Emits ONE JSON line {owner,repo,project} consumed dow
 ※※
 
 §preflight§
-bash_file = "./preflight.sh"
+bash_file = "./scripts/preflight.sh"
 §§
 
 ※※
 Step 2 — labels. DETERMINISTIC bash + gh, no LLM. Create the 9 repo-scoped lifecycle labels from
-labels.yaml on the target repo. `gh label create --force` is an idempotent UPSERT (creates, or
+data/labels.yaml on the target repo. `gh label create --force` is an idempotent UPSERT (creates, or
 overwrites color/description if the label already exists), so re-runs are safe. Labels are the one
 thing no project template can ever provide (they are repo-scoped). REPO comes from preflight's JSON.
 ※※
 
 §labels§
 depends_on = ["preflight"]
-bash_file = "./labels.sh"
+bash_file = "./scripts/labels.sh"
 §§
 
 ※※
@@ -94,7 +94,7 @@ not treated as an error. OWNER/REPO/PROJECT come from preflight's JSON.
 
 §link§
 depends_on = ["preflight"]
-bash_file = "./link.sh"
+bash_file = "./scripts/link.sh"
 §§
 
 ※※
@@ -108,7 +108,7 @@ template's job; this only tells you whether the template was applied. grep is a 
 
 §fields§
 depends_on = ["preflight"]
-bash_file = "./fields.sh"
+bash_file = "./scripts/fields.sh"
 §§
 
 ※※
@@ -121,5 +121,5 @@ two MANUAL Projects-UI steps that have NO public API: (1) enable Auto-add filter
 §report§
 depends_on = ["labels", "link", "fields"]
 trigger_rule = "all_done"
-bash_file = "./report.sh"
+bash_file = "./scripts/report.sh"
 §§

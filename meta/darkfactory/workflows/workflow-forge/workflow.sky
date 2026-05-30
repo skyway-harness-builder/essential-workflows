@@ -233,7 +233,7 @@ only ever lands in a file, never in an eval/source sink).
 
 §write-candidate§
 depends_on = ["author"]
-bash_file = "./write-candidate.sh"
+bash_file = "./scripts/write-candidate.sh"
 §§
 
 ※※
@@ -292,7 +292,7 @@ for the run log. FAIL-CLOSED: only an explicit empty `[]` yields clean=true.
 
 §lint§
 depends_on = ["fix-loop"]
-bash_file = "./lint.sh"
+bash_file = "./scripts/lint.sh"
 §§
 
 ※※
@@ -307,7 +307,7 @@ non-empty JSON array → dry_ok=true. Emit ONE clean JSON line `{"dry_ok":"true|
 §dry-run§
 depends_on = ["lint"]
 when = "$lint.output.clean == 'true'"
-bash_file = "./dry-run.sh"
+bash_file = "./scripts/dry-run.sh"
 §§
 
 ※※
@@ -360,7 +360,7 @@ clean JSON line `{"delivers":"true|false"}`.
 §gate§
 depends_on = ["lint", "dry-run", "judge"]
 trigger_rule = "all_done"
-bash_file = "./gate.sh"
+bash_file = "./scripts/gate.sh"
 §§
 
 ※※
@@ -416,5 +416,5 @@ artifact for the dry-run). Best-effort: a missing file is fine.
 §cleanup§
 depends_on = ["gate", "finalize"]
 trigger_rule = "all_done"
-bash_file = "./cleanup.sh"
+bash_file = "./scripts/cleanup.sh"
 §§

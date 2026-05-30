@@ -1,6 +1,6 @@
 ---
 name: darkfactory-onboarding
-description: Onboard a repo + its GitHub Project into the Dark Factory — the rung-0 board convention. The 9-label lifecycle (labels.yaml), the GitHub Project field schema from the Skylence project template (Status Icebox→Done + Priority/Size/Idea Stage/Bug Stage), the label→Status mapping, and exactly what a project template carries vs what you must wire by hand. Pairs with the board-prep workflow.
+description: Onboard a repo + its GitHub Project into the Dark Factory — the rung-0 board convention. The 9-label lifecycle (data/labels.yaml), the GitHub Project field schema from the Skylence project template (Status Icebox→Done + Priority/Size/Idea Stage/Bug Stage), the label→Status mapping, and exactly what a project template carries vs what you must wire by hand. Pairs with the board-prep workflow.
 category: darkfactory
 tags: [darkfactory, onboarding, github, projects, board, labels, lifecycle]
 ---
@@ -15,13 +15,13 @@ The factory state lives in **two places** that must agree:
 
 | Layer | Scope | Who reads it | Source of truth |
 |---|---|---|---|
-| **Labels** | repository | the ladder rungs (triage/build/verify key off them programmatically) | `labels.yaml` |
+| **Labels** | repository | the ladder rungs (triage/build/verify key off them programmatically) | `data/labels.yaml` |
 | **Status column** | the GitHub Project | humans (the Kanban) | the Skylence project template |
 
 ## 1. The 9-label lifecycle (repo-scoped)
 
 An issue carries **exactly one** lifecycle label at a time; the factory advances it, a human can
-override at any gate. From `labels.yaml`:
+override at any gate. From `data/labels.yaml`:
 
 ```
 triaging ──► accepted ──► ready-for-sky ──► in-progress ──► needs-review

@@ -120,7 +120,7 @@ because skill names there are not {{var}}-templated. No destructive commands (re
 ※※
 
 §read-skill§
-bash_file = "./read-skill.sh"
+bash_file = "./scripts/read-skill.sh"
 §§
 
 ※※
@@ -257,7 +257,7 @@ runs a cheap, bounded improve loop. The costlier mistake is gated against.
 
 §gate§
 depends_on = ["judge"]
-bash_file = "./gate.sh"
+bash_file = "./scripts/gate.sh"
 §§
 
 ※※
@@ -330,7 +330,7 @@ the improved files live in improve's worktree, so finalize re-runs the authorita
 
 §lint-scripts§
 depends_on = ["improve"]
-bash_file = "./lint-scripts.sh"
+bash_file = "./scripts/lint-scripts.sh"
 §§
 
 ※※
@@ -347,5 +347,5 @@ of improve's prompt-level boundary). No destructive shell patterns. SKILL_REPO/s
 §finalize§
 depends_on = ["lint-scripts"]
 isolation = "worktree"
-bash_file = "./finalize.sh"
+bash_file = "./scripts/finalize.sh"
 §§

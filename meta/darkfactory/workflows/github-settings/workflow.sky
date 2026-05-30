@@ -94,7 +94,7 @@ expansion.
 ※※
 
 §preflight§
-bash_file = "./preflight.sh"
+bash_file = "./scripts/preflight.sh"
 §§
 
 ※※
@@ -112,7 +112,7 @@ Fails gracefully (warn, never crash).
 §orggeneral§
 depends_on = ["preflight"]
 when = "$preflight.output.do_general == 'true'"
-bash_file = "./orggeneral.sh"
+bash_file = "./scripts/orggeneral.sh"
 §§
 
 ※※
@@ -125,7 +125,7 @@ projects enabled. Idempotent gh repo edit. REPO comes from preflight JSON.
 §repogeneral§
 depends_on = ["preflight"]
 when = "$preflight.output.do_repo == 'true'"
-bash_file = "./repogeneral.sh"
+bash_file = "./scripts/repogeneral.sh"
 §§
 
 ※※
@@ -137,7 +137,7 @@ free, any visibility). Each call is an idempotent PUT with no body.
 §repodependabot§
 depends_on = ["preflight"]
 when = "$preflight.output.do_repo == 'true'"
-bash_file = "./repodependabot.sh"
+bash_file = "./scripts/repodependabot.sh"
 §§
 
 ※※
@@ -151,7 +151,7 @@ enforce_admins is OFF on purpose (so onboarding cannot lock the admin out).
 §repoprotection§
 depends_on = ["preflight"]
 when = "$preflight.output.repo_advanced == 'true'"
-bash_file = "./repoprotection.sh"
+bash_file = "./scripts/repoprotection.sh"
 §§
 
 ※※
@@ -164,7 +164,7 @@ via `gh api --input -`.
 §reposecrets§
 depends_on = ["preflight"]
 when = "$preflight.output.repo_advanced == 'true'"
-bash_file = "./reposecrets.sh"
+bash_file = "./scripts/reposecrets.sh"
 §§
 
 ※※
@@ -177,5 +177,5 @@ lists manual follow-ups that the API cannot do.
 §report§
 depends_on = ["orggeneral", "repogeneral", "repodependabot", "repoprotection", "reposecrets"]
 trigger_rule = "all_done"
-bash_file = "./report.sh"
+bash_file = "./scripts/report.sh"
 §§
