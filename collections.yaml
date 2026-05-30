@@ -2,10 +2,12 @@ apiVersion: skylence.io/v1
 kind: collections
 
 collections:
-  - name: skylence-workflows
+  - name: meta
     repo: skylence-be/workflows
-    title: "Skylence"
-    description: "Official .sky workflow and skill library from the Skylence team. Meta-workflows for creating, auditing, documenting, and managing your own .sky library."
+    title: "Meta"
+    description: "Workflows and skills for managing your own .sky library — create, audit, document, and maintain workflows with eval-driven forges."
     author:
       name: Skylence
       url: https://github.com/skylence-be
+    match:
+      - meta/
