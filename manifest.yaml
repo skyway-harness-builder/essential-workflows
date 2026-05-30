@@ -1,5 +1,5 @@
 apiVersion: skylence.io/v1
-version: 2.8.0
+version: 2.10.0
 updated_at: "2026-05-30"
 entries:
   # ── Authoring & lifecycle ──────────────────────────────────────────────
@@ -162,3 +162,9 @@ entries:
     name: darkfactory-onboarding
     description: "Onboard a repo + its GitHub Project into the Dark Factory — the rung-0 board convention: the 9-label lifecycle (labels.yaml), the GitHub Project field schema from the Skylence project template (Status Icebox→Done + Priority/Size/Idea Stage/Bug Stage), the label→Status mapping, and what a project template carries vs what you wire by hand. Pairs with the board-prep workflow. Self-contained; no marketplace plugin needed."
     tags: [meta, darkfactory, onboarding, github, skill]
+
+  - kind: workflow
+    path: meta/workflows/darkfactory/github-settings.sky
+    name: github-settings
+    description: "Apply best-practice GitHub settings via gh — two scopes in one workflow: org/account-level general defaults (default_repository_permission, web_commit_signoff_required, org Dependabot defaults for new repos; paid: org advanced-security/secret-scanning defaults) AND repository hardening (squash-only merges, auto-merge, delete-branch-on-merge, allow-update-branch, Dependabot alerts; advanced: branch protection + secret scanning). Scope: --var scope=general|repo|both (default both). Tier prose: --var tier=free|paid (paid/pro/team/enterprise/ghas/advanced all count as paid). Org general requires ORG OWNER; skipped with reason for personal accounts or non-owners. Fail-closed, idempotent, pure bash + gh, no LLM. Fire via: sky run github-settings --var scope=both --var tier=free|paid [--var org=<org>] [--var repo=owner/name]"
+    tags: [meta, darkfactory, onboarding, github, settings, security, manual]
