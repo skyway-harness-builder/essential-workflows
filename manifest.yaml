@@ -1,5 +1,5 @@
 apiVersion: skylence.io/v1
-version: 2.6.0
+version: 2.7.0
 updated_at: "2026-05-30"
 entries:
   # ── Authoring & lifecycle ──────────────────────────────────────────────
@@ -137,15 +137,15 @@ entries:
     description: "Author a valid Skylence .sky workflow — four-delimiter format, trigger routing, node types, variable references, and lint error-code fixes. Self-contained; no marketplace plugin needed."
     tags: [meta, skylence, sky, authoring, lint]
 
-  # ── Forge (eval-driven: loop until the artifact passes a gate) ──────────
+  # ── Dark Factory (assisted-mode dev ladder + eval-driven forges) ────────
   - kind: workflow
-    path: meta/workflows/forge/skill-forge.sky
+    path: meta/workflows/darkfactory/skill-forge.sky
     name: skill-forge
     description: "Drive one of YOUR skills (a .claude/skills/<name>/SKILL.md plus bundled scripts) toward a measurable bar: loop generate → exercise → judge until a judge-scored eval gate passes (fail-closed), then stage a PR for a human to merge. The eval-driven cousin of one-shot scaffold-sky-workflow. Runs against your repo; all mutation in a throwaway worktree. v1 does not execute model-generated scripts (static bash -n / node --check only). Bounded by max_budget_usd + loop.max; idempotent. Fire via: sky run skill-forge --var skill_name=<name>"
     tags: [meta, forge, skills, eval, manual]
 
   - kind: workflow
-    path: meta/workflows/forge/workflow-forge.sky
+    path: meta/workflows/darkfactory/workflow-forge.sky
     name: workflow-forge
     description: "Author a target .sky workflow from a plain-English intent, then drive it through sky's own gates — sky lint (clean) + sky run --dry-run — looping author→lint→lint-fix until clean, dry-run it (never executed for real in v1), have a judge score it against the intent with a fail-closed gate, then open a staged PR under worktree isolation. The eval-driven cousin of one-shot update-sky-workflow. Bounded by max_budget_usd + loop.max. Fire via: sky run workflow-forge --var intent=\"…\""
     tags: [meta, forge, workflows, eval, manual]
