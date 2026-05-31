@@ -71,6 +71,9 @@ the set of affected files. Hard-fails (exit 1) on a missing dir, a missing token
 or zero hits — there is nothing to codemod and nothing to approve in those cases.
 ※※
 
+※scan※
+Greps all three token forms across dir/*.sky; prints hits + affected file list; exits 1 on missing dir, missing token, or zero hits. No dependencies.
+※※
 §scan§
 bash_file = "./scripts/scan.sh"
 §§
@@ -81,6 +84,9 @@ header), so a human reviews the scan preview and approves. Reject to stop with n
 changed; auto-stops after 1h if nobody answers. depends_on: scan.
 ※※
 
+※gate※
+Manual approval before any edit; shows scan preview; rejects stop workflow with nothing changed; timeout 1h. depends_on=["scan"].
+※※
 §gate§
 depends_on = ["scan"]
 wait.prompt = "Rewrite all three forms of '{{old}}' -> '{{new}}' across the affected .sky files in {{dir}}? Review the scan preview first — short/common tokens can false-match. Approve to apply."
@@ -97,6 +103,9 @@ quoted "old"->"new" id refs used in depends_on / chain_from. Only files that con
 a form are touched. depends_on: gate.
 ※※
 
+※apply※
+Portable temp-file sed rewrites all three token forms per affected file; only touches files with a match. depends_on=["gate"].
+※※
 §apply§
 depends_on = ["gate"]
 bash_file = "./scripts/apply.sh"
@@ -109,6 +118,9 @@ a bad codemod surfaces immediately. The fragile rewrite is only trusted once thi
 passes — review `git diff` regardless. depends_on: apply.
 ※※
 
+※verify※
+Re-lints every .sky in dir; exits nonzero if any fails (surfacing a bad codemod). depends_on=["apply"].
+※※
 §verify§
 depends_on = ["apply"]
 bash_file = "./scripts/verify.sh"

@@ -4,10 +4,16 @@ description = "Scan a library directory for unannotated workflow.sky files and i
 output_style = "terse"
 ⊕⊕
 
+※scan※
+Walks $SKY_DIR recursively for workflow.sky files; filters to those with no ※id※ annotation; emits one unannotated workflow parent dir per line. No dependencies.
+※※
 §scan§
 bash_file = "./scripts/scan.sh"
 §§
 
+※annotate-all※
+Invokes annotate-sky-workflow for each unannotated dir from scan output; depends_on=["scan"], trigger_rule=all_success; sequential — one run per dir until all done.
+※※
 §annotate-all§
 depends_on = ["scan"]
 trigger_rule = "all_success"

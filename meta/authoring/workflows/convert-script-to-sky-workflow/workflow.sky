@@ -11,6 +11,9 @@ read — cat the source file (shell script / Makefile / cron line).
 No upstream; fires at trigger.
 ※※
 
+※read※
+Cats the source file (shell script, Makefile target, or cron line); exits 1 if missing or empty. No upstream; fires at trigger.
+※※
 §read§
 bash_file = "./scripts/read.sh"
 §§
@@ -20,6 +23,9 @@ author — Claude (sonnet) maps source to {{dir}}/{{name}}.sky using sky-workflo
 Waits for: read all_success. Resumes source from $SKY_OUTPUT_READ.
 ※※
 
+※author※
+Claude (sonnet) maps source to {{dir}}/{{name}}.sky using sky-workflow-authoring skill; reads $SKY_OUTPUT_READ. depends_on=["read"], trigger_rule=all_success.
+※※
 §author§
 model = "sonnet"
 skills = ["sky-workflow-authoring"]
@@ -53,6 +59,9 @@ lint — Claude (sonnet) runs sky lint in loop, fixes errors until exit 0.
 Waits for: author all_success. Loops until: sky lint "{{dir}}/{{name}}.sky" exits 0 (max 6 iterations).
 ※※
 
+※lint※
+Lint-fix loop: runs sky lint on new workflow, fixes SKY-WF-* errors each pass; loop.until.bash exits 0; loop.max=6. depends_on=["author"], trigger_rule=all_success.
+※※
 §lint§
 model = "sonnet"
 skills = ["sky-workflow-authoring"]
@@ -81,6 +90,9 @@ dryrun — Best-effort dry-run: sky run <name> --dry-run (swallows failures).
 Waits for: lint all_done (implicit). Never fails the run.
 ※※
 
+※dryrun※
+Best-effort dry-run via sky run <name> --dry-run; swallows failures so a half-valid draft still surfaces output. depends_on=["lint"].
+※※
 §dryrun§
 bash_file = "./scripts/dryrun.sh"
 depends_on = ["lint"]

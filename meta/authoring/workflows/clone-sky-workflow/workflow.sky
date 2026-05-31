@@ -64,6 +64,9 @@ refuses if the destination already exists (never clobber an existing workflow). 
 it plain-copies source -> dest. No mutation of either file's contents yet.
 ※※
 
+※copy※
+Copies source workflow to dest; exits 1 if source missing (lists dir) or dest exists (never clobbers). No dependencies.
+※※
 §copy§
 bash_file = "./scripts/copy.sh"
 §§
@@ -76,6 +79,9 @@ neutralization that stops the clone double-firing. With no trigger block the clo
 manual by default.
 ※※
 
+※rewrite※
+Rewrites clone dest: retargets meta name to new-name and strips all trigger.* lines via grep -v; makes clone manual by default. depends_on=["copy"].
+※※
 §rewrite§
 depends_on = ["copy"]
 bash_file = "./scripts/rewrite.sh"
@@ -88,6 +94,9 @@ The loop.until.bash re-runs the node until lint exits 0 (max 6 passes). Loop nod
 chain a session, so the prompt re-reads the file each pass.
 ※※
 
+※lint※
+Lint-fix loop: reads clone, runs sky lint, fixes SKY-WF-* errors; loop.until.bash exits 0 when clean; loop.max=6. depends_on=["rewrite"], model=sonnet, skills=sky-workflow-authoring.
+※※
 §lint§
 model = "sonnet"
 depends_on = ["rewrite"]
@@ -105,6 +114,9 @@ Step 4 — describe. Best-effort `sky describe` of the finished clone for a quic
 human-readable summary (tolerated if the subcommand is unavailable), then prints done.
 ※※
 
+※describe※
+Best-effort sky describe of the finished clone; prints done. depends_on=["lint"], trigger_rule=all_success.
+※※
 §describe§
 depends_on = ["lint"]
 bash_file = "./scripts/describe.sh"

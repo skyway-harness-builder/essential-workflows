@@ -1,0 +1,16 @@
+⊕meta⊕
+name = "bulk-annotate-workflows"
+description = "Annotate all workflow.sky files in the given folders with inline rationale comments, then lint each clean."
+trigger.manual = true
+output_style = "terse"
+max_budget_usd = 30
+⊕⊕
+
+§annotate§
+model = "sonnet"
+skills = ["sky-workflow-authoring", "hashline-edit"]
+§§
+
+∆annotate∆
+Run `find {{folders}} -name "workflow.sky" | sort`, print the count. For each file: READ it, then for every §<id>§ node-config block missing a ※<id>※...※※ comment block immediately before it, insert one using Edit (opener ※<id>※ alone on its line, closer ※※ alone on its line, one terse machine-oriented sentence describing the node's purpose and edges). Preserve everything else verbatim. After each file run `sky lint "<path>"` and fix only what lint names. Print a final summary: files annotated vs already covered.
+∆∆

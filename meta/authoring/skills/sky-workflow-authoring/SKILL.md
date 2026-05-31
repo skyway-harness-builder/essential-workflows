@@ -18,6 +18,40 @@ A `.sky` file is written for two readers with **opposite** priorities. Get this 
 
 When the two pull in different directions, keep the prompt body machine-optimal and move every human-oriented explanation into a `※※` block.
 
+**Prompt body (wrong, AI defaults to this):**
+```
+Steps:
+1. Read the file at {{path}}.
+2. Check each function for error handling gaps.
+3. For each gap found, note the function name and what is missing.
+4. Output a summary of your findings.
+```
+**Prompt body (correct):**
+```
+Read {{path}}. For each function missing error handling, note its name and what's missing. Output a summary.
+```
+Same instruction, one line, no ceremony. The model executes it identically.
+
+**Per-node ※<id>※ annotations** use the typed opener so the block is associated with a specific node. Body: one terse prose sentence describing the node's purpose, followed by the edges it carries (only edges that exist; never list absent ones). No key/value lists, no "Step N" prefixes.
+
+Wrong (lists absent edges, uses list format):
+```
+※resolve※
+Entry node. No LLM. Normalizes the issue reference.
+depends_on: none (DAG root).
+trigger_rule: n/a.
+chain_from: none.
+when: none.
+※※
+```
+Correct:
+```
+※resolve※
+Bash root node. Normalizes the issue reference into $SKY_OUTPUT_RESOLVE so all downstream nodes read it the same way regardless of trigger path.
+※※
+```
+Only mention depends_on, trigger_rule, chain_from, when, or loop when they are actually set on the node.
+
 ## Delimiter Blocks
 
 ```

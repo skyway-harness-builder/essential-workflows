@@ -6,9 +6,17 @@ output_style = "terse"
 max_budget_usd = 3
 ⊕⊕
 
+※read※
+Verify the target .sky exists; exit 1 if missing so downstream all_success gates skip cleanly. Reports node-config block count for context.
+※※
+
 §read§
 bash_file = "./scripts/read.sh"
 §§
+
+※annotate※
+Sonnet w/ sky-workflow-authoring skill inserts ※<id>※ rationale blocks before each §id§ via Edit tool; depends_on read (all_success), so skipped if file is missing.
+※※
 
 §annotate§
 model = "sonnet"
@@ -31,6 +39,10 @@ Steps:
 
 Each step-associated doc block: opener ※<id>※ alone on its line (where <id> is the node id), closer ※※ alone on its line, body in between.
 ∆∆
+
+※lint※
+Sonnet loop; loop.until.bash runs `sky lint` on the file each pass, stopping at exit 0 (max 6); depends_on annotate (all_success); fixes only lint-named issues with Edit and never strips structure.
+※※
 
 §lint§
 model = "sonnet"
@@ -81,22 +93,4 @@ Vars:
   name  workflow filename WITHOUT the .sky extension.            → $SKY_NAME
 
 The target file edited in place is "$dir/$name.sky".
-※※
-
-※read※
-Verify the target .sky exists; exit 1 if missing so downstream
-all_success gates skip cleanly. Reports node-config block count for context.
-※※
-
-※annotate※
-Sonnet w/ sky-workflow-authoring skill. Reads the file and
-inserts a ※<id>※ rationale block before each §id§ via the Edit tool. Preserves
-every node/trigger/prompt exactly. Gated all_success on read.
-※※
-
-※lint※
-Sonnet loop. loop.until.bash runs `sky lint` on the file each
-pass and stops at exit 0 (max 6). Fixes only lint-named issues (typically a
-malformed ※※ block) with Edit; never strips structure. Gated all_success on
-annotate.
 ※※
