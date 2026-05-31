@@ -42,7 +42,7 @@ loop.max = 6
 §§
 
 ∆lint∆
-Run `sky lint "$SKY_DIR/$SKY_NAME.sky"` on the freshly annotated file (the loop re-runs this until lint exits 0, up to the cap).
+Run `sky lint "{{dir}}/{{name}}.sky"` on the freshly annotated file (the loop re-runs this until lint exits 0, up to the cap).
 
 If lint reports any error or warning:
 - READ {{dir}}/{{name}}.sky again.
