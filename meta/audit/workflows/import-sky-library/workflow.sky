@@ -5,14 +5,26 @@ trigger.manual = true
 output_style = "terse"
 ⊕⊕
 
+※enumerate※
+enumerate — list SOURCE/*.sky; fail if dirs missing or no candidates. No edges.
+※※
+
 §enumerate§
 bash_file = "./scripts/enumerate.sh"
 §§
+
+※validate※
+validate — lint each candidate; stage PASS to /tmp, log FAIL+codes, mark SKIP. depends_on=["enumerate"], trigger_rule=all_done.
+※※
 
 §validate§
 depends_on = ["enumerate"]
 bash_file = "./scripts/validate.sh"
 §§
+
+※gate※
+gate — manual approval gate; shows PASS/FAIL/SKIP sets before mutation. depends_on=["validate"], trigger_rule=all_done. Waits on manual channel (1h timeout).
+※※
 
 §gate§
 depends_on = ["validate"]
@@ -21,10 +33,18 @@ wait.prompt = "Review the PASS (will import), FAIL (lint errors, rejected), and 
 wait.timeout = "1h"
 §§
 
+※finalize※
+finalize — copy each staged PASS into TARGET (never overwrite); print kept/skipped manifest. depends_on=["gate"], trigger_rule=all_done.
+※※
+
 §finalize§
 depends_on = ["gate"]
 bash_file = "./scripts/finalize.sh"
 §§
+
+※verify※
+verify — re-lint every imported file; rm /tmp staging list; exit nonzero if any file broken. depends_on=["finalize"], trigger_rule=all_done.
+※※
 
 §verify§
 depends_on = ["finalize"]

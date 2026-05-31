@@ -42,19 +42,16 @@ output_style = "terse"
 max_budget_usd = 1.00
 ⊕⊕
 
-※※
-Step 1 — scan. Counts the workflows to be indexed and stops cleanly if the directory
-is empty (nothing to catalog is not a failure).
+※scan※
+Entry point: counts *.sky in {{dir}}. No dependencies. Stops cleanly if empty.
 ※※
 
 §scan§
 bash_file = "./scripts/scan.sh"
 §§
 
-※※
-Step 2 — index. A cheap haiku node reads every .sky in the directory and writes the
-INDEX.md table. The sky-workflow-authoring skill teaches it the four-delimiter format
-so it extracts the trigger / vars / DAG correctly.
+※index※
+Depends on scan. Haiku reads each .sky in {{dir}} and writes {{dir}}/INDEX.md table. Skills: sky-workflow-authoring.
 ※※
 
 §index§
@@ -69,9 +66,8 @@ List every `*.sky` file in {{dir}} (ignore INDEX.md and any non-.sky file). Read
 Write a Markdown file at {{dir}}/INDEX.md containing a `# Workflow Index` title, a one-line intro, and a table with the header `| Workflow | Trigger | Vars | Flow | Budget |`. One row per workflow, sorted by name; use `—` for an empty cell. Do not modify any `.sky` file. Output the path you wrote when done.
 ∆∆
 
-※※
-Step 3 — verify. Pure-bash coverage check: INDEX.md must exist, be non-empty, and
-mention every workflow file by name. Fails the run if the index is stale or partial.
+※verify※
+Depends on index. Bash coverage check: INDEX.md must exist, be non-empty, and list every .sky. Fails if stale.
 ※※
 
 §verify§

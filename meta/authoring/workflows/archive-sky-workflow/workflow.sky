@@ -5,9 +5,17 @@ trigger.manual = true
 output_style = "terse"
 ⊕⊕
 
+※find※
+Resolve source/dest paths from $SKY_MODE (archive|restore); fail if source missing or dest exists.
+※※
+
 §find§
 bash_file = "./scripts/find.sh"
 §§
+
+※gate※
+Manual approval gate. Depends on find (all_success); 1h timeout. Shows source/dest paths and archive/restore implications before user approves the move.
+※※
 
 §gate§
 depends_on = ["find"]
@@ -17,11 +25,19 @@ wait.prompt = "Confirm move. Archiving NEUTRALIZES the trigger so the file canno
 wait.timeout = "1h"
 §§
 
+※move※
+Move workflow to _archive/ (archive mode) or restore from it; strips trigger lines during archive to neutralize. Depends on gate (all_success).
+※※
+
 §move§
 depends_on = ["gate"]
 trigger_rule = "all_success"
 bash_file = "./scripts/move.sh"
 §§
+
+※verify※
+Lint the moved workflow file at its new location to confirm no syntax errors from the move. Depends on move (all_success).
+※※
 
 §verify§
 depends_on = ["move"]

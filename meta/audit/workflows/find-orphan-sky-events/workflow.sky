@@ -5,14 +5,26 @@ trigger.manual = true
 output_style = "terse"
 ⊕⊕
 
+※collect※
+Starting node: grep trigger.sky_event.event listeners and emit names from all .sky files under $SKY_DIR; build two scratch lists in /tmp.
+※※
+
 §collect§
 bash_file = "./scripts/collect.sh"
 §§
+
+※match※
+Depends on collect. Runs comm/grep to find listeners without emitters and emitters without listeners using the scratch lists from collect.
+※※
 
 §match§
 depends_on = ["collect"]
 bash_file = "./scripts/match.sh"
 §§
+
+※report※
+Depends on match. Prints both orphan lists (dead listeners and dead signals) and exits 1 if any orphan found. Cleans temp files.
+※※
 
 §report§
 depends_on = ["match"]

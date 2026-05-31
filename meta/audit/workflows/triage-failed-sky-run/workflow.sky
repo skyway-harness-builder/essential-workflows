@@ -6,15 +6,27 @@ output_style = "terse"
 max_budget_usd = 2.0
 ⊕⊕
 
+※fetch※
+Fetch workflow source and run logs. Bash script confirms .sky exists, calls `sky logs <run>`, outputs logs + source.
+※※
+
 §fetch§
 bash_file = "./scripts/fetch.sh"
 §§
+
+※diagnose※
+Read logs + source from fetch, identify failing node id + root cause. depends_on=["fetch"]. Reads $SKY_OUTPUT_FETCH. Uses sky-workflow-authoring skill.
+※※
 
 §diagnose§
 model = "sonnet"
 depends_on = ["fetch"]
 skills = ["sky-workflow-authoring"]
 §§
+
+※propose※
+Generate unified diff + apply command. depends_on=["diagnose"], chain_from="diagnose" (resumes diagnose session). Outputs diff in standard format + `sky run update-sky-workflow` command.
+※※
 
 §propose§
 model = "sonnet"

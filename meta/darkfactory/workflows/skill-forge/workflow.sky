@@ -109,7 +109,7 @@ max_budget_usd = 8.00
 learnings.exclude = ["execution-rules", "patterns", "anti-patterns", "project-notes"]
 ⊕⊕
 
-※※
+※read-skill※
 Step 1 — read-skill. DETERMINISTIC bash, no LLM. Resolve the repo checkout (skill_repo var →
 default: the run's working dir, $PWD) and the target skill dir <repo>/.claude/skills/<skill_name>/.
 `cat` SKILL.md and a file inventory + the contents of each bundled script into ONE stable,
@@ -123,7 +123,7 @@ because skill names there are not {{var}}-templated. No destructive commands (re
 bash_file = "./scripts/read-skill.sh"
 §§
 
-※※
+※parse※
 Step 2 — parse. Claude (haiku). Reads the skill source block from read-skill and SYNTHESIZES a
 v1 eval suite: 3–5 concrete, checkable success cases that exercise what the skill PROMISES. These
 are judge-generated evals; hand-authored fixtures are a deliberate follow-up (note that). Output is
@@ -162,7 +162,7 @@ Output EXACTLY this structure, nothing else:
 - v1 caveat: these are judge-synthesized evals, not hand-authored fixtures (hand-authored fixtures are a follow-up). State any case you are unsure is fair.
 ∆∆
 
-※※
+※baseline-exercise※
 Step 3 — baseline-exercise. Claude (sonnet). Exercises the skill against the synthesized eval
 cases. The skill's guidance is INJECTED as the SKILL.md text from read-skill (NOT via skills[]).
 For each case it produces the response a skill-loaded model would give, so the judge can score the
@@ -199,7 +199,7 @@ Output, per case:
 Do not score yourself — the next step judges. Do not edit any files.
 ∆∆
 
-※※
+※judge※
 Step 4 — judge. Claude (opus) + ADVISORY output_format. Scores each eval case pass/fail, pinpoints
 WHERE each failure lives, and computes pass_rate. The output_format is advisory ONLY — opus may
 return prose; the deterministic `gate` bash node (next) parses a machine SENTINEL instead, so the
@@ -246,7 +246,7 @@ Output, in this exact order:
    (or `delivers=false`). Use the same boolean as the JSON. Do not add prose after this line.
 ∆∆
 
-※※
+※gate※
 Step 5 — gate. DETERMINISTIC bash. Greps the judge output for the `SKY_FORGE delivers=…` sentinel
 and emits ONE clean JSON line {"delivers":"true|false"} — bash output always parses, so the
 downstream `when` never silently falls back. FAIL-CLOSED: only an explicit `delivers=true` yields
@@ -260,7 +260,7 @@ depends_on = ["judge"]
 bash_file = "./scripts/gate.sh"
 §§
 
-※※
+※improve※
 Step 6 — improve. Claude (sonnet) PROMPT-BODY LOOP, runs ONLY when the gate says delivers=false
 (reading the gate bash node's deterministic JSON, not LLM output). isolation = "worktree": all edits
 land in a throwaway checkout, never the live repo. Each loop iteration is a FRESH `claude -p`
@@ -317,7 +317,7 @@ PROTECTED-FILES BOUNDARY — you MUST NOT create or edit, anywhere: MISSION.md, 
 Do not commit, push, or open a PR — finalize does that. Do not touch anything outside `skill_dir`.
 ∆∆
 
-※※
+※lint-scripts※
 Step 7 — lint-scripts. DETERMINISTIC bash, no LLM. Statically lints the bundled scripts in the
 worktree where a toolchain exists IN-CONTAINER: `bash -n` (parse-check) for *.sh, `node --check`
 for *.js/*.mjs/*.cjs. NEVER executes the scripts (parse-only — see SAFETY SCOPE). Languages without
@@ -333,7 +333,7 @@ depends_on = ["improve"]
 bash_file = "./scripts/lint-scripts.sh"
 §§
 
-※※
+※finalize※
 Step 8 — finalize. bash + gh, isolation = "worktree". Commits the improved skill tree (only files
 under the target skill_dir) on a branch and opens a PR. CI IS THE QUALITY GATE — this never merges.
 IDEMPOTENT: if the worktree has no changes under skill_dir (the skill already delivered, or improve

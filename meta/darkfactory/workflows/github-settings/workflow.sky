@@ -76,37 +76,19 @@ trigger.manual = true
 output_style = "terse"
 ⊕⊕
 
-※※
-Step 1 — preflight. DETERMINISTIC bash + gh, no LLM. Resolve REPO (--var repo -> $SKY_REPO, else
-`gh repo view`), OWNER (left part of REPO), ORG (--var org -> $SKY_ORG, else OWNER). Normalize
-SCOPE ($SKY_SCOPE: general|repo|both, default both) and TIER ($SKY_TIER: paid prose -> "paid",
-else "free"). Read repo visibility + viewerPermission + defaultBranchRef. Compute booleans:
-  do_repo      = scope in {repo, both}
-  want_general = scope in {general, both}
-  advanced     = tier==paid OR visibility==public
-  do_general   = want_general AND gh api orgs/$ORG succeeds (is an org)
-                 AND gh api user/memberships/orgs/$ORG .role == "admin" (caller is owner)
-  repo_advanced = do_repo AND advanced
-Fail-closed: if do_repo, require ADMIN on the repo. If scope=general-only and do_general is false,
-exit 1. If neither do_repo nor do_general, exit 1. Emits ONE JSON line with all gating booleans
-as "true"/"false" strings. {{var}} is NOT used — bash reads $SKY_* directly and shell-quotes every
-expansion.
+※preflight※
+Step 1 — preflight. Entry point. Resolve REPO/OWNER/ORG, normalize SCOPE + TIER, read visibility + viewerPermission + defaultBranchRef. Check caller role. Compute do_repo, do_general, advanced, repo_advanced booleans. Emits JSON with all gating fields.
+  • No depends_on; trigger_rule defaults to all_done.
+  • Fail-closed: require caller ADMIN on repo (if do_repo) and ORG OWNER (if do_general).
 ※※
 
 §preflight§
 bash_file = "./scripts/preflight.sh"
 §§
 
-※※
-Step 2 — orggeneral. DETERMINISTIC bash + gh, no LLM. Runs only when do_general==true.
-PATCH orgs/$ORG with a jq -n body. Free/always fields: default_repository_permission=read,
-web_commit_signoff_required=true, dependabot_alerts_enabled_for_new_repositories=true,
-dependabot_security_updates_enabled_for_new_repositories=true. Paid-only fields (read tier from
-preflight JSON; branch in bash): advanced_security_enabled_for_new_repositories=true,
-secret_scanning_enabled_for_new_repositories=true,
-secret_scanning_push_protection_enabled_for_new_repositories=true.
-two_factor_requirement_enabled is NOT set (read-only in PATCH) — GET current value and report only.
-Fails gracefully (warn, never crash).
+※orggeneral※
+Apply org-level defaults: permission=read, web_commit_signoff=true, Dependabot alerts + updates for new repos. Paid tier adds: org-advanced-security + secret-scanning defaults.
+  • depends_on: ["preflight"]; when: "$preflight.output.do_general == 'true'".
 ※※
 
 §orggeneral§
@@ -115,11 +97,9 @@ when = "$preflight.output.do_general == 'true'"
 bash_file = "./scripts/orggeneral.sh"
 §§
 
-※※
-Step 3 — repogeneral. DETERMINISTIC bash + gh, no LLM. Runs only when do_repo==true. Universal
-repo merge hygiene + feature flags: squash-only (disable merge-commit + rebase), auto-merge,
-delete-branch-on-merge, allow-update-branch (keeps branches up-to-date with base), issues+wiki+
-projects enabled. Idempotent gh repo edit. REPO comes from preflight JSON.
+※repogeneral※
+Apply repo-level merge hygiene: squash-only, auto-merge, delete-branch-on-merge, allow-update-branch. Enable issues, wiki, projects.
+  • depends_on: ["preflight"]; when: "$preflight.output.do_repo == 'true'".
 ※※
 
 §repogeneral§
@@ -128,10 +108,9 @@ when = "$preflight.output.do_repo == 'true'"
 bash_file = "./scripts/repogeneral.sh"
 §§
 
-※※
-Step 4 — repodependabot. DETERMINISTIC bash + gh, no LLM. Runs only when do_repo==true. Universal
-supply-chain hygiene: enable Dependabot vulnerability alerts and automated security updates (both
-free, any visibility). Each call is an idempotent PUT with no body.
+※repodependabot※
+Enable Dependabot vulnerability alerts + automated security updates on repo (free, any visibility).
+  • depends_on: ["preflight"]; when: "$preflight.output.do_repo == 'true'".
 ※※
 
 §repodependabot§
@@ -140,12 +119,9 @@ when = "$preflight.output.do_repo == 'true'"
 bash_file = "./scripts/repodependabot.sh"
 §§
 
-※※
-Step 5 — repoprotection. DETERMINISTIC bash + gh, no LLM. ADVANCED: branch protection on the
-default branch. Runs only when repo_advanced==true (do_repo AND (tier=paid OR public repo)).
-Requires admin + a paid plan for PRIVATE repos; fails gracefully with a re-run hint otherwise.
-The protection body is built with `jq -n` (no shell-quoting of JSON) and PUT via `gh api --input -`.
-enforce_admins is OFF on purpose (so onboarding cannot lock the admin out).
+※repoprotection※
+ADVANCED: branch protection on default branch (≥1 PR review, dismiss stale, linear history, no force-push, resolve conversations). Free on public; paid plan required for private. enforce_admins OFF intentionally.
+  • depends_on: ["preflight"]; when: "$preflight.output.repo_advanced == 'true'".
 ※※
 
 §repoprotection§
@@ -154,11 +130,9 @@ when = "$preflight.output.repo_advanced == 'true'"
 bash_file = "./scripts/repoprotection.sh"
 §§
 
-※※
-Step 6 — reposecrets. DETERMINISTIC bash + gh, no LLM. ADVANCED: enable secret scanning + push
-protection. Runs only when repo_advanced==true. Free on PUBLIC repos; PRIVATE repos need GitHub
-Advanced Security — fails gracefully (warn) where GHAS is absent. Body built with `jq -n`, PATCH
-via `gh api --input -`.
+※reposecrets※
+ADVANCED: enable secret scanning + push protection. Free on public; GitHub Advanced Security required for private. Fails gracefully if unavailable.
+  • depends_on: ["preflight"]; when: "$preflight.output.repo_advanced == 'true'".
 ※※
 
 §reposecrets§
@@ -167,11 +141,9 @@ when = "$preflight.output.repo_advanced == 'true'"
 bash_file = "./scripts/reposecrets.sh"
 §§
 
-※※
-Step 7 — report. DETERMINISTIC bash, no LLM. The single leaf — depends on ALL prior nodes with
-trigger_rule all_done so it always summarizes regardless of which nodes ran. Echoes each node's
-output; reports what was applied vs SKIPPED per scope + tier; prints general_skip_reason if set;
-lists manual follow-ups that the API cannot do.
+※report※
+Leaf node: aggregate output from all prior nodes. Summarize applied vs skipped per scope + tier. Echo skip reasons and manual follow-ups.
+  • depends_on: ["orggeneral", "repogeneral", "repodependabot", "repoprotection", "reposecrets"]; trigger_rule: "all_done" (always runs).
 ※※
 
 §report§

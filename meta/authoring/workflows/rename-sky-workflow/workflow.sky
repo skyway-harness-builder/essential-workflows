@@ -55,7 +55,7 @@ trigger.manual = true
 output_style = "terse"
 ⊕⊕
 
-※※
+※find※
 Step 1 — find. Resolves the source file, refuses if the target name already exists,
 and prints every `sky run <old>` reference that the apply step will rewrite.
 ※※
@@ -64,9 +64,8 @@ and prints every `sky run <old>` reference that the apply step will rewrite.
 bash_file = "./scripts/find.sh"
 §§
 
-※※
-Step 2 — confirm. Manual gate. Rename + cross-file rewrite is disruptive, so a human
-approves first. Reject to stop with nothing changed; timeout after 1h.
+※confirm※
+Step 2 — confirm. depends_on=[find]. Manual gate: human approves rename + rewrite; reject to stop; timeout 1h.
 ※※
 
 §confirm§
@@ -76,10 +75,8 @@ wait.channel = "manual"
 wait.timeout = "1h"
 §§
 
-※※
-Step 3 — apply. git mv the file (falls back to mv if not a git repo), rewrite the
-`name =` field in the moved file, then text-replace `sky run <old>` -> `sky run <new>`
-across every .sky in the dir. Uses temp-file sed (portable on macOS + Linux).
+※apply※
+Step 3 — apply. depends_on=[confirm]. git mv file, fix name= field, text-replace `sky run <old>` -> `sky run <new>` across dir; uses sed.
 ※※
 
 §apply§
@@ -87,9 +84,8 @@ depends_on = ["confirm"]
 bash_file = "./scripts/apply.sh"
 §§
 
-※※
-Step 4 — verify. Lints the renamed file (catches a name<->filename mismatch) and
-warns about any leftover `sky run <old>` references for manual cleanup.
+※verify※
+Step 4 — verify. depends_on=[apply]. Lint renamed file (catches name<->filename mismatch); warn on leftover `sky run <old>` refs.
 ※※
 
 §verify§

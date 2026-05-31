@@ -5,14 +5,26 @@ trigger.manual = true
 output_style = "terse"
 ⊕⊕
 
+※list※
+Enumerate all .sky files in $SKY_DIR (no filtering, no prior state; reads dir passed via --var).
+※※
+
 §list§
 bash_file = "./scripts/list.sh"
 §§
+
+※runs※
+Capture `sky logs` output; depends_on = ["list"], trigger_rule = all_done (default). Runs after list completes; receives $SKY_OUTPUT_LIST.
+※※
 
 §runs§
 depends_on = ["list"]
 bash_file = "./scripts/runs.sh"
 §§
+
+※report※
+Cross-reference each file against run history (SEEN-IN-LOGS vs NEVER); depends_on = ["list", "runs"], trigger_rule = all_done (default). Reads $SKY_OUTPUT_LIST and $SKY_OUTPUT_RUNS; prints deletion suggestions.
+※※
 
 §report§
 depends_on = ["list", "runs"]

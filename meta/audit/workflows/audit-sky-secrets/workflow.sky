@@ -38,12 +38,10 @@ trigger.manual = true
 output_style = "terse"
 ⊕⊕
 
-※※
-Step 1 — scan. The whole audit in one bash pass. For each file: collect names declared
-in any secrets = [ ... ] array, collect env tokens used on bash/http lines (dropping
-$SKY_* template vars), keep only the secret-shaped ones, and report any not declared.
-Env tokens are matched with a [$] character class so this scanner never trips
-SKY-WF-055 on itself.
+※scan※
+Scans every .sky file for secret-shaped env-var references in bash/http lines not declared in secrets[].
+depends_on: none (manual trigger); no trigger_rule; no chain_from; no when.
+Exits non-zero if any undeclared secret-shaped reference found.
 ※※
 
 §scan§

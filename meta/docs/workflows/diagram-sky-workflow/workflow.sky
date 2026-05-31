@@ -6,6 +6,10 @@ output_style = "terse"
 max_budget_usd = 2
 ⊕⊕
 
+※draw※
+Entry point. Read target .sky file, parse node graph (depends_on / chain_from / when edges), regenerate ASCII DAG diagram in the top ※※ header block, edit in place. No upstream edges.
+※※
+
 §draw§
 model = "haiku"
 skills = ["sky-workflow-authoring"]
@@ -37,6 +41,10 @@ Use the Edit tool to make the in-place change. Do NOT rewrite the whole file. Do
 
 Do not change any `⊕meta⊕`, `§…§`, or `∆…∆` block, or any ※<id>※ per-step block. Only the top loose ※※ header diagram changes.
 ∆∆
+
+※lint※
+Loop fixer. Depends on draw (reads lint output, fixes file). Loops until sky lint exits 0 (loop.until.bash), max 6 passes. Repairs any ※※ delimiter placement or stray glyphs introduced during diagram generation.
+※※
 
 §lint§
 depends_on = ["draw"]

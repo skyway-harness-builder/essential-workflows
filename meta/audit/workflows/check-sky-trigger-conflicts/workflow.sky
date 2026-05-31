@@ -30,7 +30,7 @@ trigger.manual = true
 output_style = "terse"
 ⊕⊕
 
-※※
+※check※
 Step 1 — check. The whole audit in one bash pass. Build a "signature<TAB>file" table
 in a /tmp scratch file (so cron schedules, which contain spaces, survive intact), then
 group it with awk and print any signature shared by more than one workflow. Each file

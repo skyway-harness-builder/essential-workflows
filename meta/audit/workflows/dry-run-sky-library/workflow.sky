@@ -5,14 +5,26 @@ trigger.manual = true
 output_style = "terse"
 ⊕⊕
 
+※discover※
+Glob "$SKY_DIR"/*.sky and emit one "<name>\t<path>" row per file; exits 2 on bad input.
+※※
+
 §discover§
 bash_file = "./scripts/discover.sh"
 §§
+
+※dryrun※
+For each row from discover, run `sky run --dry-run` (tries path first, falls back to cd+name); classify PASS/FAIL/SKIP and capture first diagnostic. depends_on: discover (trigger_rule: all_done).
+※※
 
 §dryrun§
 bash_file = "./scripts/dryrun.sh"
 depends_on = ["discover"]
 §§
+
+※matrix※
+Render aligned PLAN/WORKFLOW/DIAGNOSTIC table, print summary counts; exits 1 if any workflow FAILed. depends_on: dryrun (trigger_rule: all_done).
+※※
 
 §matrix§
 bash_file = "./scripts/matrix.sh"

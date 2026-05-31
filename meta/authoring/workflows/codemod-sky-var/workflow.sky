@@ -64,7 +64,7 @@ trigger.manual = true
 output_style = "terse"
 ⊕⊕
 
-※※
+※scan※
 Step 1 — scan. Computes the uppercase env-var forms of old/new, then greps every
 .sky in the dir for the three forms and prints a numbered preview of each hit plus
 the set of affected files. Hard-fails (exit 1) on a missing dir, a missing token,
@@ -75,10 +75,10 @@ or zero hits — there is nothing to codemod and nothing to approve in those cas
 bash_file = "./scripts/scan.sh"
 §§
 
-※※
+※gate※
 Step 2 — gate. Manual approval before any edit. The rewrite is regex-fragile (see the
 header), so a human reviews the scan preview and approves. Reject to stop with nothing
-changed; auto-stops after 1h if nobody answers.
+changed; auto-stops after 1h if nobody answers. depends_on: scan.
 ※※
 
 §gate§
@@ -88,13 +88,13 @@ wait.channel = "manual"
 wait.timeout = "1h"
 §§
 
-※※
+※apply※
 Step 3 — apply. For each affected file, a portable temp-file sed (no `sed -i`, macOS +
 Linux safe) rewrites the three forms in order: template {{old}}->{{new}}, bash env
 $SKY_<UPPER_OLD>->$SKY_<UPPER_NEW> (word-boundary guarded so $SKY_OLD_EXTRA is spared),
 node-id §old§->§new§ and the matching prompt-block opener ∆old∆->∆new∆, then the
 quoted "old"->"new" id refs used in depends_on / chain_from. Only files that contain
-a form are touched.
+a form are touched. depends_on: gate.
 ※※
 
 §apply§
@@ -102,11 +102,11 @@ depends_on = ["gate"]
 bash_file = "./scripts/apply.sh"
 §§
 
-※※
+※verify※
 Step 4 — verify. Pure-bash gate: re-lints every .sky in the dir (a touched file with
 a broken reference is the failure we care about) and exits non-zero if any fails, so
 a bad codemod surfaces immediately. The fragile rewrite is only trusted once this
-passes — review `git diff` regardless.
+passes — review `git diff` regardless. depends_on: apply.
 ※※
 
 §verify§

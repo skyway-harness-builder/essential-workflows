@@ -36,19 +36,16 @@ trigger.manual = true
 output_style = "terse"
 ⊕⊕
 
-※※
-Step 1 — scan. Lists the .sky files in the target directory. If there are none,
-notes it and stops cleanly (nothing to audit is not a failure).
+※scan※
+Scan directory for .sky files. Exit 0 if none found (not a failure).
 ※※
 
 §scan§
 bash_file = "./scripts/scan.sh"
 §§
 
-※※
-Step 2 — lint-all. Runs `sky lint` on each file, tallies pass/fail, and exits
-non-zero when any file fails so the workflow can gate CI. The grouped, human
-report is printed here next to each result.
+※lint※
+Lint each .sky file from scan. Tally pass/fail, exit non-zero if any fail. depends_on: scan (all_done, implicit).
 ※※
 
 §lint§

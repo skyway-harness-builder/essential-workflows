@@ -160,7 +160,7 @@ max_budget_usd = 8.00
 learnings.exclude = ["anti-patterns"]
 ⊕⊕
 
-※※
+※parse※
 Step 1 — parse. Cheap haiku orientation. Classify the intent as new-vs-improve and sketch the
 trigger + node shape author should produce. No file IO. {{intent}} is the operator's --var.
 ※※
@@ -185,7 +185,7 @@ Decide and output, as a compact bullet list:
 Do not write the `.sky` file yet. Output only the plan.
 ∆∆
 
-※※
+※author※
 Step 2 — author. Opus generates the FULL candidate .sky body. CRITICAL CONTRACT: the
 candidate's ⊕meta⊕ name MUST be exactly "forge-candidate" so the dry-run resolver finds it by
 name. Author emits ONLY the raw file body — no markdown fences, no commentary — because the
@@ -222,7 +222,7 @@ HARD OUTPUT CONTRACT:
 2. Output ONLY the raw `.sky` file body. No ``` fences, no leading/trailing prose, no explanation. The very first non-whitespace characters must begin a `※※` doc block or the `⊕meta⊕` opener; the very last line must be a delimiter closer. The next step writes your stdout verbatim to disk and lints it.
 ∆∆
 
-※※
+※write-candidate※
 Step 3 — write-candidate. DETERMINISTIC bash, no LLM. Persists the author's output to two
 paths: the repo-tier .sky/workflows/forge-candidate.sky (so `sky run forge-candidate
 --dry-run` resolves it by name) and a stable $RUNTMP copy. Prints a greppable path block the
@@ -236,7 +236,7 @@ depends_on = ["author"]
 bash_file = "./scripts/write-candidate.sh"
 §§
 
-※※
+※fix-loop※
 Step 4 — fix-loop. opus, body context = "fresh" (each fix turn starts from a clean session,
 not a chained one). The loop's stop condition is the LINT itself: loop.until.bash runs
 `sky lint` on the repo-tier candidate and exits 0 when clean, stopping the loop. loop.max = 3
@@ -282,7 +282,7 @@ Constraints:
 Output a one-line summary of what you changed (or `already-clean`).
 ∆∆
 
-※※
+※lint※
 Step 5 — lint. DETERMINISTIC bash, no LLM. The AUTHORITATIVE lint AFTER the loop (the loop's
 own lint is just its stop condition; this node is what the gate trusts). `sky lint … --format
 json` prints `[]` when clean, else a JSON array of diagnostics. We emit ONE clean JSON line
@@ -295,7 +295,7 @@ depends_on = ["fix-loop"]
 bash_file = "./scripts/lint.sh"
 §§
 
-※※
+※dry-run※
 Step 6 — dry-run. DETERMINISTIC bash, no LLM. Runs ONLY when lint is clean. `sky run
 forge-candidate --dry-run --format json` renders each node's prompt and resolves the DAG, var
 wiring, cycle check, and budget estimate WITHOUT invoking Claude or executing any bash — this
@@ -310,7 +310,7 @@ when = "$lint.output.clean == 'true'"
 bash_file = "./scripts/dry-run.sh"
 §§
 
-※※
+※judge※
 Step 7 — judge. Opus reads the intent and the actual candidate file and decides whether the
 candidate MATCHES the intent (right trigger, right node shape, plausible behavior on paper).
 output_format is advisory only — opus often returns prose instead of JSON, so we do NOT gate
@@ -347,7 +347,7 @@ Output:
   (or `SKY_FORGE delivers=false`). Do not add any prose after this line.
 ∆∆
 
-※※
+※gate※
 Step 8 — gate. DETERMINISTIC bash, no LLM. The FAIL-CLOSED acceptance gate. delivers=true ONLY
 when ALL THREE hold: lint clean ($SKY_OUTPUT_LINT), dry_ok ($SKY_OUTPUT_DRY_RUN), and the judge
 sentinel says true ($SKY_OUTPUT_JUDGE). A missing/garbled sentinel, a skipped dry-run, or a
@@ -363,7 +363,7 @@ trigger_rule = "all_done"
 bash_file = "./scripts/gate.sh"
 §§
 
-※※
+※finalize※
 Step 9 — finalize. Opus under isolation = "worktree" (per-node throwaway git worktree — the
 live checkout is NEVER edited in place). Runs ONLY when the gate says delivers == 'true'.
 Renames the candidate from the sentinel name forge-candidate to its REAL intended name, writes
@@ -406,7 +406,7 @@ Do exactly this:
 7. Print the PR URL.
 ∆∆
 
-※※
+※cleanup※
 Step 10 — cleanup. DETERMINISTIC bash, no LLM. trigger_rule = "all_done" so it runs whether
 finalize ran, was skipped, or failed. Removes the scratch repo-tier candidate file so the
 .sky/workflows/ tier is left exactly as found (the candidate was only ever a temp resolution

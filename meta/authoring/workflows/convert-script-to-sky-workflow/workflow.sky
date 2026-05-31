@@ -6,9 +6,19 @@ output_style = "terse"
 max_budget_usd = 3
 ⊕⊕
 
+※read※
+read — cat the source file (shell script / Makefile / cron line).
+No upstream; fires at trigger.
+※※
+
 §read§
 bash_file = "./scripts/read.sh"
 §§
+
+※author※
+author — Claude (sonnet) maps source to {{dir}}/{{name}}.sky using sky-workflow-authoring skill.
+Waits for: read all_success. Resumes source from $SKY_OUTPUT_READ.
+※※
 
 §author§
 model = "sonnet"
@@ -38,6 +48,11 @@ Author one `.sky` file at {{dir}}/{{name}}.sky following the sky-workflow-author
 Write the file. Do not run anything. Report the path you wrote and a one-line summary of how you mapped the source.
 ∆∆
 
+※lint※
+lint — Claude (sonnet) runs sky lint in loop, fixes errors until exit 0.
+Waits for: author all_success. Loops until: sky lint "{{dir}}/{{name}}.sky" exits 0 (max 6 iterations).
+※※
+
 §lint§
 model = "sonnet"
 skills = ["sky-workflow-authoring"]
@@ -60,6 +75,11 @@ Each loop pass:
 
 Stop when `sky lint` exits 0. Report the final lint output.
 ∆∆
+
+※dryrun※
+dryrun — Best-effort dry-run: sky run <name> --dry-run (swallows failures).
+Waits for: lint all_done (implicit). Never fails the run.
+※※
 
 §dryrun§
 bash_file = "./scripts/dryrun.sh"

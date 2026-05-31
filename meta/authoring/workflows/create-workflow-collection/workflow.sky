@@ -50,21 +50,18 @@ trigger.manual = true
 output_style = "terse"
 ⊕⊕
 
-※※
-Step 1 — preflight. Validates that `gh` is installed and authenticated, that the
-required `vendor` var is present, and prints the resolved configuration (filling
-in defaults for the optional vars) so the operator can confirm before any remote
-work is done.
+※preflight※
+Validates gh, auth, and required vendor var. Prints resolved config (org, repo, vendor, vendor-name).
+No depends_on. Exits early if preconditions fail.
 ※※
 
 §preflight§
 bash_file = "./scripts/preflight.sh"
 §§
 
-※※
-Step 2 — create. Creates the GitHub repo from the
-`skylence-be/community-workflow-collection-skeleton` template using `gh repo create
---template`. Fails immediately if the repo already exists (never clobbers).
+※create※
+Creates GitHub repo from community-workflow-collection-skeleton template. Uses gh repo create --template.
+depends_on = ["preflight"]; runs after validation succeeds. Fails if repo already exists.
 ※※
 
 §create§
@@ -72,12 +69,10 @@ depends_on = ["preflight"]
 bash_file = "./scripts/create.sh"
 §§
 
-※※
-Step 3 — setup. Clones the new repo into a tmp directory, performs the same
-token replacements that `configure.sh` would do interactively (vendor slug, vendor
-name, author info, description, today's date), renames the `workflows/__vendor__/`
-placeholder directory, strips the `<!--delete-->` onboarding block from README.md,
-and pushes the initial configured commit. Removes the tmp clone on exit.
+※setup※
+Clones repo → tmp dir, runs token replacements (vendor, author, date), renames workflows/__vendor__/,
+strips README delete-blocks, commits, and pushes. Cleans tmp dir on exit.
+depends_on = ["create"]; runs after repo creation succeeds.
 ※※
 
 §setup§
@@ -85,9 +80,9 @@ depends_on = ["create"]
 bash_file = "./scripts/setup.sh"
 §§
 
-※※
-Step 4 — report. Prints the repo URL, the `sky library add` command for local
-installation, and the suggested next steps for adding the first real workflow.
+※report※
+Prints repo URL, sky library add command, and next steps for adding first workflow.
+depends_on = ["setup"]; runs after setup succeeds. Final output step.
 ※※
 
 §report§

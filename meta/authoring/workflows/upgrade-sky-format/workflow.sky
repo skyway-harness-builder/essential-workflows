@@ -46,7 +46,7 @@ output_style = "terse"
 max_budget_usd = 2.00
 ⊕⊕
 
-※※
+※probe※
 Step 1 — probe. Lints the file and exits with lint's own status: 0 when clean (so the
 fix node is skipped), nonzero when dirty (so the fix node fires). A missing file is a
 hard error (exit 1) with a clear message.
@@ -56,10 +56,11 @@ hard error (exit 1) with a clear message.
 bash_file = "./scripts/probe.sh"
 §§
 
-※※
+※fix※
 Step 2 — fix. Runs ONLY when probe failed (trigger_rule = one_failure), so a clean
 file costs zero tokens. The Claude node reads the file, fixes every reported code, and
 re-lints inside its own turn until `sky lint` passes — no separate loop node needed.
+depends_on: ["probe"]; trigger_rule: "one_failure".
 ※※
 
 §fix§
@@ -82,9 +83,10 @@ Otherwise work this loop until it passes:
 5. Keep the workflow entirely in English. When clean, print the final lint result.
 ∆∆
 
-※※
+※diff※
 Step 3 — diff. Always runs (trigger_rule = all_done), whether fix ran or was skipped,
 so you can see exactly what changed. The diff is empty when the file was already clean.
+depends_on: ["probe", "fix"]; trigger_rule: "all_done".
 ※※
 
 §diff§

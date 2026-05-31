@@ -6,9 +6,17 @@ output_style = "terse"
 max_budget_usd = 1
 ⊕⊕
 
+※scan※
+Scan target directory for all .sky files; for each, count prompt/model nodes, detect max_budget_usd presence, and list model tiers. Emit TSV: name, claude_node_count, has_cap, models. Triggered by manual input; no dependencies.
+※※
+
 §scan§
 bash_file = "./scripts/scan.sh"
 §§
+
+※report※
+Analyze scan output from $SKY_OUTPUT_SCAN (TSV lines). Depends on scan's success. Ranks all Claude workflows by rough cost risk; lists every workflow missing max_budget_usd cap with suggested cap. Haiku model only. trigger_rule = all_success.
+※※
 
 §report§
 model = "haiku"

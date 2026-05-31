@@ -6,9 +6,17 @@ output_style = "terse"
 max_budget_usd = 3.00
 ⊕⊕
 
+※scan※
+Glob $SKY_DIR/*.sky; run `sky lint` on each file; exit 1 if any failed (gate for fix node).
+※※
+
 §scan§
 bash_file = "./scripts/scan.sh"
 §§
+
+※fix※
+depends_on=["scan"]; trigger_rule=one_failure (runs ONLY if scan failed); Claude fixes each file per SKY-WF-* error codes, re-linting after each edit.
+※※
 
 §fix§
 model = "sonnet"
@@ -45,6 +53,10 @@ Rules you MUST respect while editing:
 
 Re-lint each file you touched after editing. When `sky lint` exits 0 on every previously-failing file, stop. Do not edit files that already passed.
 ∆∆
+
+※verify※
+depends_on=["fix"]; loop.until.bash exits 0 when all .sky files in $SKY_DIR lint clean; loop.max=6 retries; fails if any file still fails after max attempts.
+※※
 
 §verify§
 depends_on = ["fix"]

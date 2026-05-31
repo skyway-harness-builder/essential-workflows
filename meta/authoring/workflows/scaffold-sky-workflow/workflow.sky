@@ -48,10 +48,9 @@ output_style = "terse"
 max_budget_usd = 2.00
 ⊕⊕
 
-※※
-Step 1 — author. Writes the new workflow file from the brief, following the
-bundled sky-workflow-authoring skill (four delimiters, valid trigger, node DAG,
-correct variable references). Does not lint yet — that's the next stage.
+※author※
+Step 1 — author. Writes the new workflow file from the brief ({{request}}) via the
+sky-workflow-authoring skill. Outputs {{dir}}/{{name}}/workflow.sky. No edges.
 ※※
 
 §author§
@@ -69,11 +68,10 @@ Language rule: the brief above may be written in any language. Write the workflo
 Follow the sky-workflow-authoring skill exactly: the four Unicode delimiter blocks (⊕meta⊕, §id§, ∆id∆, ※※), `name = "{{name}}"` matching the filename, exactly one trigger, and a sensible node DAG. Pick node types (claude / bash / script / http / loop) that fit the brief. Two audiences (per the skill): write the ∆ prompt bodies for the model — terse, machine-oriented, no concern for human readability; write the ※※ comment blocks for the human — clear, and when the flow branches/loops/gates add the diagram that explains it fastest (ASCII, Mermaid, sequence, or swimlane). Create the {{dir}} directory if absent. Write the file — do not lint it yet.
 ∆∆
 
-※※
-Step 2 — lint. A loop node: each pass reads the file the author wrote, runs
-`sky lint`, and fixes every reported error. The loop.until.bash condition
-re-runs this node until lint exits 0 (max 6 passes). Loop nodes can't chain a
-session, so the prompt reads the file fresh each pass.
+※lint※
+Step 2 — lint & fix. Loop node (max 6 passes) that reads {{dir}}/{{name}}/workflow.sky,
+runs sky lint, and fixes all errors. Edge: depends_on=["author"], trigger_rule=all_done.
+Condition: loop.until.bash exits 0 (clean lint) or loop.max exhausted.
 ※※
 
 §lint§

@@ -58,7 +58,7 @@ output_style = "terse"
 max_budget_usd = 2.00
 ⊕⊕
 
-※※
+※copy※
 Step 1 — copy. Resolves the source, refuses if it is missing (lists the dir to help) and
 refuses if the destination already exists (never clobber an existing workflow). On success
 it plain-copies source -> dest. No mutation of either file's contents yet.
@@ -68,7 +68,7 @@ it plain-copies source -> dest. No mutation of either file's contents yet.
 bash_file = "./scripts/copy.sh"
 §§
 
-※※
+※rewrite※
 Step 2 — rewrite. Two edits to the destination, both via portable temp-file sed (no
 `sed -i`; BSD and GNU differ). First retarget the meta name to the new name. Then strip
 every `^trigger.` line with `grep -v` to a temp file and `mv` it back — this is the
@@ -81,7 +81,7 @@ depends_on = ["copy"]
 bash_file = "./scripts/rewrite.sh"
 §§
 
-※※
+※lint※
 Step 3 — lint. A loop node: each pass reads the clone fresh, runs `sky lint`, and fixes
 every reported issue (e.g. an orphaned secrets/when reference left by the trigger strip).
 The loop.until.bash re-runs the node until lint exits 0 (max 6 passes). Loop nodes can't
@@ -100,7 +100,7 @@ loop.max = 6
 Read {{dir}}/{{new-name}}.sky, then run `sky lint {{dir}}/{{new-name}}.sky` and read its output. Fix every reported error and warning in that file, using the sky-workflow-authoring skill's SKY-WF-* code table to map each code to its fix. Context: this file is a clone of another workflow with its trigger lines stripped, so it is now a manual workflow — do NOT add a trigger back. Likely leftovers from the strip: a `when`/`secrets`/`mcp_servers` reference that pointed at trigger payload data, or a `name` mismatch. Ensure `name = "{{new-name}}"` matches the filename. Keep the workflow body in English. Re-run lint after editing. This node loops until lint exits 0 — make concrete fixes each pass. When clean, output the final lint result and the file path.
 ∆∆
 
-※※
+※describe※
 Step 4 — describe. Best-effort `sky describe` of the finished clone for a quick
 human-readable summary (tolerated if the subcommand is unavailable), then prints done.
 ※※
