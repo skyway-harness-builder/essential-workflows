@@ -124,7 +124,7 @@ bash_file = "./scripts/read-skill.sh"
 §§
 
 ※parse※
-Step 2 — parse. Claude (haiku). Reads the skill source block from read-skill and SYNTHESIZES a
+Step 2 — parse. Claude (haiku). Depends on read-skill; reads skill source block and SYNTHESIZES a
 v1 eval suite: 3–5 concrete, checkable success cases that exercise what the skill PROMISES. These
 are judge-generated evals; hand-authored fixtures are a deliberate follow-up (note that). Output is
 structured text (numbered cases), consumed verbatim by baseline-exercise and judge.
@@ -163,10 +163,10 @@ Output EXACTLY this structure, nothing else:
 ∆∆
 
 ※baseline-exercise※
-Step 3 — baseline-exercise. Claude (sonnet). Exercises the skill against the synthesized eval
-cases. The skill's guidance is INJECTED as the SKILL.md text from read-skill (NOT via skills[]).
-For each case it produces the response a skill-loaded model would give, so the judge can score the
-SKILL AS WRITTEN. Capture one transcript per case.
+Step 3 — baseline-exercise. Claude (sonnet). Depends on parse; exercises the skill against the
+synthesized eval cases. The skill's guidance is INJECTED as the SKILL.md text from read-skill
+(NOT via skills[]). For each case it produces the response a skill-loaded model would give, so the
+judge can score the SKILL AS WRITTEN. Capture one transcript per case.
 ※※
 
 §baseline-exercise§
@@ -200,11 +200,11 @@ Do not score yourself — the next step judges. Do not edit any files.
 ∆∆
 
 ※judge※
-Step 4 — judge. Claude (opus) + ADVISORY output_format. Scores each eval case pass/fail, pinpoints
-WHERE each failure lives, and computes pass_rate. The output_format is advisory ONLY — opus may
-return prose; the deterministic `gate` bash node (next) parses a machine SENTINEL instead, so the
-gate never depends on LLM-formatted JSON (same lesson as track-anthropic-changes). The prompt mirrors
-the schema AND mandates the sentinel as the final line.
+Step 4 — judge. Claude (opus) + ADVISORY output_format. Depends on baseline-exercise; scores each
+eval case pass/fail, pinpoints WHERE each failure lives, and computes pass_rate. The output_format
+is advisory ONLY — opus may return prose; the deterministic `gate` bash node (next) parses a
+machine SENTINEL instead, so the gate never depends on LLM-formatted JSON. The prompt mirrors the
+schema AND mandates the sentinel as the final line.
 ※※
 
 §judge§
@@ -247,12 +247,12 @@ Output, in this exact order:
 ∆∆
 
 ※gate※
-Step 5 — gate. DETERMINISTIC bash. Greps the judge output for the `SKY_FORGE delivers=…` sentinel
-and emits ONE clean JSON line {"delivers":"true|false"} — bash output always parses, so the
-downstream `when` never silently falls back. FAIL-CLOSED: only an explicit `delivers=true` yields
-true; a missing/garbled sentinel yields "false". Rationale (opposite of track-anthropic-changes'
-fail-open): a false "delivers=true" would SHIP A BROKEN SKILL via PR; a false "delivers=false" just
-runs a cheap, bounded improve loop. The costlier mistake is gated against.
+Step 5 — gate. DETERMINISTIC bash. Depends on judge; greps the judge output for the `SKY_FORGE
+delivers=…` sentinel and emits ONE clean JSON line {"delivers":"true|false"} — bash output always
+parses, so the downstream `when` never silently falls back. FAIL-CLOSED: only an explicit
+`delivers=true` yields true; a missing/garbled sentinel yields "false". Rationale: a false
+"delivers=true" would SHIP A BROKEN SKILL via PR; a false "delivers=false" just runs a bounded
+improve loop. The costlier mistake is gated against.
 ※※
 
 §gate§
@@ -261,17 +261,14 @@ bash_file = "./scripts/gate.sh"
 §§
 
 ※improve※
-Step 6 — improve. Claude (sonnet) PROMPT-BODY LOOP, runs ONLY when the gate says delivers=false
-(reading the gate bash node's deterministic JSON, not LLM output). isolation = "worktree": all edits
-land in a throwaway checkout, never the live repo. Each loop iteration is a FRESH `claude -p`
-invocation — sky shells out per node execution and nothing carries the session over without
-chain_from — so each pass reasons fresh on the current worktree state. (There is NO `context`/
-`fresh_context` node key; that mechanism does not exist. Fresh-per-iteration is intrinsic to a
-prompt loop body.) The body edits SKILL.md + bundled scripts to fix the judged failures, then
-re-exercises + self-judges and WRITES a one-line verdict to a per-run sentinel file. loop.until.bash
-greps that file for delivers=true; loop.max = 3 caps the passes (loop bodies may be prompt/command/
-bash, NOT http/eval/wait — SKY-WF-037). The sentinel path is derived from $SKY_RUN_ID inside the
-loop.until.bash (a bash context, where {{var}} does not expand — env channel only).
+Step 6 — improve. Claude (sonnet) PROMPT-BODY LOOP. Depends on gate, judge, read-skill; runs
+ONLY when gate outputs delivers=false (when = "$gate.output.delivers == 'false'"). isolation =
+"worktree": all edits in a throwaway checkout, never the live repo. Each loop iteration is a
+FRESH `claude -p` invocation (no session carry-over without chain_from; Fresh-per-iteration is
+intrinsic to a prompt loop body). Body edits SKILL.md + bundled scripts to fix judged failures,
+then re-exercises + self-judges and WRITES a one-line verdict to a per-run sentinel file.
+loop.until.bash greps that file for delivers=true; loop.max = 3 caps the passes. The sentinel
+path is derived from $SKY_RUN_ID inside the loop.until.bash (env channel only).
 ※※
 
 §improve§
@@ -318,14 +315,13 @@ Do not commit, push, or open a PR — finalize does that. Do not touch anything 
 ∆∆
 
 ※lint-scripts※
-Step 7 — lint-scripts. DETERMINISTIC bash, no LLM. Statically lints the bundled scripts in the
-worktree where a toolchain exists IN-CONTAINER: `bash -n` (parse-check) for *.sh, `node --check`
-for *.js/*.mjs/*.cjs. NEVER executes the scripts (parse-only — see SAFETY SCOPE). Languages without
-an in-container toolchain (e.g. Go — the prod debian-slim image has no Go) are listed as deferred-to-CI.
-Non-fatal by design: a static-check failure is REPORTED and carried into finalize's PR body so a human
-sees it; CI on the pushed branch is the real gate. Reads the same skill_dir resolution as read-skill.
-NOTE: this runs against the LIVE checkout's skill_dir for languages whose static check is path-pure;
-the improved files live in improve's worktree, so finalize re-runs the authoritative checks pre-PR.
+Step 7 — lint-scripts. DETERMINISTIC bash, no LLM. Depends on improve. Statically lints bundled
+scripts in the worktree where a toolchain exists IN-CONTAINER: `bash -n` for *.sh, `node --check`
+for *.js/*.mjs/*.cjs. NEVER executes the scripts (parse-only). Languages without in-container
+toolchain (e.g. Go) deferred-to-CI. Non-fatal by design: a static-check failure is REPORTED into
+finalize's PR body; CI on the pushed branch is the real gate. Reads the same skill_dir resolution as
+read-skill. NOTE: this runs against the LIVE checkout's skill_dir for path-pure checks; the improved
+files live in improve's worktree, so finalize re-runs the authoritative checks pre-PR.
 ※※
 
 §lint-scripts§
@@ -334,14 +330,14 @@ bash_file = "./scripts/lint-scripts.sh"
 §§
 
 ※finalize※
-Step 8 — finalize. bash + gh, isolation = "worktree". Commits the improved skill tree (only files
-under the target skill_dir) on a branch and opens a PR. CI IS THE QUALITY GATE — this never merges.
-IDEMPOTENT: if the worktree has no changes under skill_dir (the skill already delivered, or improve
-was skipped/made no edits), it prints "already passing — no PR" and opens nothing.
-PROTECTED-FILES BOUNDARY (#39): the commit is scoped with an explicit pathspec to the skill_dir, and
-an EXPLICIT GUARD rejects any staged path matching MISSION.md / FACTORY_RULES.md / .github/ / .sky/ /
-learnings — if such a path is staged, the node fails closed and opens nothing (defence in depth on top
-of improve's prompt-level boundary). No destructive shell patterns. SKILL_REPO/skill_name from env.
+Step 8 — finalize. bash + gh. Depends on lint-scripts; isolation = "worktree". Commits the improved
+skill tree (only files under the target skill_dir) on a branch and opens a PR. CI IS THE QUALITY
+GATE — this never merges. IDEMPOTENT: if the worktree has no changes under skill_dir (the skill
+already delivered, or improve was skipped/made no edits), it prints "already passing — no PR" and
+opens nothing. PROTECTED-FILES BOUNDARY (#39): the commit is scoped with an explicit pathspec to
+the skill_dir, and an EXPLICIT GUARD rejects any staged path matching MISSION.md / FACTORY_RULES.md
+/ .github/ / .sky/ / learnings — if such a path is staged, the node fails closed and opens nothing
+(defence in depth on top of improve's prompt-level boundary). No destructive shell patterns.
 ※※
 
 §finalize§
