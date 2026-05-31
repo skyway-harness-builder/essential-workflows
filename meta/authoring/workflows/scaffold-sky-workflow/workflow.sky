@@ -67,7 +67,13 @@ What it must do: {{request}}
 
 Language rule: the brief above may be written in any language. Write the workflow itself entirely in English — `name`, all config keys, node ids, and every ∆ prompt body. Only the ※※ comment blocks may be written in the brief's language, to document the workflow for its author.
 
-Follow the sky-workflow-authoring skill exactly: the four Unicode delimiter blocks (⊕meta⊕, §id§, ∆id∆, ※※), `name = "{{name}}"` matching the filename, exactly one trigger, and a sensible node DAG. Pick node types (claude / bash / script / http / loop) that fit the brief. Two audiences (per the skill): write the ∆ prompt bodies for the model — terse, machine-oriented, no concern for human readability; write the ※※ comment blocks for the human — clear, and when the flow branches/loops/gates add the diagram that explains it fastest (ASCII, Mermaid, sequence, or swimlane). Create the {{dir}} directory if absent. Write the file — do not lint it yet.
+Follow the sky-workflow-authoring skill exactly: the four Unicode delimiter blocks (⊕meta⊕, §id§, ∆id∆, ※※), `name = "{{name}}"` matching the filename, exactly one trigger, and a sensible node DAG. Pick node types (claude / bash / script / http / loop) that fit the brief. Two audiences (per the skill): write the ∆ prompt bodies for the model (terse, machine-oriented, no concern for human readability); write the ※※ comment blocks for the human (clear, and when the flow branches/loops/gates add the diagram that explains it fastest: ASCII, Mermaid, sequence, or swimlane). Create the {{dir}} directory if absent.
+
+File editing rule: if `skylence_read` and `skylence_edit` MCP tools are available (sky MCP server connected), use them to write and edit the workflow file. Never use the standard Write/Edit tools when the sky MCP server is connected. `skylence_read` returns a `¶path#TAG` header; pass it verbatim in `skylence_edit` patches.
+
+MCP server rule: for any node in the generated workflow whose task requires an external tool (Cartographer graph queries, GitHub API, Slack, Linear, or any other MCP-backed capability), include an `mcp_servers` key in that node's §§ config block with the relevant server(s). A `claude` node that calls Cartographer must declare the cartographer MCP server; a node posting to Slack must declare the Slack MCP server. Omit `mcp_servers` only when no node needs an external tool.
+
+Write the file — do not lint it yet.
 
 Optional — add a `ui` key to one representative node (e.g. the first Claude prompt node) to demonstrate the dashboard card feature. When you include it, also create the companion markdown file at `{{dir}}/{{name}}/ui/<step>.en.md` (locale form) with YAML frontmatter:
 
@@ -107,11 +113,13 @@ Condition: loop.until.bash exits 0 (clean lint) or loop.max exhausted.
 §lint§
 model = "sonnet"
 depends_on = ["author"]
-skills = ["sky-workflow-authoring"]
+skills = ["sky-workflow-lint"]
 loop.until.bash = "sky lint \"$SKY_DIR/$SKY_NAME/workflow.sky\""
 loop.max = 6
 §§
 
 ∆lint∆
-Read {{dir}}/{{name}}/workflow.sky, then run `sky lint {{dir}}/{{name}}/workflow.sky` and read its output. Fix every reported error and warning in the file, using the sky-workflow-authoring skill's error-code table (SKY-WF-*) to map each code to its fix. Common ones: quote the RHS of `when`; add `chain_from` targets to `depends_on`; quote `$SKY_*` in bash; declare every env-var reference in the `secrets` array. SKY-WF-103 (warning): `ui` key points to a markdown file that does not exist — applies to both the workflow-level `ui` in `⊕meta⊕` and per-node `ui` keys; create the missing file(s) at the declared path(s), or remove the key. Keep the workflow body in English. Re-run lint after editing. This node loops until lint passes — make concrete fixes each pass. When clean, output the final lint result and the file path.
+Read {{dir}}/{{name}}/workflow.sky, then run `sky lint {{dir}}/{{name}}/workflow.sky` and read its output. Fix every reported error and warning in the file, using the sky-workflow-authoring skill's error-code table (SKY-WF-*) to map each code to its fix. Common ones: quote the RHS of `when`; add `chain_from` targets to `depends_on`; quote `$SKY_*` in bash; declare every env-var reference in the `secrets` array. SKY-WF-103 (warning): `ui` key points to a markdown file that does not exist (applies to both the workflow-level `ui` in `⊕meta⊕` and per-node `ui` keys); create the missing file(s) at the declared path(s), or remove the key. Keep the workflow body in English. Re-run lint after editing. This node loops until lint passes; make concrete fixes each pass. When clean, output the final lint result and the file path.
+
+File editing rule: if `skylence_read` and `skylence_edit` MCP tools are available (sky MCP server connected), use them for all reads and edits of the workflow file. Never use the standard Read/Edit/Write tools when the sky MCP server is connected.
 ∆∆
