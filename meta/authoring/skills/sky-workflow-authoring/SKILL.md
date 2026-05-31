@@ -55,6 +55,7 @@ bash = "echo 'hello'"
 | `hooks.pre_tool_use` | object | `{ inject = "...", deny = ["Tool", "*"] }` — workflow-level tool gating. |
 | `learnings` | object | `{ exclude = [...], only = [...], max_bytes = N }` — compound-knowledge injection (floor; overridable per node). Invalid → SKY-WF-062. |
 | `run_doc` | bool | Generate a shared scratchpad skeleton at run start (used by spawn/council). |
+| `ui` | string | Path to a dashboard UI card file describing the **whole workflow** for the outer workflow card. Same resolution rules as the node-level `ui` key: `"ui/workflow"` (extensionless) → locale set: `ui/workflow.<lang>.md` (e.g. `ui/workflow.en.md`, `ui/workflow.nl.md`); `"ui/overview.md"` → single file (locale "default"). The markdown file may have YAML frontmatter with `short_description` (one-line), `long_description` (problem + backstory), and a `changelog` list (`version`, `date` (optional), `note`); the body is freeform markdown rendered into the workflow card. Pure UI — ignored by the DAG engine. No matching file → SKY-WF-103 (warning). |
 | `trigger.*` | — | Exactly one trigger. See below. |
 
 ## Triggers
@@ -101,6 +102,7 @@ Set **exactly one**. With no trigger block, the workflow is **manual** — run v
 | `output_format` | object | JSON Schema for structured output → `--json-schema`. Invalid schema → SKY-WF-060. |
 | `emit` | object\|string | Sky event emitted on success: `"evt.name"` or `{ name = "evt", payload = { k = "v" } }`. |
 | `safety` | string | `requires_permission` suppresses SKY-WF-063 on a destructive bash node. |
+| `ui` | string | Path to a dashboard UI card file (relative to the `.sky` file). Two forms: `"ui/<step>"` (extensionless) → locale set: resolves `ui/<step>.<lang>.md` (e.g. `ui/review.en.md`, `ui/review.nl.md`); `"ui/<step>.md"` → single file (locale "default"). Each file may have YAML frontmatter (`short_description`, `long_description`); markdown body is rendered to HTML in the node card. Pure UI — ignored by the DAG engine. No matching file → SKY-WF-103 (warning). The same frontmatter keys (`short_description`, `long_description`) are shared with the workflow-level `ui` key in `⊕meta⊕` (which additionally supports a `changelog` list). |
 
 ## Node Kinds
 
@@ -237,6 +239,7 @@ Write the workflow file entirely in **English** — `name`, every config key, al
 | 058–060 | loop.idle_timeout_ms misuse / permissions:interactive needs loose / output_format not valid JSON Schema |
 | 061–063 | bare ultraplan/ultrareview keyword / learnings config invalid / destructive bash without safety |
 | 064–069 | invoke: dynamic target / inside loop / self-invoke / not found · acquire_lock: key required / bad ttl |
+| 103 | `ui` resolves to no markdown files (warning) — applies to both the workflow-level `ui` in `⊕meta⊕` and per-node `ui` keys |
 | 078–084 | spawn: workers empty / empty id / empty prompt / bad max_wait / bad on_idle / contradictory boundary / `**` glob |
 | 085–089 | council: members empty / empty member / synthesis empty / bad max_wait / negative budget |
 | 091–095 | review path empty / links entry bad / check_run conclusion invalid / check_run without event / sentry·linear no events |
@@ -248,4 +251,5 @@ Write the workflow file entirely in **English** — `name`, every config key, al
 2. Every `∆id∆` has a matching `§id§`; exactly one execution kind per node.
 3. Every `chain_from` is in `depends_on` and targets a prompt/command node; every `when` RHS is quoted.
 4. No `{{var}}` in bash/script/loop bodies; all `$SKY_*` shell-quoted; every `${env:NAME}` declared in `secrets`.
-5. `sky lint` passes clean.
+5. If `ui` is set in `⊕meta⊕` or on any node, the referenced markdown file(s) exist relative to the `.sky` file (SKY-WF-103 warns when they do not). Workflow-level `ui` in `⊕meta⊕` additionally supports a `changelog` list (`version`, `date`, `note`) in its frontmatter.
+6. `sky lint` passes clean.
