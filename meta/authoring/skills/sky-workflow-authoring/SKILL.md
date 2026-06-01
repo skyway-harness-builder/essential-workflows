@@ -133,7 +133,7 @@ Set **exactly one**. With no trigger block, the workflow is **manual** — run v
 | `learnings` | object | Per-node override of the workflow learnings config. |
 | `hooks` | object | Per-node hooks: `map[event][]{ matcher, response, timeout }`. |
 | `retry` | object | `{ max_attempts = 1..5, delay_ms = N, on_error = "transient"\|"all" }`. |
-| `output_format` | object | JSON Schema for structured output → `--json-schema`. Invalid schema → SKY-WF-060. |
+| `output_format` | string | JSON Schema for structured output → `--json-schema`. **Value must be a compact JSON string on one line**, not a TOML inline table. Correct: `output_format = {"type":"object","required":["x"],"properties":{"x":{"type":"string"}}}`. Wrong: `output_format = { type = "object", ... }` (TOML syntax, SKY-WF-001 parse error). Invalid schema → SKY-WF-060. |
 | `emit` | object\|string | Sky event emitted on success: `"evt.name"` or `{ name = "evt", payload = { k = "v" } }`. |
 | `safety` | string | `requires_permission` suppresses SKY-WF-063 on a destructive bash node. |
 | `ui` | string | Path to a dashboard UI card file (relative to the `.sky` file). Two forms: `"ui/<step>"` (extensionless) → locale set: resolves `ui/<step>.<lang>.md` (e.g. `ui/review.en.md`, `ui/review.nl.md`); `"ui/<step>.md"` → single file (locale "default"). Each file may have YAML frontmatter (`short_description`, `long_description`); markdown body is rendered to HTML in the node card. Pure UI — ignored by the DAG engine. No matching file → SKY-WF-103 (warning). The same frontmatter keys (`short_description`, `long_description`) are shared with the workflow-level `ui` key in `⊕meta⊕` (which additionally supports a `changelog` list). |
@@ -146,7 +146,7 @@ Exactly one execution kind per node (more than one → SKY-WF-024; none → SKY-
 |------|------|
 | prompt | a `∆<id>∆` block (the prompt text). `model` selects the Claude model. |
 | command | `command = ".sky/commands/<name>.md"`; optional `∆` block appended. Missing file → SKY-WF-010. |
-| bash | `bash = "shell command"`. No `∆` block. |
+| bash | `bash = "single-line shell command"`. No `∆` block. For multi-line scripts use `bash_file = "./scripts/<name>.sh"` (place the file in a `scripts/` subdirectory alongside the `.sky` file). Triple-quoted strings (`bash = """..."""`) are not supported and cause SKY-WF-001. |
 | script | `script = { runtime = "bun"\|"uv", timeout = 30000, deps = [...] }`; body from the `∆` block. Bad runtime/templated deps → SKY-WF-052; binary missing → SKY-WF-053. |
 | http | `http = { url, method = "GET", headers = {...}, body, expect_status = 0, timeout_s = 30 }`. Missing url → SKY-WF-034. |
 | eval | `eval = { source = "$node.output", contains \| matches \| equals }` — exactly one assertion (SKY-WF-035/036). |
@@ -247,6 +247,9 @@ Write the workflow file entirely in **English** — `name`, every config key, al
 - Use `{{var}}` in `bash`, `script`, or `loop.until.bash` — use `$SKY_*` env vars.
 - Use `${env:NAME}` in `prompt`/`bash`/`eval`/`script` — it resolves only for `mcp_servers`/`http` (SKY-WF-057). In bash, read `"$GITHUB_TOKEN"` directly.
 - Put a schedule under `trigger.cron` — the key is `trigger.schedule.cron`; a bare `trigger.cron` is not a recognized trigger.
+- Use `trigger.github_status`: that key does not exist. For CI check-run failures use `trigger.github.events = ["check_run.completed"]` paired with `trigger.github.check_run = { conclusion = "failure", name = "CI Name" }`.
+- Write `output_format` as a TOML inline table (`output_format = { type = "object", ... }`): the value must be a compact JSON string: `output_format = {"type":"object","properties":{...}}`.
+- Write multi-line bash inline: use `bash_file = "./scripts/<name>.sh"` instead; triple-quoted strings cause a parse error.
 - Commit secrets/tokens/`.env`.
 - Change an `output_format` schema without updating the `∆` prompt that produces it.
 - Run a destructive bash command without `safety = "requires_permission"` (SKY-WF-063).
