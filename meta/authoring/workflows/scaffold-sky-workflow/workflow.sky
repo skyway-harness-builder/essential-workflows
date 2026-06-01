@@ -113,7 +113,7 @@ Condition: loop.until.bash exits 0 (clean lint) or loop.max exhausted.
 §lint§
 model = "sonnet"
 depends_on = ["author"]
-skills = ["sky-workflow-lint"]
+skills = ["sky-workflow-authoring"]
 loop.until.bash = "sky lint \"$SKY_DIR/$SKY_NAME/workflow.sky\""
 loop.max = 6
 §§
