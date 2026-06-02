@@ -99,7 +99,7 @@ It does **NOT** carry — and there is no API for these, so they are the per-rep
 1. Create the board from the Skylence project template (org project #1):
    gh project copy 1 --source-owner skylence-be --target-owner <owner> --title "<repo> — Dark Factory"
 2. Run board-prep (creates labels, links the project, verifies fields):
-   sky run board-prep --var project=<new-project-number> --var repo=<owner/name>
+   skyway run board-prep --var project=<new-project-number> --var repo=<owner/name>
 3. Do the two manual UI steps board-prep prints: enable Auto-add (filtered to the repo) and
    wire the label→Status automation.
 ```

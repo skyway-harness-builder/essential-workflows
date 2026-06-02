@@ -55,43 +55,43 @@ Write the file. Do not run anything. Report the path you wrote and a one-line su
 ∆∆
 
 ※lint※
-lint — Claude (sonnet) runs sky lint in loop, fixes errors until exit 0.
-Waits for: author all_success. Loops until: sky lint "{{dir}}/{{name}}.sky" exits 0 (max 6 iterations).
+lint — Claude (sonnet) runs skyway lint in loop, fixes errors until exit 0.
+Waits for: author all_success. Loops until: skyway lint "{{dir}}/{{name}}.sky" exits 0 (max 6 iterations).
 ※※
 
 ※lint※
-Lint-fix loop: runs sky lint on new workflow, fixes SKY-WF-* errors each pass; loop.until.bash exits 0; loop.max=6. depends_on=["author"], trigger_rule=all_success.
+Lint-fix loop: runs skyway lint on new workflow, fixes SKY-WF-* errors each pass; loop.until.bash exits 0; loop.max=6. depends_on=["author"], trigger_rule=all_success.
 ※※
 §lint§
 model = "sonnet"
 skills = ["sky-workflow-authoring"]
 depends_on = ["author"]
 trigger_rule = "all_success"
-loop.until.bash = "sky lint \"$SKY_DIR/$SKY_NAME.sky\""
+loop.until.bash = "skyway lint \"$SKY_DIR/$SKY_NAME.sky\""
 loop.max = 6
 §§
 
 ∆lint∆
-Run `sky lint` on the workflow you just authored and fix every error and warning until it exits 0.
+Run `skyway lint` on the workflow you just authored and fix every error and warning until it exits 0.
 
 Target file: {{dir}}/{{name}}.sky
 
 Each loop pass:
-1. Run: sky lint "{{dir}}/{{name}}.sky"
+1. Run: skyway lint "{{dir}}/{{name}}.sky"
 2. Read each reported code (e.g. SKY-WF-040, SKY-WF-055, SKY-WF-063) and the line it points at.
 3. Edit the file to fix it. Common fixes: quote the RHS of every `when`; add any chain_from target to depends_on; declare every env token used in mcp_servers/http in the secrets array; add safety = "requires_permission" to any bash node using rm -r / rm -rf / rm -f; keep name equal to the filename stem.
 4. Re-lint.
 
-Stop when `sky lint` exits 0. Report the final lint output.
+Stop when `skyway lint` exits 0. Report the final lint output.
 ∆∆
 
 ※dryrun※
-dryrun — Best-effort dry-run: sky run <name> --dry-run (swallows failures).
+dryrun — Best-effort dry-run: skyway run <name> --dry-run (swallows failures).
 Waits for: lint all_done (implicit). Never fails the run.
 ※※
 
 ※dryrun※
-Best-effort dry-run via sky run <name> --dry-run; swallows failures so a half-valid draft still surfaces output. depends_on=["lint"].
+Best-effort dry-run via skyway run <name> --dry-run; swallows failures so a half-valid draft still surfaces output. depends_on=["lint"].
 ※※
 §dryrun§
 bash_file = "./scripts/dryrun.sh"
@@ -117,12 +117,12 @@ DAG
 
   read    bash; cat the source file, exit 1 if missing or empty
   author  claude/sonnet; map the source to {{dir}}/{{name}}.sky
-  lint    claude/sonnet loop; `sky lint` until exit 0 (loop.max 6)
-  dryrun  bash; `sky run <name> --dry-run`, best-effort (never fails the run)
+  lint    claude/sonnet loop; `skyway lint` until exit 0 (loop.max 6)
+  dryrun  bash; `skyway run <name> --dry-run`, best-effort (never fails the run)
 
 RUN
 ---
-  sky run convert-script-to-sky-workflow \
+  skyway run convert-script-to-sky-workflow \
     --var dir=.sky/workflows \
     --var name=my-new-workflow \
     --var source=scripts/nightly-backup.sh

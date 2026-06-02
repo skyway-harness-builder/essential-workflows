@@ -1,6 +1,6 @@
 #!/bin/bash
 set -u
-OUT=$(sky run forge-candidate --dry-run --format json 2>/dev/null)
+OUT=$(skyway run forge-candidate --dry-run --format json 2>/dev/null)
 RC=$?
 echo "dry-run-rc=$RC" >&2
 printf '%s\n' "$OUT" | head -c 400 >&2

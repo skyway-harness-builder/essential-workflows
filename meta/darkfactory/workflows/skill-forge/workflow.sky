@@ -8,12 +8,12 @@ generate → exercise → judge until a judge-scored eval GATE passes, then open
 
 Fire it:
 
-  sky run skill-forge --var skill_name=<name>
+  skyway run skill-forge --var skill_name=<name>
 
 `{{skill_name}}` is the target skill directory under `<repo>/.claude/skills/<skill_name>/`
 (a `SKILL.md` plus any bundled scripts). `trigger.manual = true` — operator-driven only.
 
-  (manual run — sky run skill-forge --var skill_name=<name>)
+  (manual run — skyway run skill-forge --var skill_name=<name>)
         │
         ▼
    ┌──────────────┐  bash, no LLM. Resolve the repo checkout + the target skill dir, then
@@ -102,7 +102,7 @@ DEVIATIONS FROM THE ISSUE DAG (see manifest discussion):
 
 ⊕meta⊕
 name = "skill-forge"
-description = "Meta-workflow: drive one of YOUR skills (a .claude/skills/<name>/SKILL.md plus bundled scripts) toward a measurable bar by looping generate → exercise → judge until a judge-scored eval gate passes (fail-closed), then stage a PR for a human to merge. Runs against your repo (the run's working dir); all mutation is in a throwaway worktree (isolation=worktree). v1 does NOT execute model-generated scripts (static bash -n / node --check only); full sandboxed execution is deferred behind the threat-model sandbox decision. Bounded by max_budget_usd + loop.max. Idempotent: an already-delivering skill opens no PR. Fire via: sky run skill-forge --var skill_name=<name>"
+description = "Meta-workflow: drive one of YOUR skills (a .claude/skills/<name>/SKILL.md plus bundled scripts) toward a measurable bar by looping generate → exercise → judge until a judge-scored eval gate passes (fail-closed), then stage a PR for a human to merge. Runs against your repo (the run's working dir); all mutation is in a throwaway worktree (isolation=worktree). v1 does NOT execute model-generated scripts (static bash -n / node --check only); full sandboxed execution is deferred behind the threat-model sandbox decision. Bounded by max_budget_usd + loop.max. Idempotent: an already-delivering skill opens no PR. Fire via: skyway run skill-forge --var skill_name=<name>"
 trigger.manual = true
 output_style = "terse"
 max_budget_usd = 8.00

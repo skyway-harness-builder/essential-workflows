@@ -1,7 +1,7 @@
 #!/bin/bash
 set -u
 NAME="${SKY_SKILL_NAME:-}"
-if [ -z "$NAME" ]; then echo 'SKILL_FORGE_FAILED: skill_name var is required (sky run skill-forge --var skill_name=<name>)' >&2; exit 1; fi
+if [ -z "$NAME" ]; then echo 'SKILL_FORGE_FAILED: skill_name var is required (skyway run skill-forge --var skill_name=<name>)' >&2; exit 1; fi
 REPO="${SKY_SKILL_REPO:-$PWD}"
 if [ ! -d "$REPO/.git" ]; then echo "SKILL_FORGE_FAILED: $REPO is not a git checkout" >&2; exit 1; fi
 DIR="$REPO/.claude/skills/$NAME"

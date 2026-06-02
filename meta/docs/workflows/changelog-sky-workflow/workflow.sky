@@ -28,7 +28,7 @@ DAG
 
 RUN
 ---
-  sky run changelog-sky-workflow --vars dir=/path/to/repo,name=my-workflow
+  skyway run changelog-sky-workflow --vars dir=/path/to/repo,name=my-workflow
 
 VARS
 ----

@@ -33,9 +33,9 @@ Steps:
    - Append `(when ...)` next to a node that has a `when` guard.
    - Note `chain_from` edges as `=chain=>` so they are distinguishable from plain `depends_on`.
    - Roots on the left / top, leaves on the right / bottom.
-5. Open the existing top ※※ … ※※ documentation block (the loose header with no id in its opener). Replace ONLY its ASCII diagram section with the diagram you built. Preserve the rest of that header verbatim: the title line, the `sky run ...` command, and every `--var` explanation. If the header has no diagram yet, insert your diagram immediately under the title line, above the run command.
+5. Open the existing top ※※ … ※※ documentation block (the loose header with no id in its opener). Replace ONLY its ASCII diagram section with the diagram you built. Preserve the rest of that header verbatim: the title line, the `skyway run ...` command, and every `--var` explanation. If the header has no diagram yet, insert your diagram immediately under the title line, above the run command.
    NOTE: The file may also have per-step ※<id>※ … ※※ blocks (with an id between the ※ delimiters). Do NOT touch those — only the top loose ※※ header (the one whose opener is exactly `※※`, no id) is modified.
-6. If the file has NO top ※※ header block at all, create one: a title line (the workflow name), the new ASCII diagram, the `sky run {{name}} --var dir=... --var name=...` command, and one `--var` line per declared var. Use a loose `※※` opener (no id).
+6. If the file has NO top ※※ header block at all, create one: a title line (the workflow name), the new ASCII diagram, the `skyway run {{name}} --var dir=... --var name=...` command, and one `--var` line per declared var. Use a loose `※※` opener (no id).
 
 Use the Edit tool to make the in-place change. Do NOT rewrite the whole file. Do NOT use bash sed/awk text-surgery on the ※※ delimiters — that is fragile and may corrupt the block. Make a single targeted Edit replacing the old diagram text with the new diagram text.
 
@@ -43,26 +43,26 @@ Do not change any `⊕meta⊕`, `§…§`, or `∆…∆` block, or any ※<id>�
 ∆∆
 
 ※lint※
-Loop fixer. Depends on draw (reads lint output, fixes file). Loops until sky lint exits 0 (loop.until.bash), max 6 passes. Repairs any ※※ delimiter placement or stray glyphs introduced during diagram generation.
+Loop fixer. Depends on draw (reads lint output, fixes file). Loops until skyway lint exits 0 (loop.until.bash), max 6 passes. Repairs any ※※ delimiter placement or stray glyphs introduced during diagram generation.
 ※※
 
 §lint§
 depends_on = ["draw"]
 model = "haiku"
 skills = ["sky-workflow-authoring"]
-loop.until.bash = "sky lint \"$SKY_DIR/$SKY_NAME.sky\""
+loop.until.bash = "skyway lint \"$SKY_DIR/$SKY_NAME.sky\""
 loop.max = 6
 §§
 
 ∆lint∆
-`sky lint` failed on {{dir}}/{{name}}.sky. Read the lint output above and the file fresh, then fix every reported error and warning.
+`skyway lint` failed on {{dir}}/{{name}}.sky. Read the lint output above and the file fresh, then fix every reported error and warning.
 
 Likely causes after a header rewrite:
 - A ※※ opener or closer that is no longer alone on its own line.
 - Accidental edits to a `⊕meta⊕`, `§…§`, or `∆…∆` delimiter line.
 - A stray delimiter glyph (※, ∆, §, ⊕) introduced inside the diagram text.
 
-Read {{dir}}/{{name}}.sky, apply the minimal Edit to make `sky lint` pass, and stop. Touch only what the lint errors point at; keep the regenerated diagram intact.
+Read {{dir}}/{{name}}.sky, apply the minimal Edit to make `skyway lint` pass, and stop. Touch only what the lint errors point at; keep the regenerated diagram intact.
 ∆∆
 
 ※※
@@ -71,19 +71,19 @@ diagram-sky-workflow — regenerate a .sky file's ※※ ASCII DAG header from i
 DAG:
 
   draw ──▶ lint
-  (haiku)   (loop.until: sky lint; loop.max=6; haiku fixer)
+  (haiku)   (loop.until: skyway lint; loop.max=6; haiku fixer)
 
   draw: READ {{dir}}/{{name}}.sky, parse §id§ nodes + depends_on/chain_from/when
         edges, then EDIT the file in place so the top ※※ header's ASCII diagram
         matches the real edges (title / run command / --var docs kept intact;
         diagram added if missing). Done with the Edit tool, never bash on the
         ※※ delimiters.
-  lint: loop node — re-run `sky lint` and have a haiku fixer repair the file
+  lint: loop node — re-run `skyway lint` and have a haiku fixer repair the file
         (read fresh each pass) until lint exits 0, max 6 passes.
 
 Run:
 
-  sky run diagram-sky-workflow --var dir=.sky/workflows --var name=my-workflow
+  skyway run diagram-sky-workflow --var dir=.sky/workflows --var name=my-workflow
 
 Vars:
 

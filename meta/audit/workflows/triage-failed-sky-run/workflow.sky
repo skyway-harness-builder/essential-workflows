@@ -1,13 +1,13 @@
 ⊕meta⊕
 name = "triage-failed-sky-run"
-description = "Read a failed sky run's logs, pinpoint the failing node + root cause in the .sky source, and propose a fix diff plus the command to apply it (nothing is auto-applied)."
+description = "Read a failed skyway run's logs, pinpoint the failing node + root cause in the .sky source, and propose a fix diff plus the command to apply it (nothing is auto-applied)."
 trigger.manual = true
 output_style = "terse"
 max_budget_usd = 2.0
 ⊕⊕
 
 ※fetch※
-Fetch workflow source and run logs. Bash script confirms .sky exists, calls `sky logs <run>`, outputs logs + source.
+Fetch workflow source and run logs. Bash script confirms .sky exists, calls `skyway logs <run>`, outputs logs + source.
 ※※
 
 §fetch§
@@ -25,7 +25,7 @@ skills = ["sky-workflow-authoring"]
 §§
 
 ※propose※
-Generate unified diff + apply command. depends_on=["diagnose"], chain_from="diagnose" (resumes diagnose session). Outputs diff in standard format + `sky run update-sky-workflow` command.
+Generate unified diff + apply command. depends_on=["diagnose"], chain_from="diagnose" (resumes diagnose session). Outputs diff in standard format + `skyway run update-sky-workflow` command.
 ※※
 
 §propose§
@@ -35,7 +35,7 @@ chain_from = "diagnose"
 §§
 
 ∆diagnose∆
-A sky run failed. Read the workflow source at {{dir}}/{{name}}.sky, then read the run logs + source captured below (logs are best-effort and may be partial or unavailable):
+A skyway run failed. Read the workflow source at {{dir}}/{{name}}.sky, then read the run logs + source captured below (logs are best-effort and may be partial or unavailable):
 
 $SKY_OUTPUT_FETCH
 
@@ -55,7 +55,7 @@ Emit exactly two sections:
 1. A unified diff for {{dir}}/{{name}}.sky that fixes the root cause. Use standard `diff -u` format with `---`/`+++` headers and `@@` hunks so it can be reviewed and applied by hand. Change only what is required.
 
 2. The exact command to apply the fix via the update workflow, on one line:
-   sky run update-sky-workflow --var dir={{dir}} --var name={{name}} --var request="<one-line description of the change>"
+   skyway run update-sky-workflow --var dir={{dir}} --var name={{name}} --var request="<one-line description of the change>"
    Fill in the request with a precise, single-sentence instruction describing the fix.
 
 If the failure is environmental (missing run id, daemon down, transient) rather than a source defect, say so plainly and skip the diff. Keep prose minimal.
@@ -67,12 +67,12 @@ triage-failed-sky-run — diagnose a failed run + propose (not apply) a fix
 DAG:
   fetch ──> diagnose ──(chain_from)──> propose
 
-  fetch     bash: confirm the .sky exists; best-effort `sky logs <run>`; cat the source
+  fetch     bash: confirm the .sky exists; best-effort `skyway logs <run>`; cat the source
   diagnose  claude(sonnet): read source + failure output, name the failing node + root cause
   propose   claude(sonnet, chained from diagnose): output a unified diff + the apply command
 
 Run:
-  sky run triage-failed-sky-run --var dir=.sky/workflows --var name=my-workflow --var run=<run-id>
+  skyway run triage-failed-sky-run --var dir=.sky/workflows --var name=my-workflow --var run=<run-id>
 
 Vars:
   dir   directory containing the .sky file
@@ -81,7 +81,7 @@ Vars:
 
 Notes:
   - A run id is required (--var run); without it fetch exits nonzero.
-  - Node-level failure extraction from logs is best-effort: if `sky logs` is unavailable
+  - Node-level failure extraction from logs is best-effort: if `skyway logs` is unavailable
     or does not name the node, diagnose infers the culprit from the source + error text.
   - Nothing is auto-applied. propose only prints a diff + the update-sky-workflow command;
     review and run that command yourself to apply the fix.

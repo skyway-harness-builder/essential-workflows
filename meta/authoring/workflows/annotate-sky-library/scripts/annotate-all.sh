@@ -9,5 +9,5 @@ fi
 while IFS= read -r wf_dir; do
   [ -z "$wf_dir" ] && continue
   echo "annotating: $wf_dir"
-  sky run annotate-sky-workflow --var "dir=$wf_dir" --var "name=workflow"
+  skyway run annotate-sky-workflow --var "dir=$wf_dir" --var "name=workflow"
 done <<< "$SKY_OUTPUT_SCAN"

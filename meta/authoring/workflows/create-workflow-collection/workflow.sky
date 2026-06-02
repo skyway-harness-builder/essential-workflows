@@ -23,13 +23,13 @@ non-interactively using the provided vars, and push the first commit.
    └───────┘  strip <!--delete--> from README; git commit + push; rm tmp
          │
          ▼
-   ┌────────┐  print repo URL + sky library add command + next steps
+   ┌────────┐  print repo URL + skyway library add command + next steps
    │ report │
    └────────┘
 
 Run it:
 
-  sky run create-workflow-collection \
+  skyway run create-workflow-collection \
     --var vendor=acme-corp \
     --var repo=acme-workflows \
     --var org=acme-org \
@@ -45,7 +45,7 @@ Run it:
 
 ⊕meta⊕
 name = "create-workflow-collection"
-description = "Scaffold a new community workflow collection from the skylence-be/community-workflow-collection-skeleton template, configure it, and push the first commit. Fire via: sky run create-workflow-collection --var vendor=<slug> [--var repo=<name>] [--var org=<org>] [--var vendor-name=<label>] [--var description=<text>]"
+description = "Scaffold a new community workflow collection from the skylence-be/community-workflow-collection-skeleton template, configure it, and push the first commit. Fire via: skyway run create-workflow-collection --var vendor=<slug> [--var repo=<name>] [--var org=<org>] [--var vendor-name=<label>] [--var description=<text>]"
 trigger.manual = true
 output_style = "terse"
 ⊕⊕
@@ -81,7 +81,7 @@ bash_file = "./scripts/setup.sh"
 §§
 
 ※report※
-Prints repo URL, sky library add command, and next steps for adding first workflow.
+Prints repo URL, skyway library add command, and next steps for adding first workflow.
 depends_on = ["setup"]; runs after setup succeeds. Final output step.
 ※※
 

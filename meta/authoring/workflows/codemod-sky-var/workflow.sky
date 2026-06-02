@@ -31,13 +31,13 @@ must hit all three or the workflow breaks:
    └────────┘  ∆old∆->∆new∆, and the quoted "old" id refs in depends_on / chain_from.
        │
        ▼
-   ┌────────┐  sky lint each touched file; exit 1 if ANY fails.
+   ┌────────┐  skyway lint each touched file; exit 1 if ANY fails.
    │ verify │
    └────────┘
 
 Run it (state the directory and the rename with --var):
 
-  sky run codemod-sky-var \
+  skyway run codemod-sky-var \
     --var dir=".sky/workflows" \
     --var old="old-token" \
     --var new="new-token"
@@ -59,7 +59,7 @@ scan output carefully. Use a git working tree so you can `git diff` / revert.
 
 ⊕meta⊕
 name = "codemod-sky-var"
-description = "Bulk-rename one token across every .sky in a dir, consistently across its three forms ({{old}}, $SKY_<UPPER_OLD>, §old§ + quoted id refs), behind a manual gate, then lint every touched file. Pure bash, fragile regex so gated + verified. Fire via: sky run codemod-sky-var --var dir=<dir> --var old=<token> --var new=<token>"
+description = "Bulk-rename one token across every .sky in a dir, consistently across its three forms ({{old}}, $SKY_<UPPER_OLD>, §old§ + quoted id refs), behind a manual gate, then lint every touched file. Pure bash, fragile regex so gated + verified. Fire via: skyway run codemod-sky-var --var dir=<dir> --var old=<token> --var new=<token>"
 trigger.manual = true
 output_style = "terse"
 ⊕⊕

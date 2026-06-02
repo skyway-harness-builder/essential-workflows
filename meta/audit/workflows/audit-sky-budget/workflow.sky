@@ -78,7 +78,7 @@ DAG
       if the dir is missing or contains no .sky files.
 
 RUN
-  sky run audit-sky-budget --var dir=.sky/workflows
+  skyway run audit-sky-budget --var dir=.sky/workflows
 
 VARS
   dir   directory to scan for *.sky files (read in bash as "$SKY_DIR";

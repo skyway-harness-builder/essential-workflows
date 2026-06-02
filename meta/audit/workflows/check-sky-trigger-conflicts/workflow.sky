@@ -18,14 +18,14 @@ double spend. Pure bash, no LLM tokens. Exits non-zero if any collision is found
 
 Run it (state which directory to check with --var dir):
 
-  sky run check-sky-trigger-conflicts --var dir=".sky/workflows"
+  skyway run check-sky-trigger-conflicts --var dir=".sky/workflows"
 
   - dir   directory of .sky files to check — STATE THIS (e.g. .sky/workflows)
 ※※
 
 ⊕meta⊕
 name = "check-sky-trigger-conflicts"
-description = "Detect workflows bound to the same non-manual trigger (sky_event, cron, or github event+action+label) that would all fire together, exit non-zero on collision. Fire via: sky run check-sky-trigger-conflicts --var dir=<path>"
+description = "Detect workflows bound to the same non-manual trigger (sky_event, cron, or github event+action+label) that would all fire together, exit non-zero on collision. Fire via: skyway run check-sky-trigger-conflicts --var dir=<path>"
 trigger.manual = true
 output_style = "terse"
 ⊕⊕
