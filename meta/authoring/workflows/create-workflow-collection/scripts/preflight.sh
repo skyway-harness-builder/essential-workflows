@@ -12,7 +12,7 @@ DESCRIPTION="${SKY_DESCRIPTION:-}"
 # ── vendor is required ────────────────────────────────────────────────────────
 if [ -z "$VENDOR" ]; then
   echo "ERROR: --var vendor=<slug> is required" >&2
-  echo "  Example: sky run create-workflow-collection --var vendor=acme-corp --var repo=acme-workflows" >&2
+  echo "  Example: skyway run create-workflow-collection --var vendor=acme-corp --var repo=acme-workflows" >&2
   exit 1
 fi
 

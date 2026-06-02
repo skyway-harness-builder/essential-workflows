@@ -3,7 +3,7 @@ fail=0
 pass=0
 for f in "$SKY_DIR"/*.sky; do
   [ -e "$f" ] || continue
-  if out=$(sky lint "$f" 2>&1); then
+  if out=$(skyway lint "$f" 2>&1); then
     pass=$((pass+1))
     echo "OK    $(basename "$f")"
   else

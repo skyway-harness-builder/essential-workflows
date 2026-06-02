@@ -1,6 +1,6 @@
 ---
 short_description: Author a new .sky workflow from a plain-English brief and lint it clean.
-long_description: Bridges the gap between "I want a workflow that does X" and a lint-passing .sky file on disk. Takes a plain-English request, writes the workflow using the sky-workflow-authoring skill, then loops sky lint until every error is resolved — so the output is always a valid, ready-to-run workflow.
+long_description: Bridges the gap between "I want a workflow that does X" and a lint-passing .sky file on disk. Takes a plain-English request, writes the workflow using the sky-workflow-authoring skill, then loops skyway lint until every error is resolved — so the output is always a valid, ready-to-run workflow.
 changelog:
   - version: "1.1.0"
     date: "2026-05-31"

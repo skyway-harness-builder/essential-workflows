@@ -53,7 +53,7 @@ Move a .sky workflow into an _archive/ subdir with its trigger neutralized so it
 leaves the active load path, behind a manual gate. Reversible via restore mode.
 
 Pure bash, no LLM: moving a file does not change its content, so the moved file
-stays lint-clean and a bash `sky lint` verify suffices. No token cost.
+stays lint-clean and a bash `skyway lint` verify suffices. No token cost.
 
 What archiving does to the trigger
 ----------------------------------
@@ -71,14 +71,14 @@ DAG
   gate    manual confirm (shows both paths via find output); 1h timeout
   move    archive: mkdir _archive, strip trigger lines, git mv (|| mv)
           restore: git mv (|| mv) back, trigger stays neutralized
-  verify  sky lint the moved file at its new path; nonzero exit on failure
+  verify  skyway lint the moved file at its new path; nonzero exit on failure
 
 Run
 ---
   archive (default):
-    sky run archive-sky-workflow --var dir=.sky/workflows --var name=old-flow
+    skyway run archive-sky-workflow --var dir=.sky/workflows --var name=old-flow
   restore:
-    sky run archive-sky-workflow --var dir=.sky/workflows --var name=old-flow --var mode=restore
+    skyway run archive-sky-workflow --var dir=.sky/workflows --var name=old-flow --var mode=restore
 
 Vars
 ----

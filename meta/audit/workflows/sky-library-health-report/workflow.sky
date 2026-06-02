@@ -87,15 +87,15 @@ DAG
    (bash)       (bash)     (haiku)     (bash)
 
   inventory   list "$SKY_DIR"/*.sky; fail if dir missing or empty.
-  checks      per file: sky lint pass/fail, claude-node-without-cap detection,
-              best-effort last-run recency from `sky logs`; emit TSV rows.
+  checks      per file: skyway lint pass/fail, claude-node-without-cap detection,
+              best-effort last-run recency from `skyway logs`; emit TSV rows.
   render      haiku reads $SKY_OUTPUT_CHECKS, grades each row, writes
               "$SKY_DIR"/HEALTH.md (table + one-line rollup).
   verify      assert HEALTH.md exists and is non-empty.
 
 RUN
 ---
-  sky run sky-library-health-report --vars dir=/path/to/.sky/workflows
+  skyway run sky-library-health-report --vars dir=/path/to/.sky/workflows
 
 VARS
 ----
@@ -106,7 +106,7 @@ VARS
 NOTES
 -----
   - No `rm -f`/`rm -r`: nothing is deleted; render overwrites HEALTH.md in place.
-  - last_run is best-effort (greps `sky logs` for the workflow basename); a
+  - last_run is best-effort (greps `skyway logs` for the workflow basename); a
     "never" can be a false negative if logs were pruned — treat amber as a nudge.
   - max_budget_usd caps the single haiku render node.
 ※※

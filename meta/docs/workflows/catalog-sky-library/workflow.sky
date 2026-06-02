@@ -25,18 +25,18 @@ the rest is bash. Re-run any time to refresh the map of your library.
 
 Run it (state which directory to catalog with --var dir):
 
-  sky run catalog-sky-library --var dir=".sky/workflows"
+  skyway run catalog-sky-library --var dir=".sky/workflows"
 
   - dir   directory of .sky files to index — STATE THIS (e.g. .sky/workflows)
 
 Install the skill it formats with (once):
 
-  sky library install sky-workflow-authoring
+  skyway library install sky-workflow-authoring
 ※※
 
 ⊕meta⊕
 name = "catalog-sky-library"
-description = "Regenerate a browsable INDEX.md for a .sky directory (name, trigger, vars, DAG, budget) with a bash coverage check that every file is listed. Fire via: sky run catalog-sky-library --var dir=<path>"
+description = "Regenerate a browsable INDEX.md for a .sky directory (name, trigger, vars, DAG, budget) with a bash coverage check that every file is listed. Fire via: skyway run catalog-sky-library --var dir=<path>"
 trigger.manual = true
 output_style = "terse"
 max_budget_usd = 1.00

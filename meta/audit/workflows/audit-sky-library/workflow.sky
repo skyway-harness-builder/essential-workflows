@@ -13,7 +13,7 @@ Pure bash — no LLM tokens. The steward's pre-flight before sharing a library o
    └────────┘
        │ found N files
        ▼
-   ┌──────────┐  for each: sky lint → OK / FAIL + codes
+   ┌──────────┐  for each: skyway lint → OK / FAIL + codes
    │ lint-all │
    └──────────┘
        │
@@ -24,14 +24,14 @@ Pure bash — no LLM tokens. The steward's pre-flight before sharing a library o
 
 Run it (state which directory to audit with --var dir):
 
-  sky run audit-sky-library --var dir=".sky/workflows"
+  skyway run audit-sky-library --var dir=".sky/workflows"
 
   - dir   directory of .sky files to lint — STATE THIS before running (e.g. .sky/workflows)
 ※※
 
 ⊕meta⊕
 name = "audit-sky-library"
-description = "Lint every .sky in a directory in one pass and report pass/fail grouped by file, exiting non-zero on any failure. Fire via: sky run audit-sky-library --var dir=<path>"
+description = "Lint every .sky in a directory in one pass and report pass/fail grouped by file, exiting non-zero on any failure. Fire via: skyway run audit-sky-library --var dir=<path>"
 trigger.manual = true
 output_style = "terse"
 ⊕⊕

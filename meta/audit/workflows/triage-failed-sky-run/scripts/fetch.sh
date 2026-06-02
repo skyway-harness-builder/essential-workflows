@@ -12,6 +12,6 @@ fi
 echo "=== run id ==="
 echo "$SKY_RUN"
 echo "=== run logs (best-effort) ==="
-sky logs "$SKY_RUN" 2>&1 || echo "LOGS_UNAVAILABLE: $SKY_RUN"
+skyway logs "$SKY_RUN" 2>&1 || echo "LOGS_UNAVAILABLE: $SKY_RUN"
 echo "=== workflow source: $SKY_FILE ==="
 cat "$SKY_FILE"

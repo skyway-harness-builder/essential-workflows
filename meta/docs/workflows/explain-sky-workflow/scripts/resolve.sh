@@ -6,5 +6,5 @@ if [ ! -f "$F" ]; then
   exit 1
 fi
 echo "resolved: $F"
-echo "--- sky describe (best-effort) ---"
-sky describe "$F" 2>/dev/null || echo "(sky describe unavailable; explain will read the file directly)"
+echo "--- skyway describe (best-effort) ---"
+skyway describe "$F" 2>/dev/null || echo "(skyway describe unavailable; explain will read the file directly)"

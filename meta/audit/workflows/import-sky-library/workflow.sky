@@ -75,12 +75,12 @@ DAG:
     finalize             cp each staged PASS into TARGET unless it exists;
         |                print kept / skipped manifest
         |
-    verify               sky lint each imported file; rm the staging list;
+    verify               skyway lint each imported file; rm the staging list;
                          exit nonzero if any imported file is broken
 
 Run:
 
-    sky run import-sky-library --var source=/path/to/foreign/dir --var dir=.sky/workflows
+    skyway run import-sky-library --var source=/path/to/foreign/dir --var dir=.sky/workflows
 
 Vars:
 
@@ -97,7 +97,7 @@ Nodes:
 
 Notes:
 
-  - A file is REJECTED (not imported) if `sky lint` fails on it; its error
+  - A file is REJECTED (not imported) if `skyway lint` fails on it; its error
     codes are logged so you can fix the source and re-run.
   - A file is SKIPPED if a same-named file already exists in the target dir;
     this workflow never overwrites. Remove/rename the target file and re-run

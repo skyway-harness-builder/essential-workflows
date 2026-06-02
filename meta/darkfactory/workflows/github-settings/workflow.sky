@@ -32,7 +32,7 @@ paid/pro/team/enterprise/ghas/advanced is normalized to `paid`. The split mirror
   NOT SETTABLE via API (reported only):
     • two_factor_requirement_enabled — read-only in the org PATCH endpoint; reported as current value.
 
-  (sky run github-settings --var scope=general|repo|both --var tier=free|paid
+  (skyway run github-settings --var scope=general|repo|both --var tier=free|paid
                             [--var org=<org>] [--var repo=owner/name])
         │
         ▼
@@ -71,7 +71,7 @@ SAFETY:
 
 ⊕meta⊕
 name = "github-settings"
-description = "Apply best-practice GitHub settings via gh — two scopes in one workflow: org/account-level general defaults (default_repository_permission, web_commit_signoff_required, org Dependabot defaults for new repos; paid: org advanced-security/secret-scanning defaults) AND repository hardening (squash-only merges, auto-merge, delete-branch-on-merge, allow-update-branch, Dependabot alerts; advanced: branch protection + secret scanning). Scope: --var scope=general|repo|both (default both). Tier prose: --var tier=free|paid (paid/pro/team/enterprise/ghas/advanced all count as paid). Org general requires ORG OWNER; skipped with reason for personal accounts or non-owners. Fail-closed, idempotent, pure bash + gh, no LLM. Fire via: sky run github-settings --var scope=both --var tier=free|paid [--var org=<org>] [--var repo=owner/name]"
+description = "Apply best-practice GitHub settings via gh — two scopes in one workflow: org/account-level general defaults (default_repository_permission, web_commit_signoff_required, org Dependabot defaults for new repos; paid: org advanced-security/secret-scanning defaults) AND repository hardening (squash-only merges, auto-merge, delete-branch-on-merge, allow-update-branch, Dependabot alerts; advanced: branch protection + secret scanning). Scope: --var scope=general|repo|both (default both). Tier prose: --var tier=free|paid (paid/pro/team/enterprise/ghas/advanced all count as paid). Org general requires ORG OWNER; skipped with reason for personal accounts or non-owners. Fail-closed, idempotent, pure bash + gh, no LLM. Fire via: skyway run github-settings --var scope=both --var tier=free|paid [--var org=<org>] [--var repo=owner/name]"
 trigger.manual = true
 output_style = "terse"
 ⊕⊕

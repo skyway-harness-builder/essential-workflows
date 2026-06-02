@@ -1,6 +1,6 @@
 ---
 name: sky-workflow-lint
-description: Lint code table and self-check for fixing SKY-WF-* errors in .sky workflows. Use when reading sky lint output and applying fixes.
+description: Lint code table and self-check for fixing SKY-WF-* errors in .sky workflows. Use when reading skyway lint output and applying fixes.
 category: skylence
 tags: [skylence, sky, workflow, lint, errors]
 ---
@@ -48,4 +48,4 @@ tags: [skylence, sky, workflow, lint, errors]
 3. Every `chain_from` is in `depends_on` and targets a prompt/command node; every `when` RHS is quoted.
 4. No `{{var}}` in bash/script/loop bodies; all `$SKY_*` shell-quoted; every `${env:NAME}` declared in `secrets`.
 5. If `ui` is set in `⊕meta⊕` or on any node, the referenced markdown file(s) exist relative to the `.sky` file.
-6. `sky lint` passes clean.
+6. `skyway lint` passes clean.

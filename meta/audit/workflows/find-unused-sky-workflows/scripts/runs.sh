@@ -1,9 +1,9 @@
 #!/bin/bash
 set -u
 LOG="$(mktemp /tmp/sky-runlog.XXXXXX)"
-# 'sky logs' format is not contractually stable; capture defensively and never let a nonzero exit kill discovery.
-if ! sky logs > "$LOG" 2>/dev/null; then
-  echo 'WARN: sky logs returned nonzero or is unavailable; treating history as empty' >&2
+# 'skyway logs' format is not contractually stable; capture defensively and never let a nonzero exit kill discovery.
+if ! skyway logs > "$LOG" 2>/dev/null; then
+  echo 'WARN: skyway logs returned nonzero or is unavailable; treating history as empty' >&2
   : > "$LOG"
 fi
 LINES="$(wc -l < "$LOG" | tr -d ' ')"

@@ -3,7 +3,7 @@ DIR="$SKY_DIR"
 FAIL=0
 for f in "$DIR"/*.sky; do
   [ -e "$f" ] || continue
-  if ! sky lint "$f" >/dev/null 2>&1; then
+  if ! skyway lint "$f" >/dev/null 2>&1; then
     FAIL=$((FAIL + 1))
     echo "still failing: $f"
   fi

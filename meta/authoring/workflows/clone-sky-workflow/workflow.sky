@@ -24,18 +24,18 @@ block == manual), which is what a fresh template should be. That strip is the wh
    └─────────┘
        │
        ▼
-   ┌────────┐ ⟲  loop.until.bash: sky lint dest  (max 6 passes)
+   ┌────────┐ ⟲  loop.until.bash: skyway lint dest  (max 6 passes)
    │  lint  │     sonnet + sky-workflow-authoring fixes any leftover issue
    └────────┘
        │
        ▼
-   ┌──────────┐  sky describe dest (best-effort) + "done"
+   ┌──────────┐  skyway describe dest (best-effort) + "done"
    │ describe │
    └──────────┘
 
 Run it (state where the source lives with --var dir):
 
-  sky run clone-sky-workflow \
+  skyway run clone-sky-workflow \
     --var dir=".sky/workflows" \
     --var name="source-name" \
     --var new-name="clone-name"
@@ -52,7 +52,7 @@ The lint loop then repairs anything the strip left dangling (e.g. a now-orphaned
 
 ⊕meta⊕
 name = "clone-sky-workflow"
-description = "Duplicate a .sky as a new manual template under a new name, neutralizing the copied trigger so both never double-fire, then lint clean. Fire via: sky run clone-sky-workflow --var dir=<dir> --var name=<source> --var new-name=<clone>"
+description = "Duplicate a .sky as a new manual template under a new name, neutralizing the copied trigger so both never double-fire, then lint clean. Fire via: skyway run clone-sky-workflow --var dir=<dir> --var name=<source> --var new-name=<clone>"
 trigger.manual = true
 output_style = "terse"
 max_budget_usd = 2.00
@@ -88,34 +88,34 @@ bash_file = "./scripts/rewrite.sh"
 §§
 
 ※lint※
-Step 3 — lint. A loop node: each pass reads the clone fresh, runs `sky lint`, and fixes
+Step 3 — lint. A loop node: each pass reads the clone fresh, runs `skyway lint`, and fixes
 every reported issue (e.g. an orphaned secrets/when reference left by the trigger strip).
 The loop.until.bash re-runs the node until lint exits 0 (max 6 passes). Loop nodes can't
 chain a session, so the prompt re-reads the file each pass.
 ※※
 
 ※lint※
-Lint-fix loop: reads clone, runs sky lint, fixes SKY-WF-* errors; loop.until.bash exits 0 when clean; loop.max=6. depends_on=["rewrite"], model=sonnet, skills=sky-workflow-authoring.
+Lint-fix loop: reads clone, runs skyway lint, fixes SKY-WF-* errors; loop.until.bash exits 0 when clean; loop.max=6. depends_on=["rewrite"], model=sonnet, skills=sky-workflow-authoring.
 ※※
 §lint§
 model = "sonnet"
 depends_on = ["rewrite"]
 skills = ["sky-workflow-authoring"]
-loop.until.bash = "sky lint \"$SKY_DIR/$SKY_NEW_NAME.sky\""
+loop.until.bash = "skyway lint \"$SKY_DIR/$SKY_NEW_NAME.sky\""
 loop.max = 6
 §§
 
 ∆lint∆
-Read {{dir}}/{{new-name}}.sky, then run `sky lint {{dir}}/{{new-name}}.sky` and read its output. Fix every reported error and warning in that file, using the sky-workflow-authoring skill's SKY-WF-* code table to map each code to its fix. Context: this file is a clone of another workflow with its trigger lines stripped, so it is now a manual workflow — do NOT add a trigger back. Likely leftovers from the strip: a `when`/`secrets`/`mcp_servers` reference that pointed at trigger payload data, or a `name` mismatch. Ensure `name = "{{new-name}}"` matches the filename. Keep the workflow body in English. Re-run lint after editing. This node loops until lint exits 0 — make concrete fixes each pass. When clean, output the final lint result and the file path.
+Read {{dir}}/{{new-name}}.sky, then run `skyway lint {{dir}}/{{new-name}}.sky` and read its output. Fix every reported error and warning in that file, using the sky-workflow-authoring skill's SKY-WF-* code table to map each code to its fix. Context: this file is a clone of another workflow with its trigger lines stripped, so it is now a manual workflow — do NOT add a trigger back. Likely leftovers from the strip: a `when`/`secrets`/`mcp_servers` reference that pointed at trigger payload data, or a `name` mismatch. Ensure `name = "{{new-name}}"` matches the filename. Keep the workflow body in English. Re-run lint after editing. This node loops until lint exits 0 — make concrete fixes each pass. When clean, output the final lint result and the file path.
 ∆∆
 
 ※describe※
-Step 4 — describe. Best-effort `sky describe` of the finished clone for a quick
+Step 4 — describe. Best-effort `skyway describe` of the finished clone for a quick
 human-readable summary (tolerated if the subcommand is unavailable), then prints done.
 ※※
 
 ※describe※
-Best-effort sky describe of the finished clone; prints done. depends_on=["lint"], trigger_rule=all_success.
+Best-effort skyway describe of the finished clone; prints done. depends_on=["lint"], trigger_rule=all_success.
 ※※
 §describe§
 depends_on = ["lint"]

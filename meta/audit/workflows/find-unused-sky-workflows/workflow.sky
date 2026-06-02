@@ -1,6 +1,6 @@
 ⊕meta⊕
 name = "find-unused-sky-workflows"
-description = "Cross-reference every .sky in a dir against sky run history; list never-run / long-stale files as advisory deletion candidates. Prints ready-to-paste delete commands but deletes nothing."
+description = "Cross-reference every .sky in a dir against skyway run history; list never-run / long-stale files as advisory deletion candidates. Prints ready-to-paste delete commands but deletes nothing."
 trigger.manual = true
 output_style = "terse"
 ⊕⊕
@@ -14,7 +14,7 @@ bash_file = "./scripts/list.sh"
 §§
 
 ※runs※
-Capture `sky logs` output; depends_on = ["list"], trigger_rule = all_done (default). Runs after list completes; receives $SKY_OUTPUT_LIST.
+Capture `skyway logs` output; depends_on = ["list"], trigger_rule = all_done (default). Runs after list completes; receives $SKY_OUTPUT_LIST.
 ※※
 
 §runs§
@@ -36,19 +36,19 @@ find-unused-sky-workflows — advisory dead-workflow scanner (pure bash, no Clau
 
 WHAT IT DOES
   Lists every <name>.sky in --var dir, cross-references each basename against
-  the output of `sky logs`, and classifies it:
+  the output of `skyway logs`, and classifies it:
     SEEN-IN-LOGS  name appears (case-insensitively) somewhere in run history
     NEVER         name does NOT appear in run history -> deletion CANDIDATE
   For every NEVER file it prints a ready-to-paste command line:
-    sky run delete-sky-workflow --var dir="<dir>" --var name=<name>
+    skyway run delete-sky-workflow --var dir="<dir>" --var name=<name>
   It deletes NOTHING. Always exits 0 — this is discovery, not enforcement.
 
 HONESTY / CAVEATS (read before acting on output)
-  - "NEVER" is ADVISORY. It only means the name was not found in `sky logs`.
+  - "NEVER" is ADVISORY. It only means the name was not found in `skyway logs`.
   - It is wrong if log retention has aged the run out, or if the workflow's
     `name = "..."` in ⊕meta⊕ differs from its filename (matching is by
     filename basename appearing in the log text).
-  - `sky logs` output format is not a stable contract; this scan greps the raw
+  - `skyway logs` output format is not a stable contract; this scan greps the raw
     text case-insensitively and tolerates an empty/unavailable log (then every
     file reports NEVER). Verify before deleting anything.
   - Recently-created-but-never-run files will also show NEVER. That is correct
@@ -59,11 +59,11 @@ DAG
    │                 ▲
    └─────────────────┘
   list   bash: print basename of each "$SKY_DIR"/*.sky (one per line); errors if dir empty/missing
-  runs   bash: capture `sky logs` into a /tmp mktemp file, print it, rm the file; never fails the run
+  runs   bash: capture `skyway logs` into a /tmp mktemp file, print it, rm the file; never fails the run
   report bash: for each file mark SEEN-IN-LOGS / NEVER; print delete suggestions; exit 0 always
 
 RUN
-  sky run find-unused-sky-workflows --var dir=/abs/path/to/.sky/workflows
+  skyway run find-unused-sky-workflows --var dir=/abs/path/to/.sky/workflows
 
 VARS
   dir   (required)  Absolute path to a directory containing .sky files. -> $SKY_DIR

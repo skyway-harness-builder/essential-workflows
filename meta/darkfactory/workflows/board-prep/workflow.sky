@@ -24,7 +24,7 @@ Two vocabularies it reconciles:
     Revisions Requested · Done   (+ Priority / Size / Idea Stage / Bug Stage custom fields)
 The label→column mapping lives in the `darkfactory-onboarding` skill and in the report.
 
-  (sky run board-prep --var project=<n> [--var owner=<org-or-user>] [--var repo=<owner/name>])
+  (skyway run board-prep --var project=<n> [--var owner=<org-or-user>] [--var repo=<owner/name>])
         │
         ▼
    ┌──────────────┐  bash + gh. Resolve OWNER/REPO (--var repo or `gh repo view`), require
@@ -56,7 +56,7 @@ SAFETY:
 
 ⊕meta⊕
 name = "board-prep"
-description = "Dark Factory rung 0 (onboarding, GitHub): idempotently create the 9 lifecycle labels (data/labels.yaml) on the caller's repo, link a GitHub Project to the repo, verify the project carries the dark-factory field schema (Status: Icebox→Done plus Priority/Size/Idea Stage/Bug Stage, from the Skylence project template), and print the manual UI steps the GitHub API cannot do (auto-add workflow + label→Status automation). A project template carries board STRUCTURE but never repo labels or auto-add wiring — this fills that gap. Pure bash + gh, deterministic, fail-closed, idempotent. Fire via: sky run board-prep --var project=<project-number> [--var owner=<org-or-user>] [--var repo=<owner/name>]"
+description = "Dark Factory rung 0 (onboarding, GitHub): idempotently create the 9 lifecycle labels (data/labels.yaml) on the caller's repo, link a GitHub Project to the repo, verify the project carries the dark-factory field schema (Status: Icebox→Done plus Priority/Size/Idea Stage/Bug Stage, from the Skylence project template), and print the manual UI steps the GitHub API cannot do (auto-add workflow + label→Status automation). A project template carries board STRUCTURE but never repo labels or auto-add wiring — this fills that gap. Pure bash + gh, deterministic, fail-closed, idempotent. Fire via: skyway run board-prep --var project=<project-number> [--var owner=<org-or-user>] [--var repo=<owner/name>]"
 trigger.manual = true
 output_style = "terse"
 ⊕⊕

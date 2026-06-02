@@ -2,7 +2,7 @@
 # rename-sky-workflow
 
 Manually-run workflow that renames a `.sky` file atomically: it `git mv`s the file,
-fixes its `⊕meta⊕ name =` field, and rewrites `sky run <old>` references across the
+fixes its `⊕meta⊕ name =` field, and rewrites `skyway run <old>` references across the
 library — behind a manual gate — then lints the result and verifies the old name is
 gone. Pure bash, no LLM tokens.
 
@@ -10,7 +10,7 @@ gone. Pure bash, no LLM tokens.
        │
        ▼
    ┌────────┐  not found ──▶ list <dir> + stop
-   │  find  │  shows old->new + `sky run <old>` ref hits
+   │  find  │  shows old->new + `skyway run <old>` ref hits
    └────────┘
        │ found
        ▼
@@ -19,12 +19,12 @@ gone. Pure bash, no LLM tokens.
    └─────────┘
        │ approve
        ▼
-   ┌────────┐  git mv + fix name= + rewrite `sky run <old>`
+   ┌────────┐  git mv + fix name= + rewrite `skyway run <old>`
    │ apply  │
    └────────┘
        │
        ▼
-   ┌────────┐  sky lint new file; warn on leftover old refs
+   ┌────────┐  skyway lint new file; warn on leftover old refs
    │ verify │
    └────────┘
        │
@@ -33,7 +33,7 @@ gone. Pure bash, no LLM tokens.
 
 Run it (state where the workflow lives with --var dir):
 
-  sky run rename-sky-workflow \
+  skyway run rename-sky-workflow \
     --var dir=".sky/workflows" \
     --var name="old-name" \
     --var new-name="new-name"
@@ -42,7 +42,7 @@ Run it (state where the workflow lives with --var dir):
   - name      current kebab-case filename (no .sky extension)
   - new-name  new kebab-case filename + workflow name (no .sky extension)
 
-Scope note: the reference rewrite targets `sky run <old>` occurrences. It does a
+Scope note: the reference rewrite targets `skyway run <old>` occurrences. It does a
 plain text replace, so if one workflow name is a prefix of another the verify step
 flags any leftover for manual review. It does not touch `sky_event` names (those are
 event identifiers, not workflow names).
@@ -50,14 +50,14 @@ event identifiers, not workflow names).
 
 ⊕meta⊕
 name = "rename-sky-workflow"
-description = "Atomically rename a .sky: git mv, fix its meta name, rewrite `sky run <old>` refs behind a manual gate, then lint and verify. Fire via: sky run rename-sky-workflow --var dir=<dir> --var name=<old> --var new-name=<new>"
+description = "Atomically rename a .sky: git mv, fix its meta name, rewrite `skyway run <old>` refs behind a manual gate, then lint and verify. Fire via: skyway run rename-sky-workflow --var dir=<dir> --var name=<old> --var new-name=<new>"
 trigger.manual = true
 output_style = "terse"
 ⊕⊕
 
 ※find※
 Step 1 — find. Resolves the source file, refuses if the target name already exists,
-and prints every `sky run <old>` reference that the apply step will rewrite.
+and prints every `skyway run <old>` reference that the apply step will rewrite.
 ※※
 
 §find§
@@ -70,13 +70,13 @@ Step 2 — confirm. depends_on=[find]. Manual gate: human approves rename + rewr
 
 §confirm§
 depends_on = ["find"]
-wait.prompt = "Rename {{name}} -> {{new-name}} in {{dir}} and rewrite `sky run {{name}}` references? Approve to apply."
+wait.prompt = "Rename {{name}} -> {{new-name}} in {{dir}} and rewrite `skyway run {{name}}` references? Approve to apply."
 wait.channel = "manual"
 wait.timeout = "1h"
 §§
 
 ※apply※
-Step 3 — apply. depends_on=[confirm]. git mv file, fix name= field, text-replace `sky run <old>` -> `sky run <new>` across dir; uses sed.
+Step 3 — apply. depends_on=[confirm]. git mv file, fix name= field, text-replace `skyway run <old>` -> `skyway run <new>` across dir; uses sed.
 ※※
 
 §apply§
@@ -85,7 +85,7 @@ bash_file = "./scripts/apply.sh"
 §§
 
 ※verify※
-Step 4 — verify. depends_on=[apply]. Lint renamed file (catches name<->filename mismatch); warn on leftover `sky run <old>` refs.
+Step 4 — verify. depends_on=[apply]. Lint renamed file (catches name<->filename mismatch); warn on leftover `skyway run <old>` refs.
 ※※
 
 §verify§

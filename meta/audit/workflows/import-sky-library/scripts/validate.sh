@@ -15,7 +15,7 @@ for f in "$SRC"/*.sky; do
     SKIP=$((SKIP+1))
     continue
   fi
-  if CODES="$(sky lint "$f" 2>&1)"; then
+  if CODES="$(skyway lint "$f" 2>&1)"; then
     echo "PASS  $BASE"
     echo "$f" >> "$STAGE"
     PASS=$((PASS+1))

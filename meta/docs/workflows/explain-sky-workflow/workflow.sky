@@ -20,12 +20,12 @@ DAG
   (bash)       (claude haiku, skills=[sky-workflow-authoring])
 
   resolve  verifies "$SKY_DIR/$SKY_NAME.sky" exists (exit 1 if not) and runs
-           'sky describe' best-effort for extra context.
+           'skyway describe' best-effort for extra context.
   explain  depends_on=[resolve], trigger_rule=all_success — only runs if the
            file actually resolved. Reads the file and writes prose. Read-only.
 
 RUN
-  sky run explain-sky-workflow --var dir=.sky/workflows --var name=my-workflow
+  skyway run explain-sky-workflow --var dir=.sky/workflows --var name=my-workflow
 
 VARS
   dir   directory containing the .sky file (no trailing slash).  -> $SKY_DIR
@@ -34,7 +34,7 @@ VARS
 
 ※resolve※
 Assert the target .sky exists ("$SKY_DIR/$SKY_NAME.sky"); exit 1
-with a clear message if not. Then run `sky describe` best-effort for extra context the
+with a clear message if not. Then run `skyway describe` best-effort for extra context the
 explain step can use. Read-only: no rm, no mutation.
 ※※
 
@@ -59,7 +59,7 @@ skills = ["sky-workflow-authoring"]
 ∆explain∆
 Read the workflow file at {{dir}}/{{name}}.sky and write a plain-English walkthrough for a user who does NOT know the .sky Unicode-delimiter format. Do NOT modify the file — read only.
 
-Context from the resolve step (path + optional `sky describe`):
+Context from the resolve step (path + optional `skyway describe`):
 $SKY_OUTPUT_RESOLVE
 
 Cover, in this order, using clear headings and short paragraphs:
@@ -69,7 +69,7 @@ Cover, in this order, using clear headings and short paragraphs:
 3. Inputs — every --var the user can pass, what each means, and how it maps to a $SKY_ variable.
 4. Node DAG — list nodes in dependency order. For each: its id, type (bash / claude / http / script / loop / etc.), and one plain sentence on what it does.
 5. Edges — explain the meaning of every depends_on, when condition, trigger_rule, chain_from, and loop.until / loop.max found. Translate gating semantics into plain language (e.g. "runs only if the previous step failed").
-6. How to run — a copy-pasteable `sky run` command with the required --var flags.
+6. How to run — a copy-pasteable `skyway run` command with the required --var flags.
 
 Rules:
 - Plain English. Do not show the raw Unicode delimiters; translate them.

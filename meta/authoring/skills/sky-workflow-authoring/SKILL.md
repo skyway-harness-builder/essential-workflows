@@ -7,7 +7,7 @@ tags: [skylence, sky, workflow, authoring, lint, dag, reference]
 
 # Authoring a .sky Workflow
 
-A `.sky` file defines a DAG of execution nodes plus trigger metadata. The parser uses four Unicode delimiter blocks; every opener and closer must be alone on its line. This skill is self-contained — no marketplace plugin is required to author or lint a workflow. It mirrors the machine-readable language surface emitted by `sky describe --format json`.
+A `.sky` file defines a DAG of execution nodes plus trigger metadata. The parser uses four Unicode delimiter blocks; every opener and closer must be alone on its line. This skill is self-contained — no marketplace plugin is required to author or lint a workflow. It mirrors the machine-readable language surface emitted by `skyway describe --format json`.
 
 ## Two Audiences (read this first)
 
@@ -94,11 +94,11 @@ bash = "echo 'hello'"
 
 ## Triggers
 
-Set **exactly one**. With no trigger block, the workflow is **manual** — run via `sky run <name>` (pass inputs with `--var key=value`). `trigger.manual = true` is tolerated and means the same thing.
+Set **exactly one**. With no trigger block, the workflow is **manual** — run via `skyway run <name>` (pass inputs with `--var key=value`). `trigger.manual = true` is tolerated and means the same thing.
 
 | Trigger | Keys |
 |---------|------|
-| Manual | (no trigger block) — `sky run <name> --var k=v` |
+| Manual | (no trigger block) — `skyway run <name> --var k=v` |
 | GitHub | `trigger.github.events = ["issues", "pull_request", "issue_comment", "check_run.completed", …]`; `trigger.github.label = "..."`; `trigger.github.fork_policy = "deny"\|"allow"\|"trusted-only"`; `trigger.github.trusted_authors = [...]`; `trigger.github.check_run = { conclusion = "failure", name = "CI" }` (requires `check_run.completed` in events — SKY-WF-094; bad conclusion → SKY-WF-093) |
 | Sky event | `trigger.sky_event.event = "deploy.completed"` — exact name emitted by another workflow's `emit` |
 | Schedule | `trigger.schedule.cron = "0 3 * * *"` (required, standard 5-field `min hour dom mon dow`); `trigger.schedule.timezone = "Europe/Brussels"` (optional IANA name, defaults UTC). Missing cron → SKY-WF-096; bad expr → SKY-WF-097; bad timezone → SKY-WF-098. The daemon must be running for schedules to fire. |
@@ -234,7 +234,7 @@ Write the workflow file entirely in **English** — `name`, every config key, al
 
 ## MUST
 
-- **Lint before done:** `sky lint <dir>/<file>.sky` must pass. Errors are blocking.
+- **Lint before done:** `skyway lint <dir>/<file>.sky` must pass. Errors are blocking.
 - **`name` matches the filename** (kebab-case).
 - **Exactly one trigger** (or none = manual).
 - **Quote the RHS of every `when`:** `when = "$x.output == 'value'"`.
@@ -254,7 +254,7 @@ Write the workflow file entirely in **English** — `name`, every config key, al
 - Change an `output_format` schema without updating the `∆` prompt that produces it.
 - Run a destructive bash command without `safety = "requires_permission"` (SKY-WF-063).
 - Add an `emit` that re-triggers a workflow already in the ancestor chain — the chain depth cap is **5** and over-cap dispatch is silently suppressed.
-- Put Claude Code magic keywords — `ultrathink`, `ultraplan`, `ultrareview`, `ultracode` — in a `∆` prompt body. They are meant for interactive Claude Code, not workflow authoring. `ultraplan`/`ultrareview` are flagged by SKY-WF-061; `ultrathink` is *not* linted but still fires under `sky run` (sky drives Claude via `--input-format stream-json`, not `-p`) — it injects a "reason thoroughly" nudge you did not intend and cannot control per-node. Express intent explicitly instead: write what you want the node to do, and set reasoning via `effort = "..."` or `thinking = { ... }` on the node, never via a keyword in the prose.
+- Put Claude Code magic keywords — `ultrathink`, `ultraplan`, `ultrareview`, `ultracode` — in a `∆` prompt body. They are meant for interactive Claude Code, not workflow authoring. `ultraplan`/`ultrareview` are flagged by SKY-WF-061; `ultrathink` is *not* linted but still fires under `skyway run` (sky drives Claude via `--input-format stream-json`, not `-p`) — it injects a "reason thoroughly" nudge you did not intend and cannot control per-node. Express intent explicitly instead: write what you want the node to do, and set reasoning via `effort = "..."` or `thinking = { ... }` on the node, never via a keyword in the prose.
 
 ## Lint Codes (SKY-WF-*)
 
@@ -289,4 +289,4 @@ Write the workflow file entirely in **English** — `name`, every config key, al
 3. Every `chain_from` is in `depends_on` and targets a prompt/command node; every `when` RHS is quoted.
 4. No `{{var}}` in bash/script/loop bodies; all `$SKY_*` shell-quoted; every `${env:NAME}` declared in `secrets`.
 5. If `ui` is set in `⊕meta⊕` or on any node, the referenced markdown file(s) exist relative to the `.sky` file (SKY-WF-103 warns when they do not). Workflow-level `ui` in `⊕meta⊕` additionally supports a `changelog` list (`version`, `date`, `note`) in its frontmatter.
-6. `sky lint` passes clean.
+6. `skyway lint` passes clean.

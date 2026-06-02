@@ -40,7 +40,7 @@ Vars:
   dir   root of the library to scan (e.g. meta/authoring/workflows) → $SKY_DIR
 
 Run:
-  sky run annotate-sky-library --var dir=meta/authoring/workflows
+  skyway run annotate-sky-library --var dir=meta/authoring/workflows
 ※※
 
 ※scan※
@@ -52,6 +52,6 @@ Empty output = all workflows already annotated; annotate-all exits cleanly.
 ※annotate-all※
 Reads $SKY_OUTPUT_SCAN line by line. For each unannotated workflow directory,
 invokes annotate-sky-workflow synchronously:
-  sky run annotate-sky-workflow --vars "dir=<wf_dir>,name=workflow"
+  skyway run annotate-sky-workflow --vars "dir=<wf_dir>,name=workflow"
 Sequential — one run finishes before the next starts. Gated all_success on scan.
 ※※

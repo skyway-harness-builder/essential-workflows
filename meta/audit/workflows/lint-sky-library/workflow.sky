@@ -7,7 +7,7 @@ max_budget_usd = 3.00
 ⊕⊕
 
 ※scan※
-Glob $SKY_DIR/*.sky; run `sky lint` on each file; exit 1 if any failed (gate for fix node).
+Glob $SKY_DIR/*.sky; run `skyway lint` on each file; exit 1 if any failed (gate for fix node).
 ※※
 
 §scan§
@@ -26,14 +26,14 @@ skills = ["sky-workflow-authoring"]
 §§
 
 ∆fix∆
-The scan node ran `sky lint` on every `.sky` file in a directory and reported the failing files plus their SKY-WF-* error codes.
+The scan node ran `skyway lint` on every `.sky` file in a directory and reported the failing files plus their SKY-WF-* error codes.
 
 Scan output:
 $SKY_OUTPUT_SCAN
 
 For EACH file listed as FAIL above:
 1. Read the file fresh from disk.
-2. Run `sky lint "<path>"` yourself to see the current diagnostics.
+2. Run `skyway lint "<path>"` yourself to see the current diagnostics.
 3. Fix every SKY-WF-* error and warning, editing the file in place.
 
 Apply the standard fixes per error code:
@@ -51,7 +51,7 @@ Rules you MUST respect while editing:
 - Do not weaken or remove a `safety = "requires_permission"` guard on a destructive bash node.
 - Preserve each file's original intent, trigger, and DAG; make the minimal change that clears lint.
 
-Re-lint each file you touched after editing. When `sky lint` exits 0 on every previously-failing file, stop. Do not edit files that already passed.
+Re-lint each file you touched after editing. When `skyway lint` exits 0 on every previously-failing file, stop. Do not edit files that already passed.
 ∆∆
 
 ※verify※
@@ -61,7 +61,7 @@ depends_on=["fix"]; loop.until.bash exits 0 when all .sky files in $SKY_DIR lint
 §verify§
 depends_on = ["fix"]
 bash_file = "./scripts/verify.sh"
-loop.until.bash = "DIR=\"$SKY_DIR\"\nfor f in \"$DIR\"/*.sky; do\n  [ -e \"$f\" ] || continue\n  sky lint \"$f\" >/dev/null 2>&1 || exit 1\ndone\nexit 0"
+loop.until.bash = "DIR=\"$SKY_DIR\"\nfor f in \"$DIR\"/*.sky; do\n  [ -e \"$f\" ] || continue\n  skyway lint \"$f\" >/dev/null 2>&1 || exit 1\ndone\nexit 0"
 loop.max = 6
 §§
 
@@ -77,7 +77,7 @@ WARNING: this workflow EDITS `.sky` files IN PLACE. It is BUDGET-CAPPED at
 
 DAG:
 
-    scan (bash)          glob "$SKY_DIR"/*.sky, run `sky lint` on each,
+    scan (bash)          glob "$SKY_DIR"/*.sky, run `skyway lint` on each,
       |                  collect failing paths + SKY-WF-* codes;
       |                  exit 1 if any fail (this nonzero is the gate for fix)
       v
@@ -90,7 +90,7 @@ DAG:
 
 Run:
 
-    sky run lint-sky-library --var dir=.sky/workflows
+    skyway run lint-sky-library --var dir=.sky/workflows
 
 Vars:
     dir   directory containing the .sky files to lint and fix (e.g. .sky/workflows)

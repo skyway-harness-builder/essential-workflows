@@ -14,7 +14,7 @@ bash_file = "./scripts/discover.sh"
 §§
 
 ※dryrun※
-For each row from discover, run `sky run --dry-run` (tries path first, falls back to cd+name); classify PASS/FAIL/SKIP and capture first diagnostic. depends_on: discover (trigger_rule: all_done).
+For each row from discover, run `skyway run --dry-run` (tries path first, falls back to cd+name); classify PASS/FAIL/SKIP and capture first diagnostic. depends_on: discover (trigger_rule: all_done).
 ※※
 
 §dryrun§
@@ -37,10 +37,10 @@ depends_on = ["dryrun"]
 ================================================================================
 
  WHAT IT DOES
-   Runs `sky run <wf> --dry-run` against every .sky file in --var dir and prints
+   Runs `skyway run <wf> --dry-run` against every .sky file in --var dir and prints
    an aligned matrix of which workflows resolve their render+plan stage cleanly.
    --dry-run exercises template substitution and depends_on wiring that static
-   `sky lint` cannot see, so this catches a different (deeper) class of bug.
+   `skyway lint` cannot see, so this catches a different (deeper) class of bug.
    Pure bash, no LLM, no cost.
 
  DAG
@@ -49,7 +49,7 @@ depends_on = ["dryrun"]
                  dry-run)    summary, exit 1 on any FAIL)
 
  RUN
-   sky run dry-run-sky-library --vars dir=/abs/path/to/.sky/workflows
+   skyway run dry-run-sky-library --vars dir=/abs/path/to/.sky/workflows
 
  VARS
    dir   (required)  Absolute path to the directory containing the .sky files.
@@ -61,7 +61,7 @@ depends_on = ["dryrun"]
    2  bad input: dir missing / not a directory / no .sky files (discover node).
 
  HONESTY / KNOWN LIMITS
-   - name == filename is ASSUMED. `sky run "<path>" --dry-run` is tried first;
+   - name == filename is ASSUMED. `skyway run "<path>" --dry-run` is tried first;
      if that build does not accept a path, it falls back to `cd "$dir" && sky
      run "<name>"` which relies on the workflow's name field matching its
      filename. Mismatched name fields will mis-resolve.
@@ -70,12 +70,12 @@ depends_on = ["dryrun"]
      workflow that fails for an unrelated reason but happens to mention those
      words could be mis-classified as SKIP rather than FAIL, and vice versa.
    - Only the FIRST diagnostic line is shown per workflow; read the full
-     dry-run output (`sky run <wf> --dry-run`) for the complete error.
+     dry-run output (`skyway run <wf> --dry-run`) for the complete error.
    - Override the binary with SKY_CLI=/path/to/sky in the daemon env if `sky`
      is not on PATH.
 ================================================================================
 
  -- discover: glob "$SKY_DIR"/*.sky, emit one "<name>\t<path>" row per file (exit 2 on bad input).
- -- dryrun: for each row, run `sky run --dry-run` (path first, cd+name fallback); classify PASS/FAIL/SKIP + capture first diagnostic.
+ -- dryrun: for each row, run `skyway run --dry-run` (path first, cd+name fallback); classify PASS/FAIL/SKIP + capture first diagnostic.
  -- matrix: render aligned PLAN/WORKFLOW/DIAGNOSTIC table, print summary counts, exit 1 if any FAIL.
 ※※

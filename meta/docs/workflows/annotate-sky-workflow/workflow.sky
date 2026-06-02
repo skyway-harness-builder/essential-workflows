@@ -41,7 +41,7 @@ Each step-associated doc block: opener ※<id>※ alone on its line (where <id> 
 ∆∆
 
 ※lint※
-Sonnet loop; loop.until.bash runs `sky lint` on the file each pass, stopping at exit 0 (max 6); depends_on annotate (all_success); fixes only lint-named issues with Edit and never strips structure.
+Sonnet loop; loop.until.bash runs `skyway lint` on the file each pass, stopping at exit 0 (max 6); depends_on annotate (all_success); fixes only lint-named issues with Edit and never strips structure.
 ※※
 
 §lint§
@@ -49,12 +49,12 @@ model = "sonnet"
 skills = ["sky-workflow-authoring"]
 depends_on = ["annotate"]
 trigger_rule = "all_success"
-loop.until.bash = "sky lint \"$SKY_DIR/$SKY_NAME.sky\""
+loop.until.bash = "skyway lint \"$SKY_DIR/$SKY_NAME.sky\""
 loop.max = 6
 §§
 
 ∆lint∆
-Run `sky lint "{{dir}}/{{name}}.sky"` on the freshly annotated file (the loop re-runs this until lint exits 0, up to the cap).
+Run `skyway lint "{{dir}}/{{name}}.sky"` on the freshly annotated file (the loop re-runs this until lint exits 0, up to the cap).
 
 If lint reports any error or warning:
 - READ {{dir}}/{{name}}.sky again.
@@ -75,7 +75,7 @@ file may not want the extra verbosity — annotation adds line count.
 DAG:
   read ──▶ annotate ──▶ lint
   (bash:      (sonnet:        (sonnet loop:
-   verify      Edit in           sky lint until 0,
+   verify      Edit in           skyway lint until 0,
    file        place)            max 6 passes)
    exists)
 
@@ -83,10 +83,10 @@ DAG:
     read     all_success gate is implicit (bash; nonzero exit if file missing).
     annotate trigger_rule=all_success  → runs only if read found the file.
     lint     trigger_rule=all_success  → runs only if annotate succeeded;
-             loop.until.bash re-runs the node until `sky lint` exits 0.
+             loop.until.bash re-runs the node until `skyway lint` exits 0.
 
 Run:
-  sky run annotate-sky-workflow --vars dir=.sky/workflows,name=triage-issue
+  skyway run annotate-sky-workflow --vars dir=.sky/workflows,name=triage-issue
 
 Vars:
   dir   directory holding the target .sky (e.g. .sky/workflows). → $SKY_DIR

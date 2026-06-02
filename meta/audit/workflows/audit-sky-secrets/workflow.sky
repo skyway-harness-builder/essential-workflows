@@ -26,14 +26,14 @@ declaring it in `secrets = [...]`.
 
 Run it (state which directory to scan with --var dir):
 
-  sky run audit-sky-secrets --var dir=".sky/workflows"
+  skyway run audit-sky-secrets --var dir=".sky/workflows"
 
   - dir   directory of .sky files to scan — STATE THIS (e.g. .sky/workflows)
 ※※
 
 ⊕meta⊕
 name = "audit-sky-secrets"
-description = "Scan every .sky for secret-shaped $ENV refs in bash/http not declared in secrets[], report the undeclared ones, exit non-zero on any. Pure bash. Fire via: sky run audit-sky-secrets --var dir=<path>"
+description = "Scan every .sky for secret-shaped $ENV refs in bash/http not declared in secrets[], report the undeclared ones, exit non-zero on any. Pure bash. Fire via: skyway run audit-sky-secrets --var dir=<path>"
 trigger.manual = true
 output_style = "terse"
 ⊕⊕

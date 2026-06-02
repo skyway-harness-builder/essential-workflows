@@ -59,7 +59,7 @@ DAG
 
 Run
 ---
-  sky run find-orphan-sky-events --var dir=/path/to/.sky/workflows
+  skyway run find-orphan-sky-events --var dir=/path/to/.sky/workflows
 
 Vars
 ----

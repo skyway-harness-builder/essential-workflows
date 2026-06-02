@@ -11,7 +11,7 @@ if [ -f "$STAGE" ]; then
     TARGET="$DST/$BASE"
     [ -e "$TARGET" ] || continue
     CHECKED=$((CHECKED+1))
-    if sky lint "$TARGET" >/dev/null 2>&1; then
+    if skyway lint "$TARGET" >/dev/null 2>&1; then
       echo "OK    $BASE"
     else
       echo "BROKEN $BASE (lint failed after import)"
