@@ -71,7 +71,7 @@ Follow the sky-workflow-authoring skill exactly: the four Unicode delimiter bloc
 
 File editing rule: if `skylence_read` and `skylence_edit` MCP tools are available (sky MCP server connected), use them to write and edit the workflow file. Never use the standard Write/Edit tools when the sky MCP server is connected. `skylence_read` returns a `¶path#TAG` header; pass it verbatim in `skylence_edit` patches.
 
-MCP server rule: for any node in the generated workflow whose task requires an external tool (Cartographer graph queries, GitHub API, Slack, Linear, or any other MCP-backed capability), include an `mcp_servers` key in that node's §§ config block with the relevant server(s). A `claude` node that calls Cartographer must declare the cartographer MCP server; a node posting to Slack must declare the Slack MCP server. Omit `mcp_servers` only when no node needs an external tool.
+MCP server rule: for any node in the generated workflow whose task requires an external tool (Cartographer graph queries, GitHub API, Slack, Linear, or any other MCP-backed capability), include an `mcp_servers` key in that node's §§ config block with the relevant server(s). A `claude` node that calls Cartographer must declare the cartographer MCP server; a node posting to Slack must declare the Slack MCP server. Omit `mcp_servers` only when no node needs an external tool. Transport choice (see the skill's MCP section): prefer the built-in `skylence_*` tools when they cover the task (no server needed); for an external server hit by several or parallel nodes use a shared `http` daemon (`type:"http"`, `url`); use `stdio` (`command`/`args`) only for a single-node one-off, since it spawns a subprocess per node. Never use `sse` (deprecated).
 
 Write the file — do not lint it yet.
 

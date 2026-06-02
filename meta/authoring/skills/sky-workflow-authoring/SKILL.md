@@ -92,6 +92,26 @@ bash = "echo 'hello'"
 | `ui` | string | Path to a dashboard UI card file describing the **whole workflow** for the outer workflow card. Same resolution rules as the node-level `ui` key: `"ui/workflow"` (extensionless) → locale set: `ui/workflow.<lang>.md` (e.g. `ui/workflow.en.md`, `ui/workflow.nl.md`); `"ui/overview.md"` → single file (locale "default"). The markdown file may have YAML frontmatter with `short_description` (one-line), `long_description` (problem + backstory), and a `changelog` list (`version`, `date` (optional), `note`); the body is freeform markdown rendered into the workflow card. Pure UI — ignored by the DAG engine. No matching file → SKY-WF-103 (warning). |
 | `trigger.*` | — | Exactly one trigger. See below. |
 
+## MCP Servers & Transports
+
+`mcp_servers` is a JSON object; each entry picks a transport via `type`: `stdio` (subprocess), `http` (streamable HTTP, the modern remote transport), or `sse` (deprecated, do not use).
+
+```
+mcp_servers = {"remote": {"type": "http", "url": "http://localhost:9000/mcp"}, "local": {"type": "stdio", "command": "npx", "args": ["-y", "pkg", "mcp"]}}
+```
+
+Each node is a fresh Claude session, so transport choice is mostly about **startup cost, not per-message latency**:
+
+| Want | Use | Why |
+|------|-----|-----|
+| A tool sky already ships (file read/edit, grep) | nothing: use the built-in `skylence_*` tools | served in-process over HTTP, zero spawn, no config |
+| An external server hit by several or parallel nodes | a shared `http` daemon (`type:"http"`, `url`) | one running server, every node connects instantly, no contention |
+| A one-off in a single node | `stdio` | fine, but each node spawns its own subprocess |
+
+`http` and in-process servers pay no per-session startup. `stdio` spawns a fresh subprocess on **every node** (cold-start cost), and parallel nodes spawning the same stdio server contend. Never use `sse`.
+
+> **stdio + `allowed_tools` waits before the first turn.** When a node both restricts tools (`allowed_tools`) and uses a `stdio` server, the runner holds the first prompt ~10s (`SKY_MCP_READY_DELAY_MS`) so the server finishes connecting first; otherwise the still-connecting tool is filtered from the model's view and reported "not available." `http` and in-process servers have no such wait. One more reason to prefer a shared `http` daemon for any server hit by multiple nodes.
+
 ## Triggers
 
 Set **exactly one**. With no trigger block, the workflow is **manual** — run via `skyway run <name>` (pass inputs with `--var key=value`). `trigger.manual = true` is tolerated and means the same thing.
