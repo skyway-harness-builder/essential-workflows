@@ -296,11 +296,13 @@ Write the workflow file entirely in **English** — `name`, every config key, al
 | 058–060 | loop.idle_timeout_ms misuse / permissions:interactive needs loose / output_format not valid JSON Schema |
 | 061–063 | bare ultraplan/ultrareview keyword / learnings config invalid / destructive bash without safety |
 | 064–069 | invoke: dynamic target / inside loop / self-invoke / not found · acquire_lock: key required / bad ttl |
-| 103 | `ui` resolves to no markdown files (warning) — applies to both the workflow-level `ui` in `⊕meta⊕` and per-node `ui` keys |
 | 078–084 | spawn: workers empty / empty id / empty prompt / bad max_wait / bad on_idle / contradictory boundary / `**` glob |
 | 085–089 | council: members empty / empty member / synthesis empty / bad max_wait / negative budget |
 | 091–095 | review path empty / links entry bad / check_run conclusion invalid / check_run without event / sentry·linear no events |
 | 096–098 | schedule: cron field required / cron expression invalid (5-field) / timezone not a valid IANA location |
+| 099–101 | bash_file mutually exclusive with bash / file not found / shellcheck warning (non-blocking) |
+| 102 | `※<id>※` doc block names a nonexistent node id (warning, non-blocking) |
+| 103 | `ui` resolves to no markdown files (warning) — applies to both the workflow-level `ui` in `⊕meta⊕` and per-node `ui` keys |
 
 ## Self-Check Before Finishing
 
