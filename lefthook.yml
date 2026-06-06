@@ -12,9 +12,7 @@ pre-commit:
       glob: "manifest.yaml"
       run: bash scripts/validate-manifest.sh
     - name: yaml lint
-      glob:
-        - "**/*.yml"
-        - "**/*.yaml"
+      glob: "**/*.{yml,yaml}"
       run: yamllint -d relaxed {staged_files}
     - name: markdown lint
       glob: "**/*.md"
@@ -27,6 +25,8 @@ pre-push:
       glob: "**/*.sky"
       run: skyway lint {all_files}
     - name: yaml lint all
-      run: yamllint -d relaxed .
+      glob: "**/*.{yml,yaml}"
+      run: yamllint -d relaxed {push_files}
     - name: markdown lint all
-      run: markdownlint-cli2 "**/*.md"
+      glob: "**/*.md"
+      run: markdownlint-cli2 {push_files}
