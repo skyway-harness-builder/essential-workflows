@@ -1,15 +1,32 @@
-# Pre-commit gate: lint staged .sky workflow files with the local `sky` binary
-# before they can be committed, so a broken workflow never lands in git.
-#
-# The .sky files here live under meta/workflows/<cat>/ (not the conventional
-# .sky/workflows/ location), so `sky lint --repo .` would not find them.
-# Instead we lint the explicitly staged files: `{staged_files}` expands to the
-# staged paths matching `glob`, and `sky lint <file>...` accepts multiple paths.
+# Commit guards: lint staged files before they land in git.
+# Required tools:
+#   skyway          https://github.com/skylence-be/skyway (install to PATH)
+#   yamllint        brew install yamllint
+#   markdownlint-cli2  npm install -g markdownlint-cli2
 pre-commit:
   jobs:
     - name: sky lint
       glob: "**/*.sky"
-      run: sky lint {staged_files}
+      run: skyway lint {staged_files}
     - name: manifest validate
       glob: "manifest.yaml"
       run: bash scripts/validate-manifest.sh
+    - name: yaml lint
+      glob:
+        - "**/*.yml"
+        - "**/*.yaml"
+      run: yamllint -d relaxed {staged_files}
+    - name: markdown lint
+      glob: "**/*.md"
+      run: markdownlint-cli2 {staged_files}
+
+# Push guard: full-repo lint before code reaches the remote.
+pre-push:
+  jobs:
+    - name: sky lint all
+      glob: "**/*.sky"
+      run: skyway lint {all_files}
+    - name: yaml lint all
+      run: yamllint -d relaxed .
+    - name: markdown lint all
+      run: markdownlint-cli2 "**/*.md"

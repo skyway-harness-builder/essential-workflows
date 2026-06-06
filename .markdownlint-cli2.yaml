@@ -1,0 +1,16 @@
+# Permissive markdownlint config for workflow documentation.
+# Disables style-only rules that conflict with workflow descriptions and
+# skill files; keeps rules that catch structural errors.
+config:
+  default: true
+  # Long lines are unavoidable in workflow descriptions and skill docs
+  MD013: false
+  # Blank lines around fences/lists are style preferences, not errors
+  MD031: false
+  MD032: false
+  # Code blocks in .sky files use custom syntax; no language tag required
+  MD040: false
+  # Not all docs start with a top-level heading (e.g. skill files)
+  MD041: false
+  # Compact table style is acceptable
+  MD060: false
