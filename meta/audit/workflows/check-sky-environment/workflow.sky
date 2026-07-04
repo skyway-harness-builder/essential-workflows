@@ -1,0 +1,44 @@
+⊕meta⊕
+name = "check-sky-environment"
+description = "Preflight doctor: probe the local sky environment (claude CLI, gh auth, git remote reachability, daemon health, declared-but-unset secrets) and report OK/WARN/FAIL per check, exiting non-zero on any FAIL. Pure bash."
+params.dir.type = "string"
+params.dir.required = true
+params.dir.description = "Workflow library directory whose .sky files are scanned for declared secrets."
+trigger.manual = true
+output_style = "terse"
+ui = "ui/workflow"
+⊕⊕
+
+※probe※
+Bash root node. Runs every environment check and prints one `OK|WARN|FAIL <check>: <detail>` line per probe plus a summary; exits non-zero when any check FAILs so CI and dashboards see red.
+※※
+
+§probe§
+bash_file = "./scripts/probe.sh"
+§§
+
+※※
+check-sky-environment — preflight doctor for a sky install
+
+One pure-bash node, no LLM cost.
+
+Checks (in order):
+  1. skyway version           OK   (informational)
+  2. claude CLI on PATH       FAIL when missing — nothing LLM-shaped can run
+  3. gh present + gh auth     FAIL when present-but-unauthenticated, WARN when absent
+  4. git repo + origin        FAIL when origin is unreachable, WARN when absent
+  5. daemon GET /health       WARN when down — manual runs still work, schedules/webhooks do not
+  6. secrets[] vs env         FAIL per env var declared in any {{dir}}/**.sky secrets[] but unset
+
+Run:
+  skyway run check-sky-environment --var dir=.sky/workflows
+
+Vars:
+  dir  directory scanned for .sky files (secrets check); required
+
+Notes:
+  - Complements GET /api/workflows/health (daemon-side lint + MCP probes); this covers
+    the host environment the daemon cannot see from inside a request.
+  - Daemon base URL honors $SKY_SERVER_URL, default http://localhost:3090.
+  - Read-only: no file is written, nothing is mutated.
+※※

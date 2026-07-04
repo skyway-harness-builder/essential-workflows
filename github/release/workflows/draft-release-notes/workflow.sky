@@ -1,0 +1,65 @@
+⊕meta⊕
+name = "draft-release-notes"
+description = "When a GitHub release is published (or manually via --var tag=<tag>), collect the commits since the previous release and draft grouped release notes plus the exact gh command to apply them. Propose-only: nothing is written to GitHub."
+trigger.github.events = ["release.published"]
+output_style = "terse"
+max_budget_usd = 1.5
+ui = "ui/workflow"
+⊕⊕
+
+※collect※
+Bash root node. Resolves the repo (webhook payload or gh repo view) and the released tag (latest published release, or $SKY_TAG on manual runs), finds the previous published tag, and prints repo/tag/prev, the current release body, and the commit list between the two tags.
+※※
+
+§collect§
+bash_file = "./scripts/collect.sh"
+§§
+
+※draft※
+Sonnet node. Turns the collected commit data into grouped human release notes and prints them with the ready-to-run apply command. depends_on=["collect"]; reads $SKY_OUTPUT_COLLECT. Propose-only by design.
+※※
+
+§draft§
+model = "sonnet"
+depends_on = ["collect"]
+§§
+
+∆draft∆
+Draft GitHub release notes from the data below (repo, tag, prev, current release body, commits):
+
+$SKY_OUTPUT_COLLECT
+
+Rules: group bullets under Features / Fixes / Other, omitting empty groups; one bullet per change, imperative mood; keep PR/issue numbers appearing in commit subjects; drop merge/chore noise unless nothing else remains; if the current release body already contains hand-written notes, preserve them verbatim above a "## What changed" section. Do NOT edit files, run commands, or call GitHub.
+
+Output exactly two sections:
+1. The complete proposed notes in one fenced markdown block.
+2. The apply instruction on two lines: save section 1 to notes.md, then run
+   gh release edit <tag> --repo <repo> --notes-file notes.md
+   with <tag> and <repo> filled in from the data above.
+∆∆
+
+※※
+draft-release-notes — propose release notes when a release is published
+
+DAG:
+  collect ──> draft
+
+  collect  bash: resolve repo + tag, previous published tag, current body, commit list (gh api)
+  draft    claude(sonnet): grouped notes + the exact `gh release edit` apply command
+
+Trigger:
+  github release.published — fires when a release is published on a repo whose
+  webhook points at this daemon. The release payload carries no extracted vars,
+  so collect resolves the tag via the GitHub API (newest published release).
+
+Manual run:
+  skyway run draft-release-notes --var tag=v1.2.3
+  (tag optional — without it the newest published release is used)
+
+Notes:
+  - Propose-only: the draft is printed, never written back. Apply by running the
+    emitted `gh release edit` command yourself.
+  - Requires an authenticated `gh` CLI on the daemon host.
+  - Commit range comes from `repos/{repo}/compare/{prev}...{tag}`; first release
+    (no previous tag) falls back to the last 50 commits at the tag.
+※※

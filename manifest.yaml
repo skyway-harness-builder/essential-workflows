@@ -1,5 +1,5 @@
 apiVersion: skylence.io/v1
-version: 2.15.1
+version: 2.16.0
 updated_at: "2026-07-04"
 
 stores:
@@ -15,6 +15,9 @@ stores:
   - name: meta
     plugin: darkfactory
     description: "Dark Factory onboarding + eval-driven forges"
+  - name: github
+    plugin: release
+    description: "GitHub release operations: draft release notes on publish"
 
 entries:
   # ── Authoring & lifecycle ──────────────────────────────────────────────
@@ -260,6 +263,16 @@ entries:
     scripts:
       - meta/audit/workflows/triage-failed-sky-run/scripts/fetch.sh
 
+
+  - kind: workflow
+    name: check-sky-environment
+    path: meta/audit/workflows/check-sky-environment/workflow.sky
+    description: "Preflight doctor: probe claude CLI, gh auth, git remote reachability, daemon health, and declared-but-unset secrets[]; OK/WARN/FAIL per check, exit non-zero on any FAIL. Pure bash. Fire via: skyway run check-sky-environment --var dir=<path>"
+    tags: [meta, audit, doctor, environment, ci, manual]
+    store: meta
+    plugin: audit
+    scripts:
+      - meta/audit/workflows/check-sky-environment/scripts/probe.sh
   # ── Documentation ──────────────────────────────────────────────────────
   - kind: workflow
     name: catalog-sky-library
@@ -420,3 +433,14 @@ entries:
     tags: [meta, audit, triage, debug, runs, skill]
     store: meta
     plugin: audit
+
+  # ── GitHub release ─────────────────────────────────────────────────────
+  - kind: workflow
+    name: draft-release-notes
+    path: github/release/workflows/draft-release-notes/workflow.sky
+    description: "On GitHub release.published (or manually with --var tag=<tag>), collect commits since the previous published tag and draft grouped release notes plus the exact gh release edit command to apply them. Propose-only. Fire via webhook or: skyway run draft-release-notes --var tag=<tag>"
+    tags: [github, release, notes, docs, webhook]
+    store: github
+    plugin: release
+    scripts:
+      - github/release/workflows/draft-release-notes/scripts/collect.sh
