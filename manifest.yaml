@@ -1,6 +1,6 @@
 apiVersion: skylence.io/v1
-version: 2.12.0
-updated_at: "2026-05-30"
+version: 2.13.0
+updated_at: "2026-07-04"
 
 stores:
   - name: meta
@@ -15,6 +15,9 @@ stores:
   - name: meta
     plugin: darkfactory
     description: "Dark Factory onboarding + eval-driven forges"
+  - name: core
+    plugin: core
+    description: "Always-on builtin workflows shipped with the skyway binary (repo automation with human approval gates)"
 
 entries:
   # ── Authoring & lifecycle ──────────────────────────────────────────────
@@ -404,3 +407,24 @@ entries:
     tags: [meta, skylence, sky, workflow, lint]
     store: meta
     plugin: authoring
+  - kind: workflow
+    name: repo-convention-enforcer
+    path: core/workflows/repo-convention-enforcer/workflow.sky
+    description: "Audit and fix repo conventions, then gate the push on human approval with reject-and-revise"
+    tags: [core, builtin, github, approval]
+    store: core
+    plugin: core
+  - kind: workflow
+    name: repo-issue-to-pr
+    path: core/workflows/repo-issue-to-pr/workflow.sky
+    description: "Implement a GitHub issue, gate on human approval with reject-and-revise, then open a PR"
+    tags: [core, builtin, github, approval]
+    store: core
+    plugin: core
+  - kind: workflow
+    name: repo-spec-to-pr
+    path: core/workflows/repo-spec-to-pr/workflow.sky
+    description: "Turn a spec into a PR: plan → approval → implement → approval → PR, each gate with reject-and-revise"
+    tags: [core, builtin, github, approval]
+    store: core
+    plugin: core
