@@ -1,2 +1,4 @@
 .cartographer
 .skybox
+# local-only lint helpers: the library extractor refuses symlinks, so these must never ship in a release
+.claude/
