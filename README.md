@@ -87,9 +87,9 @@ Meta-workflows for managing your own `.sky` library — create, update, rename, 
 | `upgrade-sky-format` | Lint a `.sky` and apply minimal format fixes when it reports problems. `--var dir=<dir> --var name=<file>` |
 
 ```sh
-sky library install scaffold-sky-workflow
-sky library install sky-workflow-authoring   # skill scaffold + update depend on
-sky run scaffold-sky-workflow \
+skyway library install scaffold-sky-workflow
+skyway library install sky-workflow-authoring   # skill scaffold + update depend on
+skyway run scaffold-sky-workflow \
   --var dir=".sky/workflows" \
   --var name="deploy-on-tag" \
   --var request="on a GitHub release, run the deploy script and post the result to Slack"
@@ -103,7 +103,7 @@ Lint, health-check, and maintain the integrity of a `.sky` library.
 |------|-------------|
 | `audit-sky-library` | Lint every `.sky` in a directory in one pass, exit non-zero on any failure. `--var dir=<path>` |
 | `lint-sky-library` | Lint + Claude fix-loop until the whole library lints clean. `--var dir=<path>` |
-| `dry-run-sky-library` | Run `sky run --dry-run` against every workflow, print PASS/FAIL/SKIP matrix. `--var dir=<path>` |
+| `dry-run-sky-library` | Run `skyway run --dry-run` against every workflow, print PASS/FAIL/SKIP matrix. `--var dir=<path>` |
 | `audit-sky-secrets` | Scan `.sky` files for undeclared secret-shaped `$ENV` refs. `--var dir=<path>` |
 | `check-sky-trigger-conflicts` | Detect workflows bound to the same non-manual trigger. `--var dir=<path>` |
 | `find-orphan-sky-events` | Flag dangling `sky_event` triggers and orphan emit nodes. `--var dir=<path>` |
