@@ -4,6 +4,7 @@ description = "Read a failed skyway run's logs, pinpoint the failing node + root
 trigger.manual = true
 output_style = "terse"
 max_budget_usd = 2.0
+ui = "ui/workflow"
 ⊕⊕
 
 ※fetch※
@@ -12,6 +13,7 @@ Fetch workflow source and run logs. Bash script confirms .sky exists, calls `sky
 
 §fetch§
 bash_file = "./scripts/fetch.sh"
+ui = "ui/fetch"
 §§
 
 ※diagnose※
@@ -22,6 +24,7 @@ Read logs + source from fetch, identify failing node id + root cause. depends_on
 model = "sonnet"
 depends_on = ["fetch"]
 skills = ["sky-workflow-authoring"]
+ui = "ui/diagnose"
 §§
 
 ※propose※
@@ -32,6 +35,7 @@ Generate unified diff + apply command. depends_on=["diagnose"], chain_from="diag
 model = "sonnet"
 depends_on = ["diagnose"]
 chain_from = "diagnose"
+ui = "ui/propose"
 §§
 
 ∆diagnose∆

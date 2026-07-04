@@ -4,6 +4,7 @@ description = "Read an existing shell script, Makefile target, or cron line and 
 trigger.manual = true
 output_style = "terse"
 max_budget_usd = 3
+ui = "ui/workflow"
 ⊕⊕
 
 ※read※
@@ -16,6 +17,7 @@ Cats the source file (shell script, Makefile target, or cron line); exits 1 if m
 ※※
 §read§
 bash_file = "./scripts/read.sh"
+ui = "ui/read"
 §§
 
 ※author※
@@ -31,6 +33,7 @@ model = "sonnet"
 skills = ["sky-workflow-authoring"]
 depends_on = ["read"]
 trigger_rule = "all_success"
+ui = "ui/author"
 §§
 
 ∆author∆
@@ -69,6 +72,7 @@ depends_on = ["author"]
 trigger_rule = "all_success"
 loop.until.bash = "skyway lint \"$SKY_DIR/$SKY_NAME.sky\""
 loop.max = 6
+ui = "ui/lint"
 §§
 
 ∆lint∆
@@ -96,6 +100,7 @@ Best-effort dry-run via skyway run <name> --dry-run; swallows failures so a half
 §dryrun§
 bash_file = "./scripts/dryrun.sh"
 depends_on = ["lint"]
+ui = "ui/dryrun"
 §§
 
 ※※

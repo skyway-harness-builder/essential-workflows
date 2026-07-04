@@ -4,6 +4,7 @@ description = "Regenerate the ※※ ASCII DAG header of a .sky file from its ac
 trigger.manual = true
 output_style = "terse"
 max_budget_usd = 2
+ui = "ui/workflow"
 ⊕⊕
 
 ※draw※
@@ -13,6 +14,7 @@ Entry point. Read target .sky file, parse node graph (depends_on / chain_from / 
 §draw§
 model = "haiku"
 skills = ["sky-workflow-authoring"]
+ui = "ui/draw"
 §§
 
 ∆draw∆
@@ -52,6 +54,7 @@ model = "haiku"
 skills = ["sky-workflow-authoring"]
 loop.until.bash = "skyway lint \"$SKY_DIR/$SKY_NAME.sky\""
 loop.max = 6
+ui = "ui/lint"
 §§
 
 ∆lint∆

@@ -4,6 +4,7 @@ description = "Compose per-workflow lint status, run-recency, and budget-cap pre
 trigger.manual = true
 output_style = "terse"
 max_budget_usd = 0.5
+ui = "ui/workflow"
 ⊕⊕
 
 ※inventory※
@@ -12,6 +13,7 @@ Enumerate .sky files in SKY_DIR; fail if dir missing or empty. No dependencies.
 
 §inventory§
 bash_file = "./scripts/inventory.sh"
+ui = "ui/inventory"
 §§
 
 ※checks※
@@ -22,6 +24,7 @@ Per-file lint pass/fail, uncapped-LLM detection, last-run recency; emit TSV. Dep
 depends_on = ["inventory"]
 trigger_rule = "all_success"
 bash_file = "./scripts/checks.sh"
+ui = "ui/checks"
 §§
 
 ※render※
@@ -32,6 +35,7 @@ Grade each workflow row (red/amber/green by lint/cap/recency); write HEALTH.md. 
 model = "haiku"
 depends_on = ["checks"]
 trigger_rule = "all_success"
+ui = "ui/render"
 §§
 
 ∆render∆
@@ -61,6 +65,7 @@ Assert HEALTH.md exists and is non-empty. Depends_on: render, trigger_rule: all_
 depends_on = ["render"]
 trigger_rule = "all_success"
 bash_file = "./scripts/verify.sh"
+ui = "ui/verify"
 §§
 
 ※※

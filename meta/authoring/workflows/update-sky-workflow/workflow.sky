@@ -46,6 +46,7 @@ description = "Apply a change to an existing .sky workflow and lint it until cle
 trigger.manual = true
 output_style = "terse"
 max_budget_usd = 2.00
+ui = "ui/workflow"
 ⊕⊕
 
 ※update※
@@ -55,6 +56,7 @@ Apply requested change using sky-workflow-authoring skill. Manual trigger (no de
 §update§
 model = "sonnet"
 skills = ["sky-workflow-authoring"]
+ui = "ui/update"
 §§
 
 ∆update∆
@@ -77,6 +79,7 @@ depends_on = ["update"]
 skills = ["sky-workflow-authoring"]
 loop.until.bash = "skyway lint \"$SKY_DIR/$SKY_NAME.sky\""
 loop.max = 6
+ui = "ui/lint"
 §§
 
 ∆lint∆

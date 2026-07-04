@@ -3,6 +3,7 @@ name = "dry-run-sky-library"
 description = "Dry-run every .sky workflow in a directory and print a PASS/FAIL/SKIP plan matrix; exit nonzero on any FAIL."
 trigger.manual = true
 output_style = "terse"
+ui = "ui/workflow"
 ⊕⊕
 
 ※discover※
@@ -11,6 +12,7 @@ Glob "$SKY_DIR"/*.sky and emit one "<name>\t<path>" row per file; exits 2 on bad
 
 §discover§
 bash_file = "./scripts/discover.sh"
+ui = "ui/discover"
 §§
 
 ※dryrun※
@@ -20,6 +22,7 @@ For each row from discover, run `skyway run --dry-run` (tries path first, falls 
 §dryrun§
 bash_file = "./scripts/dryrun.sh"
 depends_on = ["discover"]
+ui = "ui/dryrun"
 §§
 
 ※matrix※
@@ -29,6 +32,7 @@ Render aligned PLAN/WORKFLOW/DIAGNOSTIC table, print summary counts; exits 1 if 
 §matrix§
 bash_file = "./scripts/matrix.sh"
 depends_on = ["dryrun"]
+ui = "ui/matrix"
 §§
 
 ※※

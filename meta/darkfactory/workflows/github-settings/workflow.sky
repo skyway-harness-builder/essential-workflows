@@ -74,6 +74,7 @@ name = "github-settings"
 description = "Apply best-practice GitHub settings via gh — two scopes in one workflow: org/account-level general defaults (default_repository_permission, web_commit_signoff_required, org Dependabot defaults for new repos; paid: org advanced-security/secret-scanning defaults) AND repository hardening (squash-only merges, auto-merge, delete-branch-on-merge, allow-update-branch, Dependabot alerts; advanced: branch protection + secret scanning). Scope: --var scope=general|repo|both (default both). Tier prose: --var tier=free|paid (paid/pro/team/enterprise/ghas/advanced all count as paid). Org general requires ORG OWNER; skipped with reason for personal accounts or non-owners. Fail-closed, idempotent, pure bash + gh, no LLM. Fire via: skyway run github-settings --var scope=both --var tier=free|paid [--var org=<org>] [--var repo=owner/name]"
 trigger.manual = true
 output_style = "terse"
+ui = "ui/workflow"
 ⊕⊕
 
 ※preflight※
@@ -84,6 +85,7 @@ Step 1 — preflight. Entry point. Resolve REPO/OWNER/ORG, normalize SCOPE + TIE
 
 §preflight§
 bash_file = "./scripts/preflight.sh"
+ui = "ui/preflight"
 §§
 
 ※orggeneral※
@@ -95,6 +97,7 @@ Apply org-level defaults: permission=read, web_commit_signoff=true, Dependabot a
 depends_on = ["preflight"]
 when = "$preflight.output.do_general == 'true'"
 bash_file = "./scripts/orggeneral.sh"
+ui = "ui/orggeneral"
 §§
 
 ※repogeneral※
@@ -106,6 +109,7 @@ Apply repo-level merge hygiene: squash-only, auto-merge, delete-branch-on-merge,
 depends_on = ["preflight"]
 when = "$preflight.output.do_repo == 'true'"
 bash_file = "./scripts/repogeneral.sh"
+ui = "ui/repogeneral"
 §§
 
 ※repodependabot※
@@ -117,6 +121,7 @@ Enable Dependabot vulnerability alerts + automated security updates on repo (fre
 depends_on = ["preflight"]
 when = "$preflight.output.do_repo == 'true'"
 bash_file = "./scripts/repodependabot.sh"
+ui = "ui/repodependabot"
 §§
 
 ※repoprotection※
@@ -128,6 +133,7 @@ ADVANCED: branch protection on default branch (≥1 PR review, dismiss stale, li
 depends_on = ["preflight"]
 when = "$preflight.output.repo_advanced == 'true'"
 bash_file = "./scripts/repoprotection.sh"
+ui = "ui/repoprotection"
 §§
 
 ※reposecrets※
@@ -139,6 +145,7 @@ ADVANCED: enable secret scanning + push protection. Free on public; GitHub Advan
 depends_on = ["preflight"]
 when = "$preflight.output.repo_advanced == 'true'"
 bash_file = "./scripts/reposecrets.sh"
+ui = "ui/reposecrets"
 §§
 
 ※report※
@@ -150,4 +157,5 @@ Leaf node: aggregate output from all prior nodes. Summarize applied vs skipped p
 depends_on = ["orggeneral", "repogeneral", "repodependabot", "repoprotection", "reposecrets"]
 trigger_rule = "all_done"
 bash_file = "./scripts/report.sh"
+ui = "ui/report"
 §§

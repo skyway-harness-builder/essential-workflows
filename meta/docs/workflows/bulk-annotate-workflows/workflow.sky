@@ -4,6 +4,7 @@ description = "Annotate all workflow.sky files in the given folders with inline 
 trigger.manual = true
 output_style = "terse"
 max_budget_usd = 30
+ui = "ui/workflow"
 ⊕⊕
 
 §annotate§

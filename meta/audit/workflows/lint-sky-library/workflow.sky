@@ -4,6 +4,7 @@ description = "Lint every .sky in a directory, then run a Claude fix-loop on the
 trigger.manual = true
 output_style = "terse"
 max_budget_usd = 3.00
+ui = "ui/workflow"
 ⊕⊕
 
 ※scan※
@@ -12,6 +13,7 @@ Glob $SKY_DIR/*.sky; run `skyway lint` on each file; exit 1 if any failed (gate 
 
 §scan§
 bash_file = "./scripts/scan.sh"
+ui = "ui/scan"
 §§
 
 ※fix※
@@ -23,6 +25,7 @@ model = "sonnet"
 depends_on = ["scan"]
 trigger_rule = "one_failure"
 skills = ["sky-workflow-authoring"]
+ui = "ui/fix"
 §§
 
 ∆fix∆
@@ -63,6 +66,7 @@ depends_on = ["fix"]
 bash_file = "./scripts/verify.sh"
 loop.until.bash = "DIR=\"$SKY_DIR\"\nfor f in \"$DIR\"/*.sky; do\n  [ -e \"$f\" ] || continue\n  skyway lint \"$f\" >/dev/null 2>&1 || exit 1\ndone\nexit 0"
 loop.max = 6
+ui = "ui/verify"
 §§
 
 ※※

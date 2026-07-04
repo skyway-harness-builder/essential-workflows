@@ -4,6 +4,7 @@ description = "Insert inline ※※ rationale comments before each node in a .sk
 trigger.manual = true
 output_style = "terse"
 max_budget_usd = 3
+ui = "ui/workflow"
 ⊕⊕
 
 ※read※
@@ -12,6 +13,7 @@ Verify the target .sky exists; exit 1 if missing so downstream all_success gates
 
 §read§
 bash_file = "./scripts/read.sh"
+ui = "ui/read"
 §§
 
 ※annotate※
@@ -23,6 +25,7 @@ model = "sonnet"
 skills = ["sky-workflow-authoring"]
 depends_on = ["read"]
 trigger_rule = "all_success"
+ui = "ui/annotate"
 §§
 
 ∆annotate∆
@@ -51,6 +54,7 @@ depends_on = ["annotate"]
 trigger_rule = "all_success"
 loop.until.bash = "skyway lint \"$SKY_DIR/$SKY_NAME.sky\""
 loop.max = 6
+ui = "ui/lint"
 §§
 
 ∆lint∆

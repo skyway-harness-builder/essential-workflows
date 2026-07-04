@@ -2,6 +2,7 @@
 name = "annotate-sky-library"
 description = "Scan a library directory for unannotated workflow.sky files and invoke annotate-sky-workflow for each one in sequence."
 output_style = "terse"
+ui = "ui/workflow"
 ⊕⊕
 
 ※scan※
@@ -9,6 +10,7 @@ Walks $SKY_DIR recursively for workflow.sky files; filters to those with no ※i
 ※※
 §scan§
 bash_file = "./scripts/scan.sh"
+ui = "ui/scan"
 §§
 
 ※annotate-all※
@@ -18,6 +20,7 @@ Invokes annotate-sky-workflow for each unannotated dir from scan output; depends
 depends_on = ["scan"]
 trigger_rule = "all_success"
 bash_file = "./scripts/annotate-all.sh"
+ui = "ui/annotate-all"
 §§
 
 ※※
