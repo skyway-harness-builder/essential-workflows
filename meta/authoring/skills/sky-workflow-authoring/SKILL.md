@@ -32,7 +32,7 @@ Read {{path}}. For each function missing error handling, note its name and what'
 ```
 Same instruction, one line, no ceremony. The model executes it identically.
 
-**Per-node ※<id>※ annotations** use the typed opener so the block is associated with a specific node. Body: one terse prose sentence describing the node's purpose, followed by the edges it carries (only edges that exist; never list absent ones). No key/value lists, no "Step N" prefixes.
+**Per-node `※<id>※` annotations** use the typed opener so the block is associated with a specific node. Body: one terse prose sentence describing the node's purpose, followed by the edges it carries (only edges that exist; never list absent ones). No key/value lists, no "Step N" prefixes.
 
 Wrong (lists absent edges, uses list format):
 ```
@@ -160,7 +160,7 @@ Set **exactly one**. With no trigger block, the workflow is **manual** — run v
 
 ## Node Kinds
 
-Exactly one execution kind per node (more than one → SKY-WF-024; none → SKY-WF-022). `loop` is a modifier that wraps the body kind.
+Exactly one execution kind per node (more than one → SKY-WF-024; none → SKY-WF-022). `loop` and `foreach` are modifiers that wrap the body kind.
 
 | Kind | Keys |
 |------|------|
@@ -171,6 +171,7 @@ Exactly one execution kind per node (more than one → SKY-WF-024; none → SKY-
 | http | `http = { url, method = "GET", headers = {...}, body, expect_status = 0, timeout_s = 30 }`. Missing url → SKY-WF-034. |
 | eval | `eval = { source = "$node.output", contains \| matches \| equals }` — exactly one assertion (SKY-WF-035/036). |
 | loop | `loop = { until = { bash \| eval }, max = 10, idle_timeout_ms = N }`. Body can't be http/eval/wait (SKY-WF-037); until needs exactly one of bash/eval (SKY-WF-038); `max` cap 100 (SKY-WF-046); idle_timeout_ms is bash-only (SKY-WF-058). |
+| foreach | `foreach = { items = ["a","b"] \| "$node.output" \| "{{var}}", max_concurrency = 3 }`. Body must be exactly one of prompt/command/bash/bash_file/script (SKY-WF-105); `items` invalid/empty → SKY-WF-104; `max_concurrency` out of 0–32 → SKY-WF-106; `chain_from` into/out of the node → SKY-WF-107. Runs the body once per resolved item (default sequential; up to `max_concurrency` in parallel); child steps named `<node-id>.<index>`; aggregate output is a JSON array of per-item outputs in order. |
 | wait | `wait = { prompt, channel = "manual"\|"webhook", timeout = "24h", approvers = [...] }`. Bad channel → SKY-WF-039; bad timeout → SKY-WF-040. |
 | approval | structured gate extending wait: `{ prompt, channel, timeout, approvers, capture_response, on_reject = { prompt, prompt_node, max_attempts = 0..10 } }`. |
 | cancel | `cancel = { reason = "..." }` — aborts the run; pair with `when`. |
@@ -178,7 +179,7 @@ Exactly one execution kind per node (more than one → SKY-WF-024; none → SKY-
 | acquire_lock / release_lock | `acquire_lock = { key = "name", ttl = "10m" }` (ttl default 10m, max 1h, ignored on release). Missing key → SKY-WF-068; bad ttl → SKY-WF-069. |
 | spawn | `spawn = { workers = [{ id, prompt, model }], max_wait = "25m", on_idle = "any"\|"all", continue_prompt = "...", boundary = { read_only, own = [...], must_not_edit = [...] } }`. Empty workers → 078; empty id/prompt → 079/080; bad max_wait → 081; bad on_idle → 082; contradictory boundary → 083; `**` glob → 084. |
 | council | `council = { members = [{ id, prompt }], synthesis = "...", max_wait = "25m", max_budget_usd = N }` — read-only advisors + synthesis. Empty members → 085; empty member → 086; empty synthesis → 087; bad max_wait → 088; negative budget → 089. |
-| review | `review = { base = "main", target = "<pr#|branch>", paths = [...] }` — built-in read-only code review. Empty path entry → SKY-WF-091. |
+| review | `review = { base = "main", target = "<pr#\|branch>", paths = [...] }` — built-in read-only code review. Empty path entry → SKY-WF-091. |
 
 ## DAG Shape & Data Flow
 
@@ -228,12 +229,14 @@ Choose whatever a human grasps fastest, and optimize the diagram for that human 
 
 ## Templates & Variables
 
-`{{var}}` expansion runs in **prompt, http, and eval** node fields — **not** in `bash`, `script`, or `loop.until.bash` (use `$SKY_*` env vars there).
+`{{var}}` expansion runs in **prompt, http, and eval** node fields — **not** in `bash`, `script`, or `loop.until.bash` (use `$SKY_*` env vars there). A `foreach` node's body follows the same rule: `{{item}}`/`{{item_index}}`/`{{item_total}}` reach only the prompt/template channel; a bash/script body must read `$SKY_ITEM`/`$SKY_ITEM_INDEX`/`$SKY_ITEM_TOTAL` instead.
 
 | Surface | Reference |
 |---------|-----------|
 | `∆` prompt / http / eval | `{{issue.title}}`, `{{repo.full_name}}`, `{{name}}` and other `--var` keys; `$SKY_OUTPUT_<ID>` |
 | `bash` / `loop.until.bash` / `script` | `"$SKY_ISSUE_NUMBER"`, `"$SKY_OUTPUT_<ID>"`, `"$SKY_<UPPER_KEY>"`; in script: `process.env.SKY_OUTPUT_<ID>` |
+| `foreach` prompt/command body | `{{item}}`, `{{item_index}}` (0-based), `{{item_total}}` |
+| `foreach` bash/script body | `"$SKY_ITEM"`, `"$SKY_ITEM_INDEX"`, `"$SKY_ITEM_TOTAL"` |
 | `mcp_servers` / `http` url·body·headers | `${env:NAME}` (must be in `secrets`) |
 | `when` | `$node.output.field OP 'literal'` |
 
@@ -265,6 +268,8 @@ Write the workflow file entirely in **English** — `name`, every config key, al
 ## MUST NOT
 
 - Use `{{var}}` in `bash`, `script`, or `loop.until.bash` — use `$SKY_*` env vars.
+- Use `{{item}}`/`{{item_index}}`/`{{item_total}}` in a `foreach` node's bash/script body — use `$SKY_ITEM`/`$SKY_ITEM_INDEX`/`$SKY_ITEM_TOTAL` instead; the two channels never cross.
+- Put a non-scalar (object/array) entry in a `foreach.items` literal array — only string entries are supported; a resolved item is always a scalar (numbers/bools arrive as their JSON text).
 - Use `${env:NAME}` in `prompt`/`bash`/`eval`/`script` — it resolves only for `mcp_servers`/`http` (SKY-WF-057). In bash, read `"$GITHUB_TOKEN"` directly.
 - Put a schedule under `trigger.cron` — the key is `trigger.schedule.cron`; a bare `trigger.cron` is not a recognized trigger.
 - Use `trigger.github_status`: that key does not exist. For CI check-run failures use `trigger.github.events = ["check_run.completed"]` paired with `trigger.github.check_run = { conclusion = "failure", name = "CI Name" }`.
@@ -303,6 +308,7 @@ Write the workflow file entirely in **English** — `name`, every config key, al
 | 099–101 | bash_file mutually exclusive with bash / file not found / shellcheck warning (non-blocking) |
 | 102 | `※<id>※` doc block names a nonexistent node id (warning, non-blocking) |
 | 103 | `ui` resolves to no markdown files (warning) — applies to both the workflow-level `ui` in `⊕meta⊕` and per-node `ui` keys |
+| 104–107 | foreach: `items` missing/empty/wrong shape / body not exactly one of prompt·command·bash·bash_file·script (or combined with an incompatible modifier) / `max_concurrency` out of range (0–32) / `chain_from` targets or is set on a foreach node |
 
 ## Self-Check Before Finishing
 
