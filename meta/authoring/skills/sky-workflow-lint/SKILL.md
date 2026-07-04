@@ -30,6 +30,7 @@ tags: [skylence, sky, workflow, lint, errors]
 | 091–095 | review path empty / links entry bad / check_run conclusion invalid / check_run without event / sentry·linear no events |
 | 096–098 | schedule: cron field required / cron expression invalid (5-field) / timezone not a valid IANA location |
 | 103 | `ui` resolves to no markdown files (warning): create the missing file(s) or remove the key |
+| 104–107 | foreach: items missing/empty/not strings (or literal array over 100) / body not prompt·command·bash·script (or combined with loop) / max_concurrency out of 0–32 / chain_from on or targeting a foreach node |
 
 ## Common Fixes
 
@@ -40,6 +41,9 @@ tags: [skylence, sky, workflow, lint, errors]
 | SKY-WF-055 | Add every `${env:NAME}` reference to the `secrets` array |
 | SKY-WF-063 | Add `safety = "requires_permission"` to destructive bash nodes |
 | SKY-WF-103 | Create the missing markdown file at the declared path, or remove the `ui` key |
+| SKY-WF-104 | Set `foreach.items` to a non-empty string array or a `$node.output`/`{{var}}` string reference |
+| SKY-WF-105 | Give the foreach node exactly one prompt/command/bash/script body; drop any `loop` block |
+| SKY-WF-107 | Remove `chain_from` — foreach items run in separate sessions; aggregate via `$SKY_OUTPUT_<ID>` instead |
 
 ## Self-Check Before Done
 
