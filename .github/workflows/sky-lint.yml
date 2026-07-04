@@ -2,18 +2,27 @@ name: Lint workflows
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: sky-lint-essential-workflows-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   sky-lint:
-    runs-on: self-hosted
+    runs-on: [self-hosted, macOS, ARM64, light]
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v6
-      - uses: skyway-harness-builder/lint-action@v2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+      - uses: skyway-harness-builder/lint-action@7a3fcc8510d4aef09a11b01abf71e29c54fbc926 # v2
         with:
           paths: "**/*.sky"
 
   manifest-validate:
-    runs-on: self-hosted
+    runs-on: [self-hosted, macOS, ARM64, light]
+    timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
       - name: Validate manifest.yaml
         run: bash scripts/validate-manifest.sh
