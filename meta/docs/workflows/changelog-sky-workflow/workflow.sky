@@ -1,9 +1,16 @@
 ⊕meta⊕
 name = "changelog-sky-workflow"
 description = "Diff a .sky against its last committed git version and append a plain-English changelog entry to CHANGELOG.md."
+params.dir.type = "string"
+params.dir.required = true
+params.dir.description = "Directory containing the .sky and its CHANGELOG.md; must be a git working tree."
+params.name.type = "string"
+params.name.required = true
+params.name.description = "Workflow filename without the .sky extension."
 trigger.manual = true
 output_style = "terse"
 max_budget_usd = 0.20
+ui = "ui/workflow"
 ⊕⊕
 
 ※※
@@ -41,6 +48,7 @@ Git working-tree vs HEAD for the target .sky; emit a stable marker when there ar
 ※※
 §diff§
 bash_file = "./scripts/diff.sh"
+ui = "ui/diff"
 §§
 
 ※describe※
@@ -49,6 +57,7 @@ Read the diff from the upstream node and write ONE concise changelog bullet in r
 §describe§
 model = "haiku"
 depends_on = ["diff"]
+ui = "ui/describe"
 §§
 
 ∆describe∆
@@ -76,4 +85,5 @@ Print the bullet, then append it under a dated heading to CHANGELOG.md in the ta
 §emit§
 depends_on = ["describe"]
 bash_file = "./scripts/emit.sh"
+ui = "ui/emit"
 §§

@@ -60,8 +60,18 @@ scan output carefully. Use a git working tree so you can `git diff` / revert.
 ⊕meta⊕
 name = "codemod-sky-var"
 description = "Bulk-rename one token across every .sky in a dir, consistently across its three forms ({{old}}, $SKY_<UPPER_OLD>, §old§ + quoted id refs), behind a manual gate, then lint every touched file. Pure bash, fragile regex so gated + verified. Fire via: skyway run codemod-sky-var --var dir=<dir> --var old=<token> --var new=<token>"
+params.dir.type = "string"
+params.dir.required = true
+params.dir.description = "Directory of .sky files to codemod."
+params.old.type = "string"
+params.old.required = true
+params.old.description = "Existing token (kebab-case --var key or node id) to rename, without $SKY_ / section markers."
+params.new.type = "string"
+params.new.required = true
+params.new.description = "Replacement token (kebab-case), without $SKY_ / section markers."
 trigger.manual = true
 output_style = "terse"
+ui = "ui/workflow"
 ⊕⊕
 
 ※scan※
@@ -76,6 +86,7 @@ Greps all three token forms across dir/*.sky; prints hits + affected file list; 
 ※※
 §scan§
 bash_file = "./scripts/scan.sh"
+ui = "ui/scan"
 §§
 
 ※gate※
@@ -92,6 +103,7 @@ depends_on = ["scan"]
 wait.prompt = "Rewrite all three forms of '{{old}}' -> '{{new}}' across the affected .sky files in {{dir}}? Review the scan preview first — short/common tokens can false-match. Approve to apply."
 wait.channel = "manual"
 wait.timeout = "1h"
+ui = "ui/gate"
 §§
 
 ※apply※
@@ -109,6 +121,7 @@ Portable temp-file sed rewrites all three token forms per affected file; only to
 §apply§
 depends_on = ["gate"]
 bash_file = "./scripts/apply.sh"
+ui = "ui/apply"
 §§
 
 ※verify※
@@ -124,4 +137,5 @@ Re-lints every .sky in dir; exits nonzero if any fails (surfacing a bad codemod)
 §verify§
 depends_on = ["apply"]
 bash_file = "./scripts/verify.sh"
+ui = "ui/verify"
 §§

@@ -1,6 +1,6 @@
 apiVersion: skylence.io/v1
-version: 2.12.0
-updated_at: "2026-05-30"
+version: 2.14.0
+updated_at: "2026-07-04"
 
 stores:
   - name: meta

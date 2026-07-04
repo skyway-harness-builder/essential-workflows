@@ -4,6 +4,7 @@ description = "Estimate per-workflow LLM spend across a directory and flag every
 trigger.manual = true
 output_style = "terse"
 max_budget_usd = 1
+ui = "ui/workflow"
 ⊕⊕
 
 ※scan※
@@ -12,6 +13,7 @@ Scan target directory for all .sky files; for each, count prompt/model nodes, de
 
 §scan§
 bash_file = "./scripts/scan.sh"
+ui = "ui/scan"
 §§
 
 ※report※
@@ -23,6 +25,7 @@ model = "haiku"
 depends_on = ["scan"]
 trigger_rule = "all_success"
 max_budget_usd = 1
+ui = "ui/report"
 §§
 
 ∆report∆

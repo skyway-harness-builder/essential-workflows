@@ -1,9 +1,13 @@
 ⊕meta⊕
 name = "bulk-annotate-workflows"
 description = "Annotate all workflow.sky files in the given folders with inline rationale comments, then lint each clean."
+params.folders.type = "string"
+params.folders.required = true
+params.folders.description = "Space-separated list of folders to search for workflow.sky files."
 trigger.manual = true
 output_style = "terse"
 max_budget_usd = 30
+ui = "ui/workflow"
 ⊕⊕
 
 §annotate§

@@ -3,6 +3,7 @@ name = "import-sky-library"
 description = "Validate and import a folder of foreign/legacy .sky files into a target dir one-by-one: lint each, skip any that fail lint or already exist, gate the import manually, then write a kept/rejected/skipped manifest and verify the imports."
 trigger.manual = true
 output_style = "terse"
+ui = "ui/workflow"
 ⊕⊕
 
 ※enumerate※
@@ -11,6 +12,7 @@ enumerate — list SOURCE/*.sky; fail if dirs missing or no candidates. No edges
 
 §enumerate§
 bash_file = "./scripts/enumerate.sh"
+ui = "ui/enumerate"
 §§
 
 ※validate※
@@ -20,6 +22,7 @@ validate — lint each candidate; stage PASS to /tmp, log FAIL+codes, mark SKIP.
 §validate§
 depends_on = ["enumerate"]
 bash_file = "./scripts/validate.sh"
+ui = "ui/validate"
 §§
 
 ※gate※
@@ -31,6 +34,7 @@ depends_on = ["validate"]
 wait.channel = "manual"
 wait.prompt = "Review the PASS (will import), FAIL (lint errors, rejected), and SKIP (already exists) sets above. Approve to copy the PASS files into the target dir."
 wait.timeout = "1h"
+ui = "ui/gate"
 §§
 
 ※finalize※
@@ -40,6 +44,7 @@ finalize — copy each staged PASS into TARGET (never overwrite); print kept/ski
 §finalize§
 depends_on = ["gate"]
 bash_file = "./scripts/finalize.sh"
+ui = "ui/finalize"
 §§
 
 ※verify※
@@ -49,6 +54,7 @@ verify — re-lint every imported file; rm /tmp staging list; exit nonzero if an
 §verify§
 depends_on = ["finalize"]
 bash_file = "./scripts/verify.sh"
+ui = "ui/verify"
 §§
 
 ※※

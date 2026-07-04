@@ -36,6 +36,7 @@ name = "audit-sky-secrets"
 description = "Scan every .sky for secret-shaped $ENV refs in bash/http not declared in secrets[], report the undeclared ones, exit non-zero on any. Pure bash. Fire via: skyway run audit-sky-secrets --var dir=<path>"
 trigger.manual = true
 output_style = "terse"
+ui = "ui/workflow"
 ⊕⊕
 
 ※scan※
@@ -46,4 +47,5 @@ Exits non-zero if any undeclared secret-shaped reference found.
 
 §scan§
 bash_file = "./scripts/scan.sh"
+ui = "ui/scan"
 §§

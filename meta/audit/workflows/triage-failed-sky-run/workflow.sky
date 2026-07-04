@@ -1,9 +1,19 @@
 ⊕meta⊕
 name = "triage-failed-sky-run"
 description = "Read a failed skyway run's logs, pinpoint the failing node + root cause in the .sky source, and propose a fix diff plus the command to apply it (nothing is auto-applied)."
+params.dir.type = "string"
+params.dir.required = true
+params.dir.description = "Directory containing the .sky file to diagnose."
+params.name.type = "string"
+params.name.required = true
+params.name.description = "Workflow filename without the .sky extension."
+params.run.type = "string"
+params.run.required = true
+params.run.description = "The failed run id to fetch logs for."
 trigger.manual = true
 output_style = "terse"
 max_budget_usd = 2.0
+ui = "ui/workflow"
 ⊕⊕
 
 ※fetch※
@@ -12,6 +22,7 @@ Fetch workflow source and run logs. Bash script confirms .sky exists, calls `sky
 
 §fetch§
 bash_file = "./scripts/fetch.sh"
+ui = "ui/fetch"
 §§
 
 ※diagnose※
@@ -22,6 +33,7 @@ Read logs + source from fetch, identify failing node id + root cause. depends_on
 model = "sonnet"
 depends_on = ["fetch"]
 skills = ["sky-workflow-authoring"]
+ui = "ui/diagnose"
 §§
 
 ※propose※
@@ -32,6 +44,7 @@ Generate unified diff + apply command. depends_on=["diagnose"], chain_from="diag
 model = "sonnet"
 depends_on = ["diagnose"]
 chain_from = "diagnose"
+ui = "ui/propose"
 §§
 
 ∆diagnose∆

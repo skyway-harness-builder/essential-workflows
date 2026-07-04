@@ -3,6 +3,7 @@ name = "archive-sky-workflow"
 description = "Archive a .sky workflow into _archive/ with its trigger neutralized so it leaves the active path; reversible via restore mode. Manual gate before any move. Pure bash, no LLM."
 trigger.manual = true
 output_style = "terse"
+ui = "ui/workflow"
 ⊕⊕
 
 ※find※
@@ -11,6 +12,7 @@ Resolve source/dest paths from $SKY_MODE (archive|restore); fail if source missi
 
 §find§
 bash_file = "./scripts/find.sh"
+ui = "ui/find"
 §§
 
 ※gate※
@@ -23,6 +25,7 @@ trigger_rule = "all_success"
 wait.channel = "manual"
 wait.prompt = "Confirm move. Archiving NEUTRALIZES the trigger so the file cannot auto-fire even if the loader scans _archive/. Restore returns it as a manual-only workflow (re-add a trigger to reactivate). Review the source and dest paths printed by the find step, then approve."
 wait.timeout = "1h"
+ui = "ui/gate"
 §§
 
 ※move※
@@ -33,6 +36,7 @@ Move workflow to _archive/ (archive mode) or restore from it; strips trigger lin
 depends_on = ["gate"]
 trigger_rule = "all_success"
 bash_file = "./scripts/move.sh"
+ui = "ui/move"
 §§
 
 ※verify※
@@ -43,6 +47,7 @@ Lint the moved workflow file at its new location to confirm no syntax errors fro
 depends_on = ["move"]
 trigger_rule = "all_success"
 bash_file = "./scripts/verify.sh"
+ui = "ui/verify"
 §§
 
 ※※

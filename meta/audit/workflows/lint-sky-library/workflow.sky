@@ -1,9 +1,13 @@
 ⊕meta⊕
 name = "lint-sky-library"
 description = "Lint every .sky in a directory, then run a Claude fix-loop on the failing files until the whole library lints clean. Auto-fix twin of audit-sky-library. Edits files in place; budget-capped."
+params.dir.type = "string"
+params.dir.required = true
+params.dir.description = "Directory containing the .sky files to lint and fix."
 trigger.manual = true
 output_style = "terse"
 max_budget_usd = 3.00
+ui = "ui/workflow"
 ⊕⊕
 
 ※scan※
@@ -12,6 +16,7 @@ Glob $SKY_DIR/*.sky; run `skyway lint` on each file; exit 1 if any failed (gate 
 
 §scan§
 bash_file = "./scripts/scan.sh"
+ui = "ui/scan"
 §§
 
 ※fix※
@@ -23,6 +28,7 @@ model = "sonnet"
 depends_on = ["scan"]
 trigger_rule = "one_failure"
 skills = ["sky-workflow-authoring"]
+ui = "ui/fix"
 §§
 
 ∆fix∆
@@ -38,7 +44,7 @@ For EACH file listed as FAIL above:
 
 Apply the standard fixes per error code:
 - SKY-WF-040: a node's `chain_from` target must also appear in its `depends_on` array. Add it.
-- SKY-WF-047: bare `{{var}}` inside an `http.body` JSON string. Use `{{var|json}}`.
+- SKY-WF-047: a bare templated value inside an `http.body` JSON string (double-curly var). Add the `|json` filter to it.
 - SKY-WF-055: an env-reference of the form dollar-brace env colon NAME (used in `mcp_servers` or HTTP url/body/headers) whose NAME is missing from the `secrets` array. Add NAME to `secrets = [...]` in the `⊕meta⊕` block.
 - SKY-WF-060/SKY-WF-064/SKY-WF-065/SKY-WF-066/SKY-WF-067: align the node config with the rule; consult the sky-workflow-authoring skill for the exact contract before editing.
 - Bareword `when` RHS: quote it. `when = "$x.output == 'value'"`, never `== value`.
@@ -46,7 +52,7 @@ Apply the standard fixes per error code:
 
 Rules you MUST respect while editing:
 - Keep the four delimiter blocks intact; every opener/closer alone on its line.
-- Never introduce `{{var}}` into a `bash` or `loop.until.bash` body; use `$SKY_*` there.
+- Never introduce a double-curly template var into a `bash` or `loop.until.bash` body; use `$SKY_*` there.
 - Use portable sed only (no `sed -i`); prefer the temp-file pattern.
 - Do not weaken or remove a `safety = "requires_permission"` guard on a destructive bash node.
 - Preserve each file's original intent, trigger, and DAG; make the minimal change that clears lint.
@@ -63,6 +69,7 @@ depends_on = ["fix"]
 bash_file = "./scripts/verify.sh"
 loop.until.bash = "DIR=\"$SKY_DIR\"\nfor f in \"$DIR\"/*.sky; do\n  [ -e \"$f\" ] || continue\n  skyway lint \"$f\" >/dev/null 2>&1 || exit 1\ndone\nexit 0"
 loop.max = 6
+ui = "ui/verify"
 §§
 
 ※※
@@ -94,7 +101,7 @@ Run:
 
 Vars:
     dir   directory containing the .sky files to lint and fix (e.g. .sky/workflows)
-          -> $SKY_DIR in bash/loop; no {{var}} is used in any bash/loop body
+          -> $SKY_DIR in bash/loop; no double-curly var syntax is used in any bash/loop body
 
 Notes:
     - This workflow EDITS .sky files in place (the fix node) and is budget-capped

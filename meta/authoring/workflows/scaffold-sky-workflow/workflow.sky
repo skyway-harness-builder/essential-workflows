@@ -43,6 +43,17 @@ Required skill — install before first run (no marketplace plugin needed):
 ⊕meta⊕
 name = "scaffold-sky-workflow"
 description = "Author a new .sky workflow from a plain-English brief and lint it until clean. Fire via: skyway run scaffold-sky-workflow --var dir=<dir> --var name=<file> --var request=<what it should do>"
+params.dir.type = "string"
+params.dir.required = true
+params.dir.description = "Directory the new workflow file is written to."
+params.name.type = "string"
+params.name.required = true
+params.name.description = "Kebab-case directory name; generates <dir>/<name>/workflow.sky."
+params.request.type = "string"
+params.request.required = true
+params.request.description = "Plain-English brief describing what the workflow should do."
+params.today.type = "string"
+params.today.description = "Optional ISO 8601 date stamped into the generated changelog entry."
 trigger.manual = true
 output_style = "terse"
 max_budget_usd = 2.00

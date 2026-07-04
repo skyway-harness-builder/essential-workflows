@@ -1,9 +1,16 @@
 ⊕meta⊕
 name = "explain-sky-workflow"
 description = "Read one .sky file and emit a plain-English walkthrough so a user understands its triggers, node DAG, inputs, and edges without parsing the Unicode delimiters. Read-only."
+params.dir.type = "string"
+params.dir.required = true
+params.dir.description = "Directory containing the .sky file (no trailing slash)."
+params.name.type = "string"
+params.name.required = true
+params.name.description = "Workflow name without the .sky extension."
 trigger.manual = true
 output_style = "terse"
 max_budget_usd = 1
+ui = "ui/workflow"
 ⊕⊕
 
 ※※
@@ -40,6 +47,7 @@ explain step can use. Read-only: no rm, no mutation.
 
 §resolve§
 bash_file = "./scripts/resolve.sh"
+ui = "ui/resolve"
 §§
 
 ※explain※
@@ -54,6 +62,7 @@ model = "haiku"
 depends_on = ["resolve"]
 trigger_rule = "all_success"
 skills = ["sky-workflow-authoring"]
+ui = "ui/explain"
 §§
 
 ∆explain∆

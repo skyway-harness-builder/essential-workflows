@@ -154,10 +154,14 @@ as in cartographer-reindex.sky) once the safe-exercise sandbox lands.
 ⊕meta⊕
 name = "workflow-forge"
 description = "META-workflow: author a target .sky workflow from a plain-English intent, then drive it through sky's own gates — skyway lint (clean) + skyway run --dry-run (DAG/vars/cycles/budget) — looping author→lint→lint-fix until clean, dry-run it (NEVER executed for real in v1), have opus judge it against the intent with a fail-closed gate, and open a STAGED PR under worktree isolation. Uses sky's own lint + dry-run as its gates. Bounded by max_budget_usd + loop.max. Fire via: skyway run workflow-forge --var intent=\"…\""
+params.intent.type = "string"
+params.intent.required = true
+params.intent.description = "Plain-English description of the workflow to author or improve."
 trigger.manual = true
 output_style = "terse"
 max_budget_usd = 8.00
 learnings.exclude = ["anti-patterns"]
+ui = "ui/workflow"
 ⊕⊕
 
 ※parse※
@@ -168,6 +172,7 @@ trigger + node shape author should produce. No file IO. {{intent}} is the operat
 §parse§
 model = "haiku"
 max_turns = 6
+ui = "ui/parse"
 §§
 
 ∆parse∆
@@ -180,7 +185,7 @@ Decide and output, as a compact bullet list:
 1. mode: `new` (create a fresh workflow) or `improve` (edit an existing one). If the intent names or describes an existing workflow to change, it is `improve`; otherwise `new`.
 2. trigger: exactly one of `trigger.manual = true`, `trigger.github.events = [...]`, `trigger.sky_event.event = "..."`, or `trigger.schedule.cron = "..."` — pick the one the intent implies; default to `trigger.manual = true` when ambiguous.
 3. node shape: a short ordered list of the DAG nodes (id + kind: prompt/bash/script/http/loop/cancel/emit/invoke) the workflow needs to satisfy the intent.
-4. risks: any obvious lint traps the author must avoid (bareword `when` RHS, an env-secret reference without a `secrets` entry, `{{var}}` inside bash, `chain_from` not in `depends_on`).
+4. risks: any obvious lint traps the author must avoid (bareword `when` RHS, an env-secret reference without a `secrets` entry, a double-curly template var inside bash, `chain_from` not in `depends_on`).
 
 Do not write the `.sky` file yet. Output only the plan.
 ∆∆
@@ -196,6 +201,7 @@ next node writes its stdout verbatim to disk.
 model = "opus"
 depends_on = ["parse"]
 max_turns = 30
+ui = "ui/author"
 §§
 
 ∆author∆
@@ -212,7 +218,7 @@ $SKY_OUTPUT_PARSE
 - ⊕meta⊕ requires `name` and `description` and exactly one trigger (`trigger.manual = true` | `trigger.github.events = [...]` | `trigger.sky_event.event = "..."` | `trigger.schedule.cron = "..."`).
 - Real node keys only: `model` (sonnet/opus/haiku), `depends_on`, `when`, `bash`, `script`, `http`, `output_format`, `max_turns`, `max_budget_usd`, `isolation = "worktree"`, `chain_from`, `trigger_rule`, `emit`, `cancel`, `loop.until.bash`/`loop.until.eval`/`loop.max`, `invoke.target`/`invoke.vars`, `skills`, `mcp_servers`. There is NO `env.*`, NO `fresh_context`, NO `allowed_tools` key — use node `context = "fresh"` for a clean turn and `skills = [...]` to load skills.
 - `when` is FLAT: `"$node.output == 'value'"` or `"$node.output != 'value'"` or a bare boolean — RHS ALWAYS single-quoted; bareword RHS silently never fires.
-- `{{var}}` expands ONLY in `∆` prompt bodies and `http.body` (use `{{var|json}}` inside JSON). In `bash`/`script` use `$SKY_OUTPUT_<NODE_ID>` and `$SKY_<UPPER_KEY>`; never `{{var}}`.
+- Double-curly-brace template vars expand ONLY in `∆` prompt bodies and `http.body` (add a `|json` filter when inside JSON).
 - A secret reference of the form dollar-brace env-NAME is allowed ONLY in `mcp_servers` and HTTP url/body/headers, and every NAME must be declared in `secrets = [...]` in ⊕meta⊕. It is rejected anywhere else (prompt/bash/eval).
 - `chain_from = "X"` requires "X" in that node's `depends_on`.
 - Always shell-quote `$SKY_*` in bash.
@@ -234,6 +240,7 @@ only ever lands in a file, never in an eval/source sink).
 §write-candidate§
 depends_on = ["author"]
 bash_file = "./scripts/write-candidate.sh"
+ui = "ui/write-candidate"
 §§
 
 ※fix-loop※
@@ -256,6 +263,7 @@ context = "fresh"
 max_turns = 20
 loop.until.bash = "skyway lint .sky/workflows/forge-candidate.sky --format json | grep -q '^\\[\\]$'"
 loop.max = 3
+ui = "ui/fix-loop"
 §§
 
 ∆fix-loop∆
@@ -269,7 +277,7 @@ Do exactly this:
 Common fixes:
 - SKY-WF-042 `chain_from` not in `depends_on` → add the chain target to that node's `depends_on`.
 - SKY-WF-055 undeclared env-secret reference (dollar-brace env-NAME) → add NAME to `secrets = [...]` in ⊕meta⊕ (or remove the reference).
-- SKY-WF-047 bare `{{var}}` in a JSON string in `http.body` → use the unwrapped `{{var|json}}` form.
+- SKY-WF-047 a bare double-curly template var in a JSON string in `http.body` → add the `|json` filter to it.
 - SKY-WF-060 `output_format` not valid JSON Schema → fix the schema object.
 - SKY-WF-031 bad `when` → quote the RHS: `"$x.output == 'value'"`.
 - SKY-WF-037 loop body is http/eval/wait → use a prompt/command/bash body.
@@ -293,6 +301,7 @@ for the run log. FAIL-CLOSED: only an explicit empty `[]` yields clean=true.
 §lint§
 depends_on = ["fix-loop"]
 bash_file = "./scripts/lint.sh"
+ui = "ui/lint"
 §§
 
 ※dry-run※
@@ -308,6 +317,7 @@ non-empty JSON array → dry_ok=true. Emit ONE clean JSON line `{"dry_ok":"true|
 depends_on = ["lint"]
 when = "$lint.output.clean == 'true'"
 bash_file = "./scripts/dry-run.sh"
+ui = "ui/dry-run"
 §§
 
 ※judge※
@@ -324,6 +334,7 @@ model = "opus"
 depends_on = ["dry-run"]
 max_turns = 12
 output_format = {"type": "object", "properties": {"delivers": {"type": "boolean"}, "reason": {"type": "string"}}, "required": ["delivers", "reason"]}
+ui = "ui/judge"
 §§
 
 ∆judge∆
@@ -361,6 +372,7 @@ clean JSON line `{"delivers":"true|false"}`.
 depends_on = ["lint", "dry-run", "judge"]
 trigger_rule = "all_done"
 bash_file = "./scripts/gate.sh"
+ui = "ui/gate"
 §§
 
 ※finalize※
@@ -382,6 +394,7 @@ when = "$gate.output.delivers == 'true'"
 isolation = "worktree"
 max_turns = 40
 max_budget_usd = 3.00
+ui = "ui/finalize"
 §§
 
 ∆finalize∆
@@ -417,4 +430,5 @@ artifact for the dry-run). Best-effort: a missing file is fine.
 depends_on = ["gate", "finalize"]
 trigger_rule = "all_done"
 bash_file = "./scripts/cleanup.sh"
+ui = "ui/cleanup"
 §§

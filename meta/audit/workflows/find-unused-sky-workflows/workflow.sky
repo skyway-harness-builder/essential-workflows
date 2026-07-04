@@ -3,6 +3,7 @@ name = "find-unused-sky-workflows"
 description = "Cross-reference every .sky in a dir against skyway run history; list never-run / long-stale files as advisory deletion candidates. Prints ready-to-paste delete commands but deletes nothing."
 trigger.manual = true
 output_style = "terse"
+ui = "ui/workflow"
 ⊕⊕
 
 ※list※
@@ -11,6 +12,7 @@ Enumerate all .sky files in $SKY_DIR (no filtering, no prior state; reads dir pa
 
 §list§
 bash_file = "./scripts/list.sh"
+ui = "ui/list"
 §§
 
 ※runs※
@@ -20,6 +22,7 @@ Capture `skyway logs` output; depends_on = ["list"], trigger_rule = all_done (de
 §runs§
 depends_on = ["list"]
 bash_file = "./scripts/runs.sh"
+ui = "ui/runs"
 §§
 
 ※report※
@@ -29,6 +32,7 @@ Cross-reference each file against run history (SEEN-IN-LOGS vs NEVER); depends_o
 §report§
 depends_on = ["list", "runs"]
 bash_file = "./scripts/report.sh"
+ui = "ui/report"
 §§
 
 ※※

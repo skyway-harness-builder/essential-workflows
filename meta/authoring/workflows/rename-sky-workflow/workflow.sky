@@ -51,8 +51,18 @@ event identifiers, not workflow names).
 ⊕meta⊕
 name = "rename-sky-workflow"
 description = "Atomically rename a .sky: git mv, fix its meta name, rewrite `skyway run <old>` refs behind a manual gate, then lint and verify. Fire via: skyway run rename-sky-workflow --var dir=<dir> --var name=<old> --var new-name=<new>"
+params.dir.type = "string"
+params.dir.required = true
+params.dir.description = "Directory the workflow lives in."
+params.name.type = "string"
+params.name.required = true
+params.name.description = "Current kebab-case filename (no .sky extension)."
+params.new-name.type = "string"
+params.new-name.required = true
+params.new-name.description = "New kebab-case filename and workflow name (no .sky extension)."
 trigger.manual = true
 output_style = "terse"
+ui = "ui/workflow"
 ⊕⊕
 
 ※find※
@@ -62,6 +72,7 @@ and prints every `skyway run <old>` reference that the apply step will rewrite.
 
 §find§
 bash_file = "./scripts/find.sh"
+ui = "ui/find"
 §§
 
 ※confirm※
@@ -73,6 +84,7 @@ depends_on = ["find"]
 wait.prompt = "Rename {{name}} -> {{new-name}} in {{dir}} and rewrite `skyway run {{name}}` references? Approve to apply."
 wait.channel = "manual"
 wait.timeout = "1h"
+ui = "ui/confirm"
 §§
 
 ※apply※
@@ -82,6 +94,7 @@ Step 3 — apply. depends_on=[confirm]. git mv file, fix name= field, text-repla
 §apply§
 depends_on = ["confirm"]
 bash_file = "./scripts/apply.sh"
+ui = "ui/apply"
 §§
 
 ※verify※
@@ -91,4 +104,5 @@ Step 4 — verify. depends_on=[apply]. Lint renamed file (catches name<->filenam
 §verify§
 depends_on = ["apply"]
 bash_file = "./scripts/verify.sh"
+ui = "ui/verify"
 §§
