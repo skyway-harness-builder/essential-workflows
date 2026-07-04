@@ -1,5 +1,5 @@
 apiVersion: skylence.io/v1
-version: 2.16.0
+version: 2.16.1
 updated_at: "2026-07-04"
 
 stores:
@@ -121,7 +121,7 @@ entries:
   - kind: workflow
     name: create-workflow-collection
     path: meta/authoring/workflows/create-workflow-collection/workflow.sky
-    description: "Scaffold a new community workflow collection from the skylence-be/community-workflow-collection-skeleton template, configure it non-interactively, and push the first commit. Fire via: skyway run create-workflow-collection --var vendor=<slug> [--var repo=<name>] [--var org=<org>] [--var vendor-name=<label>] [--var description=<text>]"
+    description: "Scaffold a new community workflow collection from the skyway-harness-builder/workflow-collection-skeleton template, configure it non-interactively, and push the first commit. Fire via: skyway run create-workflow-collection --var vendor=<slug> [--var repo=<name>] [--var org=<org>] [--var vendor-name=<label>] [--var description=<text>]"
     tags: [meta, scaffold, community, library, manual]
     store: meta
     plugin: authoring

@@ -1,6 +1,6 @@
 ---
 short_description: Zet een nieuwe community-workflowcollectie op vanuit het GitHub-skelettemplate en pusht de eerste commit.
-long_description: Maakt een GitHub-repo aan vanuit het skylence-be/community-workflow-collection-skeleton-template, configureert die niet-interactief met de opgegeven vendor-gegevens (token-vervangingen, maphernoeming, README-opschoning) en pusht de eerste commit. Eindigt met de repo-URL en het skyway library add-commando.
+long_description: Maakt een GitHub-repo aan vanuit het skyway-harness-builder/workflow-collection-skeleton-template, configureert die niet-interactief met de opgegeven vendor-gegevens (token-vervangingen, maphernoeming, README-opschoning) en pusht de eerste commit. Eindigt met de repo-URL en het skyway library add-commando.
 ---
 
 Draait in vier stappen: **preflight** (controleert `gh`, auth en vars), **create** (`gh repo create --template`), **setup** (clonen, tokens vervangen, `workflows/__vendor__/` hernoemen, commit + push), **report** (URL en vervolgstappen printen).

@@ -2,7 +2,7 @@
 # create-workflow-collection
 
 Scaffold a brand-new community workflow collection from the
-`skylence-be/community-workflow-collection-skeleton` GitHub template, configure it
+`skyway-harness-builder/workflow-collection-skeleton` GitHub template, configure it
 non-interactively using the provided vars, and push the first commit.
 
   (manual run: --var vendor, [repo, org, vendor-name, description])
@@ -13,7 +13,7 @@ non-interactively using the provided vars, and push the first commit.
    └───────────┘  prints resolved: org, repo, vendor, vendor-name
          │
          ▼
-   ┌────────┐  gh repo create <org>/<repo> --template community-workflow-collection-skeleton
+   ┌────────┐  gh repo create <org>/<repo> --template workflow-collection-skeleton
    │ create │  --public --description <desc>
    └────────┘  fails if the repo already exists
          │
@@ -45,7 +45,7 @@ Run it:
 
 ⊕meta⊕
 name = "create-workflow-collection"
-description = "Scaffold a new community workflow collection from the skylence-be/community-workflow-collection-skeleton template, configure it, and push the first commit. Fire via: skyway run create-workflow-collection --var vendor=<slug> [--var repo=<name>] [--var org=<org>] [--var vendor-name=<label>] [--var description=<text>]"
+description = "Scaffold a new community workflow collection from the skyway-harness-builder/workflow-collection-skeleton template, configure it, and push the first commit. Fire via: skyway run create-workflow-collection --var vendor=<slug> [--var repo=<name>] [--var org=<org>] [--var vendor-name=<label>] [--var description=<text>]"
 trigger.manual = true
 output_style = "terse"
 ui = "ui/workflow"
@@ -62,7 +62,7 @@ ui = "ui/preflight"
 §§
 
 ※create※
-Creates GitHub repo from community-workflow-collection-skeleton template. Uses gh repo create --template.
+Creates GitHub repo from workflow-collection-skeleton template. Uses gh repo create --template.
 depends_on = ["preflight"]; runs after validation succeeds. Fails if repo already exists.
 ※※
 

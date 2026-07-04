@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# create.sh — create the GitHub repo from the community-workflow-collection-skeleton template.
+# create.sh — create the GitHub repo from the workflow-collection-skeleton template.
 set -euo pipefail
 
 # ── resolve vars (same logic as preflight) ────────────────────────────────────
@@ -12,7 +12,7 @@ DESCRIPTION="${SKY_DESCRIPTION:-A collection of .sky workflows by ${VENDOR_NAME:
 echo "[create] creating github.com/$ORG/$REPO from template..."
 
 if ! gh repo create "$ORG/$REPO" \
-  --template "skylence-be/community-workflow-collection-skeleton" \
+  --template "skyway-harness-builder/workflow-collection-skeleton" \
   --public \
   --description "$DESCRIPTION" 2>&1; then
   echo "" >&2
