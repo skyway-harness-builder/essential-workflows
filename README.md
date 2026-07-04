@@ -189,4 +189,4 @@ Merged workflows reach users two ways: immediately via `skyway library update` (
 
 ### CI gate
 
-Every `.sky` file is linted by [`skylence-be/sky-lint-action`](https://github.com/skylence-be/sky-lint-action) on each push and pull request. **PRs with a failing lint check cannot be merged.** Fix lint errors first — `skyway lint <file>` locally, or open a PR and let the action report the exact error codes.
+Every `.sky` file is linted by [`skyway-harness-builder/lint-action`](https://github.com/skyway-harness-builder/lint-action) on each push and pull request. **PRs with a failing lint check cannot be merged.** Fix lint errors first — `skyway lint <file>` locally, or open a PR and let the action report the exact error codes.

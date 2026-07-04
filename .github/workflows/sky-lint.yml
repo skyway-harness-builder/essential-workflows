@@ -7,7 +7,7 @@ jobs:
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v6
-      - uses: skylence-be/sky-lint-action@v2
+      - uses: skyway-harness-builder/lint-action@v2
         with:
           paths: "**/*.sky"
 
