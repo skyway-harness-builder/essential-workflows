@@ -12,7 +12,7 @@ ui = "ui/workflow"
 
 §annotate§
 model = "sonnet"
-skills = ["sky-workflow-authoring", "hashline-edit"]
+skills = ["sky-workflow-authoring"]
 §§
 
 ∆annotate∆
