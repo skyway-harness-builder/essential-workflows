@@ -213,6 +213,7 @@ schema AND mandates the sentinel as the final line.
 
 §judge§
 model = "opus"
+skills = ["sky-judge-gate"]
 depends_on = ["baseline-exercise"]
 max_turns = 12
 output_format = {"type": "object", "properties": {"delivers": {"type": "boolean"}, "pass_rate": {"type": "number"}, "cases": {"type": "array", "items": {"type": "object", "properties": {"case": {"type": "string"}, "pass": {"type": "boolean"}, "failure_locus": {"type": "string", "enum": ["prose-ambiguity", "missing-script", "script-bug", "none"]}, "fix": {"type": "string"}}, "required": ["case", "pass", "failure_locus", "fix"]}}}, "required": ["delivers", "pass_rate", "cases"]}

@@ -22,6 +22,7 @@ Analyze scan output from $SKY_OUTPUT_SCAN (TSV lines). Depends on scan's success
 
 §report§
 model = "haiku"
+skills = ["sky-workflow-authoring"]
 depends_on = ["scan"]
 trigger_rule = "all_success"
 max_budget_usd = 1

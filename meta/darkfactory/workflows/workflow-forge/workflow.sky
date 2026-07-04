@@ -199,6 +199,7 @@ next node writes its stdout verbatim to disk.
 
 §author§
 model = "opus"
+skills = ["sky-workflow-authoring"]
 depends_on = ["parse"]
 max_turns = 30
 ui = "ui/author"
@@ -258,6 +259,7 @@ the prompt forbids touching anything other than the candidate path.
 
 §fix-loop§
 model = "opus"
+skills = ["sky-workflow-authoring"]
 depends_on = ["write-candidate"]
 context = "fresh"
 max_turns = 20
@@ -331,6 +333,7 @@ This is the same AI-judge → bash-gate-greps-sentinel pattern as track-anthropi
 
 §judge§
 model = "opus"
+skills = ["sky-judge-gate"]
 depends_on = ["dry-run"]
 max_turns = 12
 output_format = {"type": "object", "properties": {"delivers": {"type": "boolean"}, "reason": {"type": "string"}}, "required": ["delivers", "reason"]}

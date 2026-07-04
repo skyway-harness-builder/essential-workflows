@@ -141,6 +141,8 @@ sky library install darkfactory-onboarding
 |------|-------------|
 | `sky-workflow-authoring` | Self-contained reference for authoring a valid `.sky` workflow: four-delimiter format, trigger routing, node types, variable references, MUST/MUST NOT rules, and lint error-code fixes. |
 | `darkfactory-onboarding` | Onboard a repo into the Dark Factory — the 9-label lifecycle (`data/labels.yaml`), GitHub Project field schema, label→Status mapping, and what a project template carries vs what you wire by hand. |
+| `sky-judge-gate` | Conduct for AI judge nodes in the judge→sentinel→deterministic-gate pattern: sentinel discipline, fail-closed rules, confidence self-enforcement, holdout freshness, untrusted-input handling. |
+| `sky-run-triage` | Diagnosing a failed skyway run: env-channel data flow, when-condition quoting, chain_from semantics, failure classes in check order, propose-don't-apply. |
 
 ## Adding a custom source
 

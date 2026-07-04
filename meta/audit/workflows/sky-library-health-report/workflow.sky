@@ -36,6 +36,7 @@ Grade each workflow row (red/amber/green by lint/cap/recency); write HEALTH.md. 
 
 §render§
 model = "haiku"
+skills = ["sky-workflow-authoring"]
 depends_on = ["checks"]
 trigger_rule = "all_success"
 ui = "ui/render"

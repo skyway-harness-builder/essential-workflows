@@ -32,7 +32,7 @@ Read logs + source from fetch, identify failing node id + root cause. depends_on
 §diagnose§
 model = "sonnet"
 depends_on = ["fetch"]
-skills = ["sky-workflow-authoring"]
+skills = ["sky-workflow-authoring", "sky-run-triage"]
 ui = "ui/diagnose"
 §§
 

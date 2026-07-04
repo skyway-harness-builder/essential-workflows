@@ -1,5 +1,5 @@
 apiVersion: skylence.io/v1
-version: 2.14.0
+version: 2.15.0
 updated_at: "2026-07-04"
 
 stores:
@@ -404,3 +404,19 @@ entries:
     tags: [meta, skylence, sky, workflow, lint]
     store: meta
     plugin: authoring
+
+  - kind: skill
+    name: sky-judge-gate
+    path: meta/darkfactory/skills/sky-judge-gate/SKILL.md
+    description: "Conduct for an AI judge node in the judge→sentinel→deterministic-gate pattern: sentinel discipline, fail-closed decision rules, confidence self-enforcement, holdout freshness, untrusted-input handling. Load on judge/validator nodes whose verdict a bash gate greps (skill-forge, workflow-forge, custom judges)."
+    tags: [meta, darkfactory, judge, gate, sentinel, eval, skill]
+    store: meta
+    plugin: darkfactory
+
+  - kind: skill
+    name: sky-run-triage
+    path: meta/audit/skills/sky-run-triage/SKILL.md
+    description: "Diagnosing a failed skyway run: env-channel data flow ($SKY_OUTPUT_*, {{var}} scope, when-quoting, chain_from), failure classes in check order, propose-don't-apply rule. Load on nodes that read run logs to name a failing node and root cause (triage-failed-sky-run)."
+    tags: [meta, audit, triage, debug, runs, skill]
+    store: meta
+    plugin: audit
