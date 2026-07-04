@@ -48,6 +48,7 @@ name = "create-workflow-collection"
 description = "Scaffold a new community workflow collection from the skylence-be/community-workflow-collection-skeleton template, configure it, and push the first commit. Fire via: skyway run create-workflow-collection --var vendor=<slug> [--var repo=<name>] [--var org=<org>] [--var vendor-name=<label>] [--var description=<text>]"
 trigger.manual = true
 output_style = "terse"
+ui = "ui/workflow"
 ⊕⊕
 
 ※preflight※
@@ -57,6 +58,7 @@ No depends_on. Exits early if preconditions fail.
 
 §preflight§
 bash_file = "./scripts/preflight.sh"
+ui = "ui/preflight"
 §§
 
 ※create※
@@ -67,6 +69,7 @@ depends_on = ["preflight"]; runs after validation succeeds. Fails if repo alread
 §create§
 depends_on = ["preflight"]
 bash_file = "./scripts/create.sh"
+ui = "ui/create"
 §§
 
 ※setup※
@@ -78,6 +81,7 @@ depends_on = ["create"]; runs after repo creation succeeds.
 §setup§
 depends_on = ["create"]
 bash_file = "./scripts/setup.sh"
+ui = "ui/setup"
 §§
 
 ※report※
@@ -88,4 +92,5 @@ depends_on = ["setup"]; runs after setup succeeds. Final output step.
 §report§
 depends_on = ["setup"]
 bash_file = "./scripts/report.sh"
+ui = "ui/report"
 §§

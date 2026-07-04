@@ -40,6 +40,7 @@ description = "Regenerate a browsable INDEX.md for a .sky directory (name, trigg
 trigger.manual = true
 output_style = "terse"
 max_budget_usd = 1.00
+ui = "ui/workflow"
 ⊕⊕
 
 ※scan※
@@ -48,6 +49,7 @@ Entry point: counts *.sky in {{dir}}. No dependencies. Stops cleanly if empty.
 
 §scan§
 bash_file = "./scripts/scan.sh"
+ui = "ui/scan"
 §§
 
 ※index※
@@ -58,6 +60,7 @@ Depends on scan. Haiku reads each .sky in {{dir}} and writes {{dir}}/INDEX.md ta
 model = "haiku"
 depends_on = ["scan"]
 skills = ["sky-workflow-authoring"]
+ui = "ui/index"
 §§
 
 ∆index∆
@@ -73,4 +76,5 @@ Depends on index. Bash coverage check: INDEX.md must exist, be non-empty, and li
 §verify§
 depends_on = ["index"]
 bash_file = "./scripts/verify.sh"
+ui = "ui/verify"
 §§

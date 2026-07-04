@@ -59,6 +59,7 @@ name = "board-prep"
 description = "Dark Factory rung 0 (onboarding, GitHub): idempotently create the 9 lifecycle labels (data/labels.yaml) on the caller's repo, link a GitHub Project to the repo, verify the project carries the dark-factory field schema (Status: Icebox→Done plus Priority/Size/Idea Stage/Bug Stage, from the Skylence project template), and print the manual UI steps the GitHub API cannot do (auto-add workflow + label→Status automation). A project template carries board STRUCTURE but never repo labels or auto-add wiring — this fills that gap. Pure bash + gh, deterministic, fail-closed, idempotent. Fire via: skyway run board-prep --var project=<project-number> [--var owner=<org-or-user>] [--var repo=<owner/name>]"
 trigger.manual = true
 output_style = "terse"
+ui = "ui/workflow"
 ⊕⊕
 
 ※preflight※
@@ -72,6 +73,7 @@ the `project` auth scope). Emits ONE JSON line {owner,repo,product} consumed dow
 
 §preflight§
 bash_file = "./scripts/preflight.sh"
+ui = "ui/preflight"
 §§
 
 ※labels※
@@ -84,6 +86,7 @@ thing no project template can ever provide (they are repo-scoped). REPO comes fr
 §labels§
 depends_on = ["preflight"]
 bash_file = "./scripts/labels.sh"
+ui = "ui/labels"
 §§
 
 ※link※
@@ -95,6 +98,7 @@ not treated as an error. OWNER/REPO/PROJECT come from preflight's JSON.
 §link§
 depends_on = ["preflight"]
 bash_file = "./scripts/link.sh"
+ui = "ui/link"
 §§
 
 ※fields※
@@ -109,6 +113,7 @@ template's job; this only tells you whether the template was applied. grep is a 
 §fields§
 depends_on = ["preflight"]
 bash_file = "./scripts/fields.sh"
+ui = "ui/fields"
 §§
 
 ※report※
@@ -122,4 +127,5 @@ two MANUAL Projects-UI steps that have NO public API: (1) enable Auto-add filter
 depends_on = ["labels", "link", "fields"]
 trigger_rule = "all_done"
 bash_file = "./scripts/report.sh"
+ui = "ui/report"
 §§

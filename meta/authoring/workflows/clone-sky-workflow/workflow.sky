@@ -56,6 +56,7 @@ description = "Duplicate a .sky as a new manual template under a new name, neutr
 trigger.manual = true
 output_style = "terse"
 max_budget_usd = 2.00
+ui = "ui/workflow"
 ⊕⊕
 
 ※copy※
@@ -69,6 +70,7 @@ Copies source workflow to dest; exits 1 if source missing (lists dir) or dest ex
 ※※
 §copy§
 bash_file = "./scripts/copy.sh"
+ui = "ui/copy"
 §§
 
 ※rewrite※
@@ -85,6 +87,7 @@ Rewrites clone dest: retargets meta name to new-name and strips all trigger.* li
 §rewrite§
 depends_on = ["copy"]
 bash_file = "./scripts/rewrite.sh"
+ui = "ui/rewrite"
 §§
 
 ※lint※
@@ -103,6 +106,7 @@ depends_on = ["rewrite"]
 skills = ["sky-workflow-authoring"]
 loop.until.bash = "skyway lint \"$SKY_DIR/$SKY_NEW_NAME.sky\""
 loop.max = 6
+ui = "ui/lint"
 §§
 
 ∆lint∆
@@ -120,4 +124,5 @@ Best-effort skyway describe of the finished clone; prints done. depends_on=["lin
 §describe§
 depends_on = ["lint"]
 bash_file = "./scripts/describe.sh"
+ui = "ui/describe"
 §§

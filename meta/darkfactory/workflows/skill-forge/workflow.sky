@@ -107,6 +107,7 @@ trigger.manual = true
 output_style = "terse"
 max_budget_usd = 8.00
 learnings.exclude = ["execution-rules", "patterns", "anti-patterns", "project-notes"]
+ui = "ui/workflow"
 ⊕⊕
 
 ※read-skill※
@@ -121,6 +122,7 @@ because skill names there are not {{var}}-templated. No destructive commands (re
 
 §read-skill§
 bash_file = "./scripts/read-skill.sh"
+ui = "ui/read-skill"
 §§
 
 ※parse※
@@ -134,6 +136,7 @@ structured text (numbered cases), consumed verbatim by baseline-exercise and jud
 model = "haiku"
 depends_on = ["read-skill"]
 max_turns = 8
+ui = "ui/parse"
 §§
 
 ∆parse∆
@@ -173,6 +176,7 @@ judge can score the SKILL AS WRITTEN. Capture one transcript per case.
 model = "sonnet"
 depends_on = ["parse"]
 max_turns = 12
+ui = "ui/baseline-exercise"
 §§
 
 ∆baseline-exercise∆
@@ -212,6 +216,7 @@ model = "opus"
 depends_on = ["baseline-exercise"]
 max_turns = 12
 output_format = {"type": "object", "properties": {"delivers": {"type": "boolean"}, "pass_rate": {"type": "number"}, "cases": {"type": "array", "items": {"type": "object", "properties": {"case": {"type": "string"}, "pass": {"type": "boolean"}, "failure_locus": {"type": "string", "enum": ["prose-ambiguity", "missing-script", "script-bug", "none"]}, "fix": {"type": "string"}}, "required": ["case", "pass", "failure_locus", "fix"]}}}, "required": ["delivers", "pass_rate", "cases"]}
+ui = "ui/judge"
 §§
 
 ∆judge∆
@@ -258,6 +263,7 @@ improve loop. The costlier mistake is gated against.
 §gate§
 depends_on = ["judge"]
 bash_file = "./scripts/gate.sh"
+ui = "ui/gate"
 §§
 
 ※improve※
@@ -278,6 +284,7 @@ when = "$gate.output.delivers == 'false'"
 isolation = "worktree"
 max_turns = 30
 loop = {"until": {"bash": "F=\"/tmp/sky-forge-${SKY_RUN_ID:-unknown}.verdict\"; test -f \"$F\" && grep -q 'delivers=true' \"$F\""}, "max": 3}
+ui = "ui/improve"
 §§
 
 ∆improve∆
@@ -327,6 +334,7 @@ files live in improve's worktree, so finalize re-runs the authoritative checks p
 §lint-scripts§
 depends_on = ["improve"]
 bash_file = "./scripts/lint-scripts.sh"
+ui = "ui/lint-scripts"
 §§
 
 ※finalize※
@@ -344,4 +352,5 @@ the skill_dir, and an EXPLICIT GUARD rejects any staged path matching MISSION.md
 depends_on = ["lint-scripts"]
 isolation = "worktree"
 bash_file = "./scripts/finalize.sh"
+ui = "ui/finalize"
 §§

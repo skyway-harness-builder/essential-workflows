@@ -34,6 +34,7 @@ name = "audit-sky-library"
 description = "Lint every .sky in a directory in one pass and report pass/fail grouped by file, exiting non-zero on any failure. Fire via: skyway run audit-sky-library --var dir=<path>"
 trigger.manual = true
 output_style = "terse"
+ui = "ui/workflow"
 ⊕⊕
 
 ※scan※
@@ -42,6 +43,7 @@ Scan directory for .sky files. Exit 0 if none found (not a failure).
 
 §scan§
 bash_file = "./scripts/scan.sh"
+ui = "ui/scan"
 §§
 
 ※lint※
@@ -51,4 +53,5 @@ Lint each .sky file from scan. Tally pass/fail, exit non-zero if any fail. depen
 §lint§
 depends_on = ["scan"]
 bash_file = "./scripts/lint.sh"
+ui = "ui/lint"
 §§

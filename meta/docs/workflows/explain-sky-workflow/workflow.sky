@@ -4,6 +4,7 @@ description = "Read one .sky file and emit a plain-English walkthrough so a user
 trigger.manual = true
 output_style = "terse"
 max_budget_usd = 1
+ui = "ui/workflow"
 ⊕⊕
 
 ※※
@@ -40,6 +41,7 @@ explain step can use. Read-only: no rm, no mutation.
 
 §resolve§
 bash_file = "./scripts/resolve.sh"
+ui = "ui/resolve"
 §§
 
 ※explain※
@@ -54,6 +56,7 @@ model = "haiku"
 depends_on = ["resolve"]
 trigger_rule = "all_success"
 skills = ["sky-workflow-authoring"]
+ui = "ui/explain"
 §§
 
 ∆explain∆

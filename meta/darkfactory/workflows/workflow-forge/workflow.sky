@@ -158,6 +158,7 @@ trigger.manual = true
 output_style = "terse"
 max_budget_usd = 8.00
 learnings.exclude = ["anti-patterns"]
+ui = "ui/workflow"
 ⊕⊕
 
 ※parse※
@@ -168,6 +169,7 @@ trigger + node shape author should produce. No file IO. {{intent}} is the operat
 §parse§
 model = "haiku"
 max_turns = 6
+ui = "ui/parse"
 §§
 
 ∆parse∆
@@ -196,6 +198,7 @@ next node writes its stdout verbatim to disk.
 model = "opus"
 depends_on = ["parse"]
 max_turns = 30
+ui = "ui/author"
 §§
 
 ∆author∆
@@ -234,6 +237,7 @@ only ever lands in a file, never in an eval/source sink).
 §write-candidate§
 depends_on = ["author"]
 bash_file = "./scripts/write-candidate.sh"
+ui = "ui/write-candidate"
 §§
 
 ※fix-loop※
@@ -256,6 +260,7 @@ context = "fresh"
 max_turns = 20
 loop.until.bash = "skyway lint .sky/workflows/forge-candidate.sky --format json | grep -q '^\\[\\]$'"
 loop.max = 3
+ui = "ui/fix-loop"
 §§
 
 ∆fix-loop∆
@@ -293,6 +298,7 @@ for the run log. FAIL-CLOSED: only an explicit empty `[]` yields clean=true.
 §lint§
 depends_on = ["fix-loop"]
 bash_file = "./scripts/lint.sh"
+ui = "ui/lint"
 §§
 
 ※dry-run※
@@ -308,6 +314,7 @@ non-empty JSON array → dry_ok=true. Emit ONE clean JSON line `{"dry_ok":"true|
 depends_on = ["lint"]
 when = "$lint.output.clean == 'true'"
 bash_file = "./scripts/dry-run.sh"
+ui = "ui/dry-run"
 §§
 
 ※judge※
@@ -324,6 +331,7 @@ model = "opus"
 depends_on = ["dry-run"]
 max_turns = 12
 output_format = {"type": "object", "properties": {"delivers": {"type": "boolean"}, "reason": {"type": "string"}}, "required": ["delivers", "reason"]}
+ui = "ui/judge"
 §§
 
 ∆judge∆
@@ -361,6 +369,7 @@ clean JSON line `{"delivers":"true|false"}`.
 depends_on = ["lint", "dry-run", "judge"]
 trigger_rule = "all_done"
 bash_file = "./scripts/gate.sh"
+ui = "ui/gate"
 §§
 
 ※finalize※
@@ -382,6 +391,7 @@ when = "$gate.output.delivers == 'true'"
 isolation = "worktree"
 max_turns = 40
 max_budget_usd = 3.00
+ui = "ui/finalize"
 §§
 
 ∆finalize∆
@@ -417,4 +427,5 @@ artifact for the dry-run). Best-effort: a missing file is fine.
 depends_on = ["gate", "finalize"]
 trigger_rule = "all_done"
 bash_file = "./scripts/cleanup.sh"
+ui = "ui/cleanup"
 §§

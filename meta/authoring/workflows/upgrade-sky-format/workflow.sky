@@ -44,6 +44,7 @@ description = "Lint one .sky and, only when it reports problems, apply minimal f
 trigger.manual = true
 output_style = "terse"
 max_budget_usd = 2.00
+ui = "ui/workflow"
 ⊕⊕
 
 ※probe※
@@ -54,6 +55,7 @@ hard error (exit 1) with a clear message.
 
 §probe§
 bash_file = "./scripts/probe.sh"
+ui = "ui/probe"
 §§
 
 ※fix※
@@ -68,6 +70,7 @@ model = "sonnet"
 depends_on = ["probe"]
 trigger_rule = "one_failure"
 skills = ["sky-workflow-authoring"]
+ui = "ui/fix"
 §§
 
 ∆fix∆
@@ -93,4 +96,5 @@ depends_on: ["probe", "fix"]; trigger_rule: "all_done".
 depends_on = ["probe", "fix"]
 trigger_rule = "all_done"
 bash_file = "./scripts/diff.sh"
+ui = "ui/diff"
 §§

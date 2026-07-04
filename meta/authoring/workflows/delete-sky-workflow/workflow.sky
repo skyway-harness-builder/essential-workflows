@@ -37,6 +37,7 @@ name = "delete-sky-workflow"
 description = "Find a .sky workflow by name and delete it behind a manual approval gate. Fire via: skyway run delete-sky-workflow --var dir=<dir> --var name=<file>"
 trigger.manual = true
 output_style = "terse"
+ui = "ui/workflow"
 ⊕⊕
 
 ※find※
@@ -46,6 +47,7 @@ No dependencies. Resolves {{dir}}/{{name}}.sky.
 
 §find§
 bash_file = "./scripts/find.sh"
+ui = "ui/find"
 §§
 
 ※confirm※
@@ -58,6 +60,7 @@ depends_on = ["find"]
 wait.prompt = "Delete {{dir}}/{{name}}.sky? Approve to remove it, reject to keep."
 wait.channel = "manual"
 wait.timeout = "1h"
+ui = "ui/confirm"
 §§
 
 ※remove※
@@ -68,4 +71,5 @@ depends_on: confirm. Executes rm {{dir}}/{{name}}.sky.
 §remove§
 depends_on = ["confirm"]
 bash_file = "./scripts/remove.sh"
+ui = "ui/remove"
 §§

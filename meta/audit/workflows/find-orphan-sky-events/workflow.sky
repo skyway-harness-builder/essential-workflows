@@ -3,6 +3,7 @@ name = "find-orphan-sky-events"
 description = "Flag dangling sky_event edges across a .sky library: trigger.sky_event listeners with no emitter (dead listeners) and emit signals with no listener (dead signals). Pure bash, exits 1 if any orphan found."
 trigger.manual = true
 output_style = "terse"
+ui = "ui/workflow"
 ⊕⊕
 
 ※collect※
@@ -11,6 +12,7 @@ Starting node: grep trigger.sky_event.event listeners and emit names from all .s
 
 §collect§
 bash_file = "./scripts/collect.sh"
+ui = "ui/collect"
 §§
 
 ※match※
@@ -20,6 +22,7 @@ Depends on collect. Runs comm/grep to find listeners without emitters and emitte
 §match§
 depends_on = ["collect"]
 bash_file = "./scripts/match.sh"
+ui = "ui/match"
 §§
 
 ※report※
@@ -29,6 +32,7 @@ Depends on match. Prints both orphan lists (dead listeners and dead signals) and
 §report§
 depends_on = ["match"]
 bash_file = "./scripts/report.sh"
+ui = "ui/report"
 §§
 
 ※※
