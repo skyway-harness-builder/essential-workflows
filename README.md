@@ -1,18 +1,20 @@
-# skylence-be/workflows
+# essential-workflows
 
-Community workflow library for [Skylence](https://github.com/skylence-be/binary). Install any workflow directly from the CLI:
+The curated first-party workflow library for [skyway](https://github.com/skyway-harness-builder) — essentials only.
+
+**You already have these.** Every skyway binary ships with this library embedded (the `skyway-bundled-workflows` source), so all of it is browsable and installable offline, out of the box:
 
 ```sh
-sky library list
-sky library install scaffold-sky-workflow
+skyway library list
+skyway library install scaffold-sky-workflow
 ```
 
-This repo is the default remote source bundled with `sky`. Run `sky library update` to pull the latest workflows.
+This repo is also the live remote source (`skyway-essential-workflows`): the embedded copy is a snapshot taken at build time, and `skyway library update` pulls anything published here since your binary was built.
 
 ## Layout
 
 ```
-workflows/
+essential-workflows/
   manifest.yaml                    ← registry of all entries
   meta/
     authoring/
@@ -41,6 +43,7 @@ workflows/
         sky-library-health-report/{workflow.sky, scripts/}
         import-sky-library/{workflow.sky, scripts/}
         triage-failed-sky-run/{workflow.sky, scripts/}
+        check-sky-environment/{workflow.sky, scripts/}
     docs/
       workflows/
         catalog-sky-library/{workflow.sky, scripts/}
@@ -57,7 +60,12 @@ workflows/
       skills/
         darkfactory-onboarding/SKILL.md
       data/
+      data/
         labels.yaml
+  github/
+    release/
+      workflows/
+        draft-release-notes/{workflow.sky, scripts/}
 ```
 
 Each workflow is a self-contained directory: `workflow.sky` plus a `scripts/` subfolder holding any bash files it references. The binary resolves `bash_file = "./scripts/x.sh"` relative to the workflow file's directory at runtime.
@@ -104,6 +112,7 @@ Lint, health-check, and maintain the integrity of a `.sky` library.
 | `sky-library-health-report` | Compose lint + recency + budget into a graded HEALTH.md. `--var dir=<path>` |
 | `import-sky-library` | Validate and import foreign `.sky` files behind a manual gate. `--var dir=<dir> --var source=<src>` |
 | `triage-failed-sky-run` | Pinpoint the failing node, root cause, and propose a fix diff. `--var dir=<dir> --var name=<file> --var run=<run-id>` |
+| `check-sky-environment` | Preflight doctor: probe claude CLI, gh auth, git remote, daemon health, and declared-but-unset secrets; OK/WARN/FAIL per check. `--var dir=<path>` |
 
 ## Documentation workflows
 
@@ -116,6 +125,14 @@ Generate and maintain documentation for your `.sky` library.
 | `explain-sky-workflow` | Emit a plain-English walkthrough of a workflow's trigger, DAG, and nodes. `--var dir=<dir> --var name=<file>` |
 | `changelog-sky-workflow` | Diff a `.sky` and append a changelog entry to `CHANGELOG.md`. `--var dir=<dir> --var name=<file>` |
 | `annotate-sky-workflow` | Insert inline ※※ rationale comments before each node, then lint. `--var dir=<dir> --var name=<file>` |
+
+## GitHub release workflows
+
+Repo automation triggered by GitHub events.
+
+| Name | Description |
+|------|-------------|
+| `draft-release-notes` | On `release.published` (or manually), collect commits since the previous tag and draft grouped release notes plus the exact apply command — propose-only. `--var tag=<tag>` |
 
 ## Dark Factory workflows
 
@@ -130,29 +147,30 @@ Eval-driven forges and onboarding workflows for the Dark Factory dev ladder.
 
 ## Skills
 
-A workflow declares `skills = [...]` on a node; `sky` injects the named `.claude/skills/<name>/SKILL.md` into that node's system prompt. Install a skill the same way as a workflow — no marketplace plugin required:
+A workflow declares `skills = [...]` on a node; `skyway` injects the named `.claude/skills/<name>/SKILL.md` into that node's system prompt. Install a skill the same way as a workflow — no marketplace plugin required:
 
 ```sh
-sky library install sky-workflow-authoring
-sky library install darkfactory-onboarding
+skyway library install sky-workflow-authoring
+skyway library install darkfactory-onboarding
 ```
 
 | Name | Description |
 |------|-------------|
 | `sky-workflow-authoring` | Self-contained reference for authoring a valid `.sky` workflow: four-delimiter format, trigger routing, node types, variable references, MUST/MUST NOT rules, and lint error-code fixes. |
+| `sky-workflow-lint` | Lint-code table and self-check for fixing SKY-WF-* errors when reading `skyway lint` output. |
 | `darkfactory-onboarding` | Onboard a repo into the Dark Factory — the 9-label lifecycle (`data/labels.yaml`), GitHub Project field schema, label→Status mapping, and what a project template carries vs what you wire by hand. |
 | `sky-judge-gate` | Conduct for AI judge nodes in the judge→sentinel→deterministic-gate pattern: sentinel discipline, fail-closed rules, confidence self-enforcement, holdout freshness, untrusted-input handling. |
 | `sky-run-triage` | Diagnosing a failed skyway run: env-channel data flow, when-condition quoting, chain_from semantics, failure classes in check order, propose-don't-apply. |
 
 ## Adding a custom source
 
-To add a private org repo alongside this one, set `examples.sources` in `~/.sky/config.yaml`:
+To add a private org repo alongside this one, set `library.sources` in `~/.skylence/harness-builder/config.yaml`:
 
 ```yaml
 library:
   sources:
-    - repo: skylence-be/workflows   # keep the default
-    - repo: myorg/workflows-internal
+    - repo: skyway-harness-builder/essential-workflows   # keep the default
+    - repo: myorg/private-workflows
       name: internal
 ```
 
@@ -160,13 +178,15 @@ library:
 
 This is a [GitHub template repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-repository-from-a-template). Fork it to build your own private library; open a PR here to contribute a workflow back to the community.
 
-Assets follow a **store → plugin → component** layout under `meta/`. Each plugin is a folder (`authoring`, `audit`, `docs`, `darkfactory`) holding `workflows/` and `skills/` subfolders. Each workflow is its own directory with a `workflow.sky` and a `scripts/` subfolder for any bash files it references. The `manifest.yaml` is the authoritative registry.
+Assets follow a **store → plugin → component** layout (`meta/` for library meta-tooling, `github/` for GitHub-event automation). Each plugin is a folder holding `workflows/` and `skills/` subfolders. Each workflow is its own directory with a `workflow.sky` and a `scripts/` subfolder for any bash files it references. The `manifest.yaml` is the authoritative registry.
 
 To add a new workflow:
-1. Create `meta/<plugin>/workflows/<name>/workflow.sky` (and `scripts/` if needed).
-2. Add an entry to `manifest.yaml` with `store: meta`, `plugin: <plugin>`, and a `scripts:` list.
+1. Create `<store>/<plugin>/workflows/<name>/workflow.sky` (and `scripts/` if needed).
+2. Add an entry to `manifest.yaml` with matching `store:`, `plugin:`, and a `scripts:` list.
 3. Bump `version` and `updated_at` in `manifest.yaml`.
+
+Merged workflows reach users two ways: immediately via `skyway library update` (this repo is the live source), and embedded in the next binary release (`make sync-meta` snapshots the library into the binary at build time).
 
 ### CI gate
 
-Every `.sky` file is linted by [`skylence-be/sky-lint-action`](https://github.com/skylence-be/sky-lint-action) on each push and pull request. **PRs with a failing lint check cannot be merged.** Fix lint errors first — `sky lint <file>` locally, or open a PR and let the action report the exact error codes.
+Every `.sky` file is linted by [`skylence-be/sky-lint-action`](https://github.com/skylence-be/sky-lint-action) on each push and pull request. **PRs with a failing lint check cannot be merged.** Fix lint errors first — `skyway lint <file>` locally, or open a PR and let the action report the exact error codes.
