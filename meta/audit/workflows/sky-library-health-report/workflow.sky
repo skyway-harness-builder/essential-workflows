@@ -1,6 +1,9 @@
 ⊕meta⊕
 name = "sky-library-health-report"
 description = "Compose per-workflow lint status, run-recency, and budget-cap presence into a one-screen graded HEALTH.md (red/amber/green) for a whole .sky library."
+params.dir.type = "string"
+params.dir.required = true
+params.dir.description = "Directory containing the .sky files to grade."
 trigger.manual = true
 output_style = "terse"
 max_budget_usd = 0.5

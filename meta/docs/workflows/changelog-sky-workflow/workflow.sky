@@ -1,6 +1,12 @@
 ⊕meta⊕
 name = "changelog-sky-workflow"
 description = "Diff a .sky against its last committed git version and append a plain-English changelog entry to CHANGELOG.md."
+params.dir.type = "string"
+params.dir.required = true
+params.dir.description = "Directory containing the .sky and its CHANGELOG.md; must be a git working tree."
+params.name.type = "string"
+params.name.required = true
+params.name.description = "Workflow filename without the .sky extension."
 trigger.manual = true
 output_style = "terse"
 max_budget_usd = 0.20

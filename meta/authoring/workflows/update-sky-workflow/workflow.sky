@@ -43,6 +43,15 @@ Required skill — install before first run (no marketplace plugin needed):
 ⊕meta⊕
 name = "update-sky-workflow"
 description = "Apply a change to an existing .sky workflow and lint it until clean. Fire via: skyway run update-sky-workflow --var dir=<dir> --var name=<file> --var request=<change>"
+params.dir.type = "string"
+params.dir.required = true
+params.dir.description = "Directory the workflow lives in."
+params.name.type = "string"
+params.name.required = true
+params.name.description = "Kebab-case filename of the existing workflow (no .sky extension)."
+params.request.type = "string"
+params.request.required = true
+params.request.description = "The change to apply, in plain English."
 trigger.manual = true
 output_style = "terse"
 max_budget_usd = 2.00

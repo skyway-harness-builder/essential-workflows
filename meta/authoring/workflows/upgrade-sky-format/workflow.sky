@@ -41,6 +41,12 @@ Notes:
 ⊕meta⊕
 name = "upgrade-sky-format"
 description = "Lint one .sky and, only when it reports problems, apply minimal format fixes (gated by trigger_rule, not output-equality), re-lint until clean, then show the git diff. No tokens when already clean. Fire via: skyway run upgrade-sky-format --var dir=<dir> --var name=<file>"
+params.dir.type = "string"
+params.dir.required = true
+params.dir.description = "Directory containing the file (a git repo)."
+params.name.type = "string"
+params.name.required = true
+params.name.description = "Workflow name without .sky."
 trigger.manual = true
 output_style = "terse"
 max_budget_usd = 2.00

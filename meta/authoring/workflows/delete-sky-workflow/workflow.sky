@@ -35,6 +35,12 @@ Run it (state where the workflow lives with --var dir):
 ⊕meta⊕
 name = "delete-sky-workflow"
 description = "Find a .sky workflow by name and delete it behind a manual approval gate. Fire via: skyway run delete-sky-workflow --var dir=<dir> --var name=<file>"
+params.dir.type = "string"
+params.dir.required = true
+params.dir.description = "Directory the workflow lives in."
+params.name.type = "string"
+params.name.required = true
+params.name.description = "Kebab-case filename of the workflow to delete (no .sky extension)."
 trigger.manual = true
 output_style = "terse"
 ui = "ui/workflow"

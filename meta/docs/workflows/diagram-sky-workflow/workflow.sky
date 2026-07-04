@@ -1,6 +1,12 @@
 ⊕meta⊕
 name = "diagram-sky-workflow"
 description = "Regenerate the ※※ ASCII DAG header of a .sky file from its actual node graph (depends_on / chain_from / when edges), edit it in place, then lint clean."
+params.dir.type = "string"
+params.dir.required = true
+params.dir.description = "Directory holding the target .sky file."
+params.name.type = "string"
+params.name.required = true
+params.name.description = "Target workflow filename without the .sky extension."
 trigger.manual = true
 output_style = "terse"
 max_budget_usd = 2

@@ -53,6 +53,15 @@ The lint loop then repairs anything the strip left dangling (e.g. a now-orphaned
 ⊕meta⊕
 name = "clone-sky-workflow"
 description = "Duplicate a .sky as a new manual template under a new name, neutralizing the copied trigger so both never double-fire, then lint clean. Fire via: skyway run clone-sky-workflow --var dir=<dir> --var name=<source> --var new-name=<clone>"
+params.dir.type = "string"
+params.dir.required = true
+params.dir.description = "Directory both the source and clone .sky files live in."
+params.name.type = "string"
+params.name.required = true
+params.name.description = "Existing kebab-case filename to clone (no .sky extension)."
+params.new-name.type = "string"
+params.new-name.required = true
+params.new-name.description = "New kebab-case filename and workflow name for the clone (no .sky extension)."
 trigger.manual = true
 output_style = "terse"
 max_budget_usd = 2.00

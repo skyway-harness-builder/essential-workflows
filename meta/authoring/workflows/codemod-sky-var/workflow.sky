@@ -60,6 +60,15 @@ scan output carefully. Use a git working tree so you can `git diff` / revert.
 ⊕meta⊕
 name = "codemod-sky-var"
 description = "Bulk-rename one token across every .sky in a dir, consistently across its three forms ({{old}}, $SKY_<UPPER_OLD>, §old§ + quoted id refs), behind a manual gate, then lint every touched file. Pure bash, fragile regex so gated + verified. Fire via: skyway run codemod-sky-var --var dir=<dir> --var old=<token> --var new=<token>"
+params.dir.type = "string"
+params.dir.required = true
+params.dir.description = "Directory of .sky files to codemod."
+params.old.type = "string"
+params.old.required = true
+params.old.description = "Existing token (kebab-case --var key or node id) to rename, without $SKY_ / section markers."
+params.new.type = "string"
+params.new.required = true
+params.new.description = "Replacement token (kebab-case), without $SKY_ / section markers."
 trigger.manual = true
 output_style = "terse"
 ui = "ui/workflow"

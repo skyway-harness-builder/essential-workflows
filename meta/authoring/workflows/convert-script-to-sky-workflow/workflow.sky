@@ -1,6 +1,15 @@
 ⊕meta⊕
 name = "convert-script-to-sky-workflow"
 description = "Read an existing shell script, Makefile target, or cron line and author an equivalent .sky workflow, then lint-loop and dry-run it."
+params.dir.type = "string"
+params.dir.required = true
+params.dir.description = "Directory to write the new .sky workflow into."
+params.name.type = "string"
+params.name.required = true
+params.name.description = "Workflow name and filename stem, kebab-case."
+params.source.type = "string"
+params.source.required = true
+params.source.description = "Path to the shell script, Makefile target, or cron line to convert."
 trigger.manual = true
 output_style = "terse"
 max_budget_usd = 3

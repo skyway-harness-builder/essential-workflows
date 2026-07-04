@@ -1,6 +1,15 @@
 ⊕meta⊕
 name = "triage-failed-sky-run"
 description = "Read a failed skyway run's logs, pinpoint the failing node + root cause in the .sky source, and propose a fix diff plus the command to apply it (nothing is auto-applied)."
+params.dir.type = "string"
+params.dir.required = true
+params.dir.description = "Directory containing the .sky file to diagnose."
+params.name.type = "string"
+params.name.required = true
+params.name.description = "Workflow filename without the .sky extension."
+params.run.type = "string"
+params.run.required = true
+params.run.description = "The failed run id to fetch logs for."
 trigger.manual = true
 output_style = "terse"
 max_budget_usd = 2.0

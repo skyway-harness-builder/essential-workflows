@@ -37,6 +37,9 @@ Install the skill it formats with (once):
 ⊕meta⊕
 name = "catalog-sky-library"
 description = "Regenerate a browsable INDEX.md for a .sky directory (name, trigger, vars, DAG, budget) with a bash coverage check that every file is listed. Fire via: skyway run catalog-sky-library --var dir=<path>"
+params.dir.type = "string"
+params.dir.required = true
+params.dir.description = "Directory of .sky files to index."
 trigger.manual = true
 output_style = "terse"
 max_budget_usd = 1.00
