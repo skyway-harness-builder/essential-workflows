@@ -1,5 +1,5 @@
 #!/bin/bash
-set -u
+set -euo pipefail
 RUNTMP=$(mktemp -d)
 REPO_WF=".sky/workflows"
 mkdir -p "$REPO_WF"

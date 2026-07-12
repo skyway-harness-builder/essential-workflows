@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 DST="$SKY_DIR/$SKY_NEW_NAME.sky"
 sed "s/^name = \"$SKY_NAME\"/name = \"$SKY_NEW_NAME\"/" "$DST" > "$DST.tmp" && mv "$DST.tmp" "$DST"
 grep -v '^trigger\.' "$DST" > "$DST.tmp" && mv "$DST.tmp" "$DST"

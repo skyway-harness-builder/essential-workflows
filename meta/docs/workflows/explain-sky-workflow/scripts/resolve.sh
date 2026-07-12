@@ -1,5 +1,5 @@
 #!/bin/bash
-set -eu
+set -euo pipefail
 F="$SKY_DIR/$SKY_NAME.sky"
 if [ ! -f "$F" ]; then
   echo "ERROR: no such .sky file: $F" >&2

@@ -1,5 +1,5 @@
 #!/bin/bash
-set -u
+set -euo pipefail
 BULLET="$SKY_OUTPUT_DESCRIBE"
 LOG="$SKY_DIR/CHANGELOG.md"
 DATE=$(date +%Y-%m-%d)

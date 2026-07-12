@@ -1,6 +1,6 @@
 #!/bin/bash
-set -e
-IDX="$SKY_DIR/INDEX.md"
+set -euo pipefail
+IDX="${SKY_DIR:-}/INDEX.md"
 if [ ! -s "$IDX" ]; then echo "[catalog] INDEX.md missing or empty"; exit 1; fi
 missing=0
 for f in "$SKY_DIR"/*.sky; do

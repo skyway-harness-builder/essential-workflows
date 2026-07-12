@@ -1,5 +1,5 @@
 #!/bin/bash
-set -eu
+set -euo pipefail
 SRC="$SKY_SOURCE"
 DST="$SKY_DIR"
 if [ ! -d "$SRC" ]; then echo "ERROR: source dir not found: $SRC" >&2; exit 1; fi

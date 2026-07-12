@@ -1,5 +1,5 @@
 #!/bin/bash
-set -u
+set -euo pipefail
 NAME="${SKY_SKILL_NAME:-}"
 if [ -z "$NAME" ]; then echo 'SKILL_FORGE_FAILED: skill_name var is required (skyway run skill-forge --var skill_name=<name>)' >&2; exit 1; fi
 REPO="${SKY_SKILL_REPO:-$PWD}"

@@ -1,5 +1,5 @@
 #!/bin/bash
-set -u
+set -euo pipefail
 NAME="${SKY_SKILL_NAME:-}"
 REPO="${SKY_SKILL_REPO:-$PWD}"
 REL=".claude/skills/$NAME"

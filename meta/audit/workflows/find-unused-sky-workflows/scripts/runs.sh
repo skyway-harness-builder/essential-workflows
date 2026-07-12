@@ -1,5 +1,5 @@
 #!/bin/bash
-set -u
+set -euo pipefail
 LOG="$(mktemp /tmp/sky-runlog.XXXXXX)"
 # 'skyway logs' format is not contractually stable; capture defensively and never let a nonzero exit kill discovery.
 if ! skyway logs > "$LOG" 2>/dev/null; then

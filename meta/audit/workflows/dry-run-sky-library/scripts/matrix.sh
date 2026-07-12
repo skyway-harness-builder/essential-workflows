@@ -1,5 +1,5 @@
 #!/bin/bash
-set -u
+set -euo pipefail
 rows="$SKY_OUTPUT_DRYRUN"
 pass=0; fail=0; skip=0
 printf '%-6s  %-32s  %s\n' 'PLAN' 'WORKFLOW' 'FIRST DIAGNOSTIC'

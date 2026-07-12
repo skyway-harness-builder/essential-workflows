@@ -1,5 +1,5 @@
 #!/bin/bash
-set -eu
+set -euo pipefail
 DIR="$SKY_DIR"
 NAME="$SKY_NAME"
 MODE="${SKY_MODE:-archive}"

@@ -1,5 +1,5 @@
 #!/bin/bash
-set -u
+set -euo pipefail
 if [ ! -d "$SKY_DIR" ]; then echo "[codemod] no such dir: $SKY_DIR" >&2; exit 1; fi
 if [ -z "$SKY_OLD" ] || [ -z "$SKY_NEW" ]; then echo "[codemod] both --var old and --var new are required" >&2; exit 1; fi
 U_OLD=$(printf '%s' "$SKY_OLD" | tr 'a-z-' 'A-Z_')

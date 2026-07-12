@@ -1,5 +1,5 @@
 #!/bin/bash
-set -u
+set -euo pipefail
 LISTENS="$(cat /tmp/sky-orphan-listens.path)"
 EMITS="$(cat /tmp/sky-orphan-emits.path)"
 DEAD_LISTENERS="$(mktemp /tmp/sky-orphan-dead-listeners.XXXXXX)"

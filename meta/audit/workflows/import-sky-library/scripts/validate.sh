@@ -1,5 +1,5 @@
 #!/bin/bash
-set -eu
+set -euo pipefail
 SRC="$SKY_SOURCE"
 DST="$SKY_DIR"
 STAGE="$(mktemp /tmp/sky-import-stage.XXXXXX)"
@@ -20,7 +20,7 @@ for f in "$SRC"/*.sky; do
     echo "$f" >> "$STAGE"
     PASS=$((PASS+1))
   else
-    SUMMARY="$(printf '%s' "$CODES" | grep -Eo 'SKY-[A-Z]+-[0-9]+' | sort -u | tr '\n' ',' | sed 's/,$//')"
+    SUMMARY="$(printf '%s' "$CODES" | grep -Eo 'SKY-[A-Z]+-[0-9]+' | sort -u | tr '\n' ',' | sed 's/,$//' || true)"
     [ -n "$SUMMARY" ] || SUMMARY="lint-failed"
     echo "FAIL  $BASE ($SUMMARY)"
     FAIL=$((FAIL+1))

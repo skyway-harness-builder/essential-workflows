@@ -1,5 +1,5 @@
 #!/bin/bash
-set -eu
+set -euo pipefail
 DST="$SKY_DIR"
 STAGE="$(cat /tmp/sky-import-stage.path)"
 if [ ! -f "$STAGE" ]; then echo "ERROR: staging list missing: $STAGE" >&2; exit 1; fi

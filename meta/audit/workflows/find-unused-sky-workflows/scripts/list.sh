@@ -1,5 +1,5 @@
 #!/bin/bash
-set -eu
+set -euo pipefail
 DIR="$SKY_DIR"
 if [ -z "$DIR" ]; then echo 'ERROR: --var dir is required' >&2; exit 1; fi
 if [ ! -d "$DIR" ]; then echo "ERROR: not a directory: $DIR" >&2; exit 1; fi

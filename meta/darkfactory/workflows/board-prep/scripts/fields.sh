@@ -1,5 +1,5 @@
 #!/bin/bash
-set -u
+set -euo pipefail
 OWNER=$(echo "${SKY_OUTPUT_PREFLIGHT:-}" | jq -r '.owner // empty')
 PROJECT=$(echo "${SKY_OUTPUT_PREFLIGHT:-}" | jq -r '.project // empty')
 FL=$(gh project field-list "$PROJECT" --owner "$OWNER" --format json 2>/dev/null || echo '{}')

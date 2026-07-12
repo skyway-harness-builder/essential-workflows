@@ -1,15 +1,15 @@
 #!/bin/bash
-set -u
+set -euo pipefail
 P="${SKY_OUTPUT_PREFLIGHT:-}"
 ORG=$(echo "$P" | jq -r '.org // empty')
 TIER=$(echo "$P" | jq -r '.tier // empty')
-TFA=$(gh api "orgs/$ORG" --jq '.two_factor_requirement_enabled // "unknown"' 2>/dev/null)
+TFA=$(gh api "orgs/$ORG" --jq '.two_factor_requirement_enabled // "unknown"' 2>/dev/null || true)
 if [ "$TIER" = paid ]; then
   BODY=$(jq -n '{default_repository_permission:"read",web_commit_signoff_required:true,dependabot_alerts_enabled_for_new_repositories:true,dependabot_security_updates_enabled_for_new_repositories:true,advanced_security_enabled_for_new_repositories:true,secret_scanning_enabled_for_new_repositories:true,secret_scanning_push_protection_enabled_for_new_repositories:true}')
 else
   BODY=$(jq -n '{default_repository_permission:"read",web_commit_signoff_required:true,dependabot_alerts_enabled_for_new_repositories:true,dependabot_security_updates_enabled_for_new_repositories:true}')
 fi
-OUT=$(echo "$BODY" | gh api -X PATCH "orgs/$ORG" --input - 2>&1)
+OUT=$(echo "$BODY" | gh api -X PATCH "orgs/$ORG" --input - 2>&1 || true)
 if echo "$OUT" | grep -q '"id"'; then
   echo "orggeneral: org defaults applied on $ORG (tier=$TIER)"
   echo "  ok default_repository_permission=read, web_commit_signoff_required=true, dependabot defaults for new repos"

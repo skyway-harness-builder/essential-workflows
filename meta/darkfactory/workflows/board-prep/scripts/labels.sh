@@ -1,5 +1,5 @@
 #!/bin/bash
-set -u
+set -euo pipefail
 REPO=$(echo "${SKY_OUTPUT_PREFLIGHT:-}" | jq -r '.repo // empty')
 [ -n "$REPO" ] || { echo 'DF_BOARDPREP_FAILED: no repo from preflight' >&2; exit 1; }
 mk() { gh label create "$1" --color "$2" --description "$3" --repo "$REPO" --force >/dev/null 2>&1 && echo "  ok $1" || echo "  warn could not ensure $1"; }

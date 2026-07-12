@@ -1,5 +1,5 @@
 #!/bin/bash
-set -u
+set -euo pipefail
 REPO="${SKY_REPO_FULL_NAME:-}"
 if [ -z "$REPO" ]; then
   REPO="$(gh repo view --json nameWithOwner --jq .nameWithOwner 2>/dev/null || true)"

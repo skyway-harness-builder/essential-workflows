@@ -1,5 +1,5 @@
 #!/bin/bash
-set -eu
+set -euo pipefail
 DST="$SKY_DIR"
 STAGE="$(cat /tmp/sky-import-stage.path)"
 FAILED=0

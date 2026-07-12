@@ -1,5 +1,5 @@
 #!/bin/bash
-set -u
+set -euo pipefail
 echo '=== Dark Factory board-prep (GitHub) — summary ==='
 echo "${SKY_OUTPUT_LABELS:-}"
 echo "${SKY_OUTPUT_LINK:-}"

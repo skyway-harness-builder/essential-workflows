@@ -1,5 +1,5 @@
 #!/bin/bash
-set -eu
+set -euo pipefail
 U_OLD=$(printf '%s' "$SKY_OLD" | tr 'a-z-' 'A-Z_')
 U_NEW=$(printf '%s' "$SKY_NEW" | tr 'a-z-' 'A-Z_')
 PAT="\{\{$SKY_OLD\}\}|\\\$SKY_$U_OLD([^A-Za-z0-9_]|\$)|§$SKY_OLD§|∆$SKY_OLD∆|\"$SKY_OLD\""

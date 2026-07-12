@@ -1,5 +1,5 @@
 #!/bin/bash
-set -u
+set -euo pipefail
 OWNER=$(echo "${SKY_OUTPUT_PREFLIGHT:-}" | jq -r '.owner // empty')
 REPO=$(echo "${SKY_OUTPUT_PREFLIGHT:-}" | jq -r '.repo // empty')
 PROJECT=$(echo "${SKY_OUTPUT_PREFLIGHT:-}" | jq -r '.project // empty')

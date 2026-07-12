@@ -1,5 +1,5 @@
 #!/bin/bash
-set -u
+set -euo pipefail
 DIR="${SKY_DIR:-}"
 FAILS=0
 WARNS=0

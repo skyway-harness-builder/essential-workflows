@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 DIR="$SKY_DIR"
 FAIL=0
 for f in "$DIR"/*.sky; do

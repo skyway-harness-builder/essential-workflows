@@ -1,5 +1,5 @@
 #!/bin/bash
-set -u
+set -euo pipefail
 P="$SKY_OUTPUT_READ_SKILL"
 DIR=$(printf '%s' "$P" | sed -n 's/^skill_dir=//p' | head -1)
 if [ -z "$DIR" ] || [ ! -d "$DIR" ]; then echo 'lint-scripts: skill_dir unresolved — deferring all checks to CI'; exit 0; fi

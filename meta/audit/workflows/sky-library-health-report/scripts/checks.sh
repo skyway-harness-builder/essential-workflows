@@ -1,5 +1,5 @@
 #!/bin/bash
-set -u
+set -euo pipefail
 DIR="$SKY_DIR"
 printf 'workflow\tlint\tllm_uncapped\tlast_run\n'
 for f in "$DIR"/*.sky; do

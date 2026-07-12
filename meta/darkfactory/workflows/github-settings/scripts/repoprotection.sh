@@ -1,5 +1,5 @@
 #!/bin/bash
-set -u
+set -euo pipefail
 REPO=$(echo "${SKY_OUTPUT_PREFLIGHT:-}" | jq -r '.repo // empty')
 DEF=$(echo "${SKY_OUTPUT_PREFLIGHT:-}" | jq -r '.default_branch // empty')
 [ -n "$DEF" ] || DEF=main
