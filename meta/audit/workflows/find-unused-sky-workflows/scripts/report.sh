@@ -1,32 +1,47 @@
 #!/bin/bash
 set -euo pipefail
-DEAD_LISTENERS="$(cat /tmp/sky-orphan-dead-listeners.path)"
-DEAD_SIGNALS="$(cat /tmp/sky-orphan-dead-signals.path)"
-LISTENS="$(cat /tmp/sky-orphan-listens.path)"
-EMITS="$(cat /tmp/sky-orphan-emits.path)"
-rc=0
-printf '=== orphan sky_event report ===\n'
-printf '\n-- DEAD LISTENERS (trigger.sky_event with no emitter) --\n'
-if [ -s "$DEAD_LISTENERS" ]; then
-  while IFS="$(printf '\t')" read -r ev file; do printf '  %s  <-  %s (listens, never emitted)\n' "$ev" "$file"; done < "$DEAD_LISTENERS"
-  rc=1
+# Cross-reference each listed workflow basename against captured run history.
+# SEEN-IN-LOGS = name appears (case-insensitively) in the skyway logs text;
+# NEVER = it does not, so the file is an advisory deletion candidate.
+# Reads $SKY_OUTPUT_LIST (basenames, one per line) and $SKY_OUTPUT_RUNS (log text).
+# Reports only: prints ready-to-paste delete commands, deletes nothing, exits 0.
+DIR="${SKY_DIR:-}"
+LIST="${SKY_OUTPUT_LIST:-}"
+RUNS="${SKY_OUTPUT_RUNS:-}"
+
+total=0
+never=""
+
+echo "unused-sky-workflow scan for: ${DIR:-<unknown dir>}"
+echo
+while IFS= read -r name; do
+  [ -n "$name" ] || continue
+  total=$((total + 1))
+  # here-string match (no pipe) so grep -q cannot SIGPIPE a producer and
+  # invert the result on a large run history.
+  if grep -qiF -- "$name" <<<"$RUNS"; then
+    printf '  SEEN-IN-LOGS  %s\n' "$name"
+  else
+    printf '  NEVER         %s\n' "$name"
+    never="${never}${name}
+"
+  fi
+done <<EOF
+$LIST
+EOF
+
+echo
+candidates="$(printf '%s' "$never" | grep -c . || true)"
+if [ "$candidates" -eq 0 ]; then
+  echo "No never-run workflows across $total file(s)."
 else
-  printf '  none\n'
+  echo "$candidates of $total file(s) never appeared in run history. Advisory deletion candidates:"
+  echo
+  printf '%s' "$never" | while IFS= read -r name; do
+    [ -n "$name" ] || continue
+    printf '  skyway run delete-sky-workflow --var dir="%s" --var name=%s\n' "$DIR" "$name"
+  done
+  echo
+  echo "NEVER is advisory: log retention or a name/filename mismatch can cause a false positive. Verify before deleting."
 fi
-printf '\n-- DEAD SIGNALS (emit with no listener) --\n'
-if [ -s "$DEAD_SIGNALS" ]; then
-  while IFS="$(printf '\t')" read -r ev file; do printf '  %s  ->  %s (emitted, never listened)\n' "$ev" "$file"; done < "$DEAD_SIGNALS"
-  rc=1
-else
-  printf '  none\n'
-fi
-rm "$DEAD_LISTENERS"
-rm "$DEAD_SIGNALS"
-rm "$LISTENS"
-rm "$EMITS"
-rm /tmp/sky-orphan-listens.path
-rm /tmp/sky-orphan-emits.path
-rm /tmp/sky-orphan-dead-listeners.path
-rm /tmp/sky-orphan-dead-signals.path
-if [ "$rc" -ne 0 ]; then printf '\nFAIL: orphan event edges found.\n' >&2; else printf '\nOK: no orphan event edges.\n'; fi
-exit "$rc"
+exit 0
