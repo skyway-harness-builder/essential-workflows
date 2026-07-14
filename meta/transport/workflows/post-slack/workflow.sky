@@ -1,0 +1,41 @@
+⊕meta⊕
+name = "post-slack"
+description = "Post a plain-text message to Slack via an incoming webhook URL held in a named env var. Invoke from orchestration workflows or run manually. Fire via: skyway run post-slack --var webhook_env_name=SLACK_WEBHOOK_URL --var text=<message>"
+params.webhook_env_name.type = "string"
+params.webhook_env_name.required = true
+params.webhook_env_name.description = "Name of the env var holding the Slack incoming webhook URL."
+params.text.type = "string"
+params.text.required = true
+params.text.description = "Plain-text message body."
+trigger.manual = true
+output_style = "terse"
+ui = "ui/workflow"
+⊕⊕
+
+※post※
+Bash root node. Resolves the webhook URL indirectly from webhook_env_name, builds JSON with jq -n, and POSTs to Slack. No retry (sink).
+※※
+
+§post§
+bash = ": \"${SKY_WEBHOOK_ENV_NAME:?webhook_env_name required}\"; : \"${SKY_TEXT:?text required}\"; url_var=\"$SKY_WEBHOOK_ENV_NAME\"; : \"${!url_var:?${url_var} not set}\"; jq -n --arg text \"$SKY_TEXT\" '{text:$text}' | curl -sS --fail --max-time 30 -X POST -H 'Content-Type: application/json' -d @- \"${!url_var}\""
+ui = "ui/post"
+§§
+
+※※
+post-slack — deterministic Slack webhook sink micro-workflow
+
+One pure-bash node, no LLM cost, no retry.
+
+Resolves the webhook URL from an env var named by webhook_env_name (indirect
+expansion), builds JSON with jq -n, and POSTs with curl --fail --max-time 30.
+
+Invoke from orchestration:
+  invoke = { target = "post-slack", vars = { webhook_env_name = "SLACK_WEBHOOK_URL", text = "..." } }
+
+Run manually:
+  skyway run post-slack --var webhook_env_name=SLACK_WEBHOOK_URL --var text="Shipped"
+
+Vars:
+  webhook_env_name  env var name holding the webhook URL  -> $SKY_WEBHOOK_ENV_NAME
+  text              plain-text message                    -> $SKY_TEXT
+※※

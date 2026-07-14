@@ -1,6 +1,6 @@
 apiVersion: skylence.io/v1
-version: 2.16.1
-updated_at: "2026-07-04"
+version: 2.17.0
+updated_at: "2026-07-14"
 
 stores:
   - name: meta
@@ -15,6 +15,9 @@ stores:
   - name: meta
     plugin: darkfactory
     description: "Dark Factory onboarding + eval-driven forges"
+  - name: meta
+    plugin: transport
+    description: "Deterministic transport micro-workflows: send-email, post-slack"
   - name: github
     plugin: release
     description: "GitHub release operations: draft release notes on publish"
@@ -433,6 +436,23 @@ entries:
     tags: [meta, audit, triage, debug, runs, skill]
     store: meta
     plugin: audit
+
+  # ── Transport (invoke targets) ─────────────────────────────────────────
+  - kind: workflow
+    name: send-email
+    path: meta/transport/workflows/send-email/workflow.sky
+    description: "Send one transactional email via the skyway daemon mail endpoint. Invoke from orchestration or run manually. Fire via: skyway run send-email --var to=<addr> --var subject=<subj> --var content=<body> [--var html=<html>]"
+    tags: [meta, transport, email, invoke, manual]
+    store: meta
+    plugin: transport
+
+  - kind: workflow
+    name: post-slack
+    path: meta/transport/workflows/post-slack/workflow.sky
+    description: "Post a plain-text Slack message via an incoming webhook URL in a named env var. Invoke from orchestration or run manually. Fire via: skyway run post-slack --var webhook_env_name=SLACK_WEBHOOK_URL --var text=<message>"
+    tags: [meta, transport, slack, invoke, manual]
+    store: meta
+    plugin: transport
 
   # ── GitHub release ─────────────────────────────────────────────────────
   - kind: workflow

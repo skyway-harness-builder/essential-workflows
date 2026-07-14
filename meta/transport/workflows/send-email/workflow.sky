@@ -1,0 +1,49 @@
+⊕meta⊕
+name = "send-email"
+description = "Send one transactional email via the skyway daemon mail endpoint. Invoke from orchestration workflows or run manually. Fire via: skyway run send-email --var to=<addr> --var subject=<subj> --var content=<body> [--var html=<html>]"
+params.to.type = "string"
+params.to.required = true
+params.to.description = "Recipient email address."
+params.subject.type = "string"
+params.subject.required = true
+params.subject.description = "Email subject line."
+params.content.type = "string"
+params.content.required = true
+params.content.description = "Plain-text body."
+params.html.type = "string"
+params.html.description = "Optional HTML body; omitted when empty."
+trigger.manual = true
+output_style = "terse"
+ui = "ui/workflow"
+⊕⊕
+
+※send※
+Bash root node. Builds JSON with jq -n and POSTs to the daemon mail endpoint with Bearer auth from EMAIL_API_TOKEN or SKY_MAIL_TOKEN. No retry (sink).
+※※
+
+§send§
+bash = ": \"${SKY_TO:?to required}\"; : \"${SKY_SUBJECT:?subject required}\"; : \"${SKY_CONTENT:?content required}\"; token=\"${EMAIL_API_TOKEN:-${SKY_MAIL_TOKEN:?SKY_MAIL_TOKEN not set}}\"; if [ -n \"${SKY_HTML:-}\" ]; then jq -n --arg to \"$SKY_TO\" --arg subject \"$SKY_SUBJECT\" --arg content \"$SKY_CONTENT\" --arg html \"$SKY_HTML\" '{to:$to,subject:$subject,content:$content,html:$html}'; else jq -n --arg to \"$SKY_TO\" --arg subject \"$SKY_SUBJECT\" --arg content \"$SKY_CONTENT\" '{to:$to,subject:$subject,content:$content}'; fi | curl -sS --fail --max-time 30 -X POST -H \"Authorization: Bearer ${token}\" -H 'Content-Type: application/json' -d @- http://127.0.0.1:3090/api/mail/send"
+ui = "ui/send"
+§§
+
+※※
+send-email — deterministic mail sink micro-workflow
+
+One pure-bash node, no LLM cost, no retry.
+
+POST http://127.0.0.1:3090/api/mail/send with jq-built JSON and
+Authorization: Bearer "${EMAIL_API_TOKEN:-$SKY_MAIL_TOKEN}". The daemon injects
+SKY_MAIL_TOKEN into every run subprocess.
+
+Invoke from orchestration:
+  invoke = { target = "send-email", vars = { to = "...", subject = "...", content = "..." } }
+
+Run manually:
+  skyway run send-email --var to=user@example.com --var subject="Hello" --var content="Body text"
+
+Vars:
+  to       recipient address           -> $SKY_TO
+  subject  subject line                -> $SKY_SUBJECT
+  content  plain-text body             -> $SKY_CONTENT
+  html     optional HTML body          -> $SKY_HTML
+※※
