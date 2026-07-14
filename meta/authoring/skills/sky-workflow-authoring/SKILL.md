@@ -112,6 +112,16 @@ Each node is a fresh Claude session, so transport choice is mostly about **start
 
 > **stdio + `allowed_tools` waits before the first turn.** When a node both restricts tools (`allowed_tools`) and uses a `stdio` server, the runner holds the first prompt ~10s (`SKY_MCP_READY_DELAY_MS`) so the server finishes connecting first; otherwise the still-connecting tool is filtered from the model's view and reported "not available." `http` and in-process servers have no such wait. One more reason to prefer a shared `http` daemon for any server hit by multiple nodes.
 
+## Outbound transport (email, Slack, webhooks)
+
+When a workflow must send email, post to Slack, or call a webhook sink, do not hand-write curl in orchestration nodes. Use this order of preference:
+
+1. **Invoke a library micro-workflow** — `invoke = { target = "send-email", vars = { to = "...", subject = "...", content = "..." } }` or `invoke = { target = "post-slack", vars = { webhook_env_name = "SLACK_WEBHOOK_URL", text = "..." } }`. Deterministic, versioned, lint-checked. No `retry` on sinks.
+2. **HTTP node** — when the sink has a stable URL and auth fits the secrets allowlist: `http = { url = "...", method = "POST", headers = { Authorization = "Bearer ${env:TOKEN}" }, body = "...", timeout_s = 30 }`. Declare every `${env:NAME}` in `secrets = [...]`. No `retry` on sinks.
+3. **Bash + curl** — bespoke sinks only. Build JSON with `jq -n` (never inline quoting). Always `curl --fail --max-time 30`. Read bearer tokens from the shell env (`"$SKY_MAIL_TOKEN"`, `"$EMAIL_API_TOKEN"`). No `retry` on sinks.
+
+The `send-email` micro-workflow POSTs to `http://127.0.0.1:3090/api/mail/send` with `Authorization: Bearer "${EMAIL_API_TOKEN:-$SKY_MAIL_TOKEN}"`. The daemon injects `SKY_MAIL_TOKEN` into every run subprocess.
+
 ## Triggers
 
 Set **exactly one**. With no trigger block, the workflow is **manual** — run via `skyway run <name>` (pass inputs with `--var key=value`). `trigger.manual = true` is tolerated and means the same thing.
