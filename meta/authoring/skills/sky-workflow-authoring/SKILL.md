@@ -142,7 +142,7 @@ Set **exactly one**. With no trigger block, the workflow is **manual** — run v
 |-----|------|-------|
 | `depends_on` | []string | Node IDs this node waits for. Output available as `$SKY_OUTPUT_<ID>`. Unknown ref → SKY-WF-021. |
 | `when` | string | Condition; node skipped if false. See grammar below. |
-| `model` | string | `sonnet` (default if omitted), `opus`, `haiku`. Not required — runtime defaults to sonnet. |
+| `model` | string | Alias `sonnet` (default if omitted), `opus`, `haiku` or `fable`, which Claude Code resolves to the newest model in that family, or a full ID such as `claude-sonnet-5-5` to pin one (`fable` and full IDs need a skyway built with workflow-lint v1.9.0+). Not required — runtime defaults to sonnet. |
 | `effort` | string | Claude effort level, e.g. `"max"` (extended thinking). |
 | `isolation` | string | `worktree` or `worktree-run` — run in a dedicated git worktree (per-node; torn down after the node). |
 | `keep_branch` | bool | Retain the worktree branch after cleanup. |
@@ -157,8 +157,8 @@ Set **exactly one**. With no trigger block, the workflow is **manual** — run v
 | `mcp_config` | string | Path to a per-node mcp.json override. |
 | `allowed_tools` / `denied_tools` | []string | Tool allowlist / blocklist. |
 | `permissions` | string | `interactive` enables `--permission-prompt-tool` (requires `claude.isolation = "loose"` — SKY-WF-059). |
-| `thinking` | object | `{ mode = "adaptive"\|"enabled"\|"disabled", budget_tokens = N }`. |
-| `sandbox` | object | `{ filesystem = { allow = ["rel/path"] } }` → `--add-dir`. Absolute/escaping path → SKY-WF-054. |
+| `thinking` | object | JSON, e.g. `{"mode": "adaptive"}`. Parsed but not forwarded to the CLI yet. `"enabled"` (with `budget_tokens`) returns HTTP 400 on Fable 5.x, Opus 5.5/5/4.8/4.7, Sonnet 5.5/5 and Haiku 5.5; `"disabled"` returns 400 on Fable 5.x, Opus 5.5 and Sonnet 5.5, and on Haiku 5.5 / Opus 5 above effort `high`. Use `"adaptive"` and set depth with `effort`. |
+| `sandbox` | object | JSON, e.g. `{"filesystem": {"allow": ["rel/path"]}}` → `--add-dir`. Absolute/escaping path → SKY-WF-054. |
 | `links` | []string | Codebase names whose paths are injected via `--add-dir`. Empty/with separator → SKY-WF-092. |
 | `learnings` | object | Per-node override of the workflow learnings config. |
 | `hooks` | object | Per-node hooks: `map[event][]{ matcher, response, timeout }`. |
