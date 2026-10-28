@@ -157,7 +157,7 @@ Set **exactly one**. With no trigger block, the workflow is **manual** — run v
 | `mcp_config` | string | Path to a per-node mcp.json override. |
 | `allowed_tools` / `denied_tools` | []string | Tool allowlist / blocklist. |
 | `permissions` | string | `interactive` enables `--permission-prompt-tool` (requires `claude.isolation = "loose"` — SKY-WF-059). |
-| `thinking` | object | `{ mode = "adaptive"\|"enabled"\|"disabled", budget_tokens = N }`. |
+| `thinking` | object | JSON, e.g. `{"mode": "adaptive"}`. Parsed but not forwarded to the CLI yet. `"enabled"` (with `budget_tokens`) returns HTTP 400 on every current Claude model; `"disabled"` returns 400 on Fable 5.x, Opus 5.5 and Sonnet 5.5, and on Haiku 5.5 / Opus 5 above effort `high`. Use `"adaptive"` and set depth with `effort`. |
 | `sandbox` | object | `{ filesystem = { allow = ["rel/path"] } }` → `--add-dir`. Absolute/escaping path → SKY-WF-054. |
 | `links` | []string | Codebase names whose paths are injected via `--add-dir`. Empty/with separator → SKY-WF-092. |
 | `learnings` | object | Per-node override of the workflow learnings config. |
