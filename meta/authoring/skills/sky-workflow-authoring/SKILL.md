@@ -161,7 +161,7 @@ Set **exactly one**. With no trigger block, the workflow is **manual** — run v
 | `sandbox` | object | JSON, e.g. `{"filesystem": {"allow": ["rel/path"]}}` → `--add-dir`. Absolute/escaping path → SKY-WF-054. |
 | `links` | []string | Codebase names whose paths are injected via `--add-dir`. Empty/with separator → SKY-WF-092. |
 | `learnings` | object | Per-node override of the workflow learnings config. |
-| `hooks` | object | Per-node hooks: `map[event][]{ matcher, response, timeout }`. |
+| `hooks` | object | Per-node hooks: `map[event][]{ matcher, response, timeout }`. Needs `claude.isolation = "loose"` in `⊕meta⊕`; strict's `--bare` skips them (SKY-WF-117). |
 | `retry` | object | `{ max_attempts = 1..5, delay_ms = N, on_error = "transient"\|"all" }`. |
 | `output_format` | string | JSON Schema for structured output → `--json-schema`. **Value must be a compact JSON string on one line**, not a TOML inline table. Correct: `output_format = {"type":"object","required":["x"],"properties":{"x":{"type":"string"}}}`. Wrong: `output_format = { type = "object", ... }` (TOML syntax, SKY-WF-001 parse error). Invalid schema → SKY-WF-060. |
 | `emit` | object\|string | Sky event emitted on success: `"evt.name"` or `{ name = "evt", payload = { k = "v" } }`. |
