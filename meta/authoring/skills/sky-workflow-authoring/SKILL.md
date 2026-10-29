@@ -326,5 +326,5 @@ Write the workflow file entirely in **English** — `name`, every config key, al
 2. Every `∆id∆` has a matching `§id§`; exactly one execution kind per node.
 3. Every `chain_from` is in `depends_on` and targets a prompt/command node; every `when` RHS is quoted.
 4. No `{{var}}` in bash/script/loop bodies; all `$SKY_*` shell-quoted; every `${env:NAME}` declared in `secrets`.
-5. If `ui` is set in `⊕meta⊕` or on any node, the referenced markdown file(s) exist relative to the `.sky` file (SKY-WF-103 warns when they do not). Workflow-level `ui` in `⊕meta⊕` additionally supports a `changelog` list (`version`, `date`, `note`) in its frontmatter.
+5. If `ui` is set in `⊕meta⊕` or on any node, the referenced markdown file(s) exist relative to the `.sky` file (SKY-WF-103 warns when they do not), and their frontmatter is valid YAML: quote any value that contains `: ` (`long_description: "Checks the data: …"`), or skyway ignores the frontmatter and lint fails with SKY-WF-118. Workflow-level `ui` in `⊕meta⊕` additionally supports a `changelog` list (`version`, `date`, `note`) in its frontmatter.
 6. `skyway lint` passes clean.
