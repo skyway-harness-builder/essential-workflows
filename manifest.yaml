@@ -1,7 +1,4 @@
-# skylence.be/v1 is canonical, but skyway releases before it was accepted
-# reject it and fail to load the whole library, so this stays on the legacy
-# skylence.io/v1 until those releases are gone.
-apiVersion: skylence.io/v1
+apiVersion: skylence.be/v1
 version: 2.17.1
 updated_at: "2026-10-29"
 
