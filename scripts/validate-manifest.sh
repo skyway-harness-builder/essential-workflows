@@ -2,7 +2,7 @@
 # validate-manifest.sh — validate manifest.yaml against the on-disk tree.
 #
 # Checks:
-#   - apiVersion is skylence.be/v1
+#   - apiVersion is skylence.be/v1 (canonical) or skylence.io/v1 (legacy)
 #   - path values in entries exist on disk
 #   - kind values are workflow / skill / command
 #   - scripts paths (if declared) exist on disk
@@ -20,8 +20,8 @@ ERRORS=0
 err() { echo "  ERROR $*" >&2; ERRORS=$((ERRORS + 1)); }
 
 # ── apiVersion ────────────────────────────────────────────────────────────────
-if ! grep -q "^apiVersion: skylence\.be/v1$" "$MANIFEST"; then
-  err "apiVersion must be 'skylence.be/v1'"
+if ! grep -q -E "^apiVersion: skylence\.(be|io)/v1$" "$MANIFEST"; then
+  err "apiVersion must be 'skylence.be/v1' (or the legacy 'skylence.io/v1')"
 fi
 
 # ── path values exist on disk ─────────────────────────────────────────────────
