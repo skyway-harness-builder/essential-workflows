@@ -32,6 +32,7 @@ tags: [skylence, sky, workflow, lint, errors]
 | 103 | `ui` resolves to no markdown files (warning): create the missing file(s) or remove the key |
 | 104–107 | foreach: items missing/empty/not strings (or literal array over 100) / body not prompt·command·bash·script (or combined with loop) / max_concurrency out of 0–32 / chain_from on or targeting a foreach node |
 | 117 | node `hooks` or `hooks.pre_tool_use.inject` without `claude.isolation = "loose"`: strict's `--bare` skips them, so a strict run refuses to start |
+| 118 | a `ui` file's frontmatter is not valid YAML (error): skyway ignores it, so the dashboard shows no short or long description |
 
 ## Common Fixes
 
@@ -46,6 +47,7 @@ tags: [skylence, sky, workflow, lint, errors]
 | SKY-WF-105 | Give the foreach node exactly one prompt/command/bash/script body; drop any `loop` block |
 | SKY-WF-107 | Remove `chain_from` — foreach items run in separate sessions; aggregate via `$SKY_OUTPUT_<ID>` instead |
 | SKY-WF-117 | Add `claude.isolation = "loose"` to `⊕meta⊕`. Deny lists (`denied_tools`, `pre_tool_use.deny`) work under strict and don't need it |
+| SKY-WF-118 | Quote the value the error points at; the usual cause is an unquoted `: ` inside it (`long_description: "Checks the data: …"`) |
 
 ## Self-Check Before Done
 
@@ -53,5 +55,5 @@ tags: [skylence, sky, workflow, lint, errors]
 2. Every `∆id∆` has a matching `§id§`; exactly one execution kind per node.
 3. Every `chain_from` is in `depends_on` and targets a prompt/command node; every `when` RHS is quoted.
 4. No `{{var}}` in bash/script/loop bodies; all `$SKY_*` shell-quoted; every `${env:NAME}` declared in `secrets`.
-5. If `ui` is set in `⊕meta⊕` or on any node, the referenced markdown file(s) exist relative to the `.sky` file.
+5. If `ui` is set in `⊕meta⊕` or on any node, the referenced markdown file(s) exist relative to the `.sky` file, and their frontmatter parses as YAML (quote values that contain `: `).
 6. `skyway lint` passes clean.
