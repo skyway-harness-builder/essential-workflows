@@ -31,6 +31,7 @@ tags: [skylence, sky, workflow, lint, errors]
 | 096–098 | schedule: cron field required / cron expression invalid (5-field) / timezone not a valid IANA location |
 | 103 | `ui` resolves to no markdown files (warning): create the missing file(s) or remove the key |
 | 104–107 | foreach: items missing/empty/not strings (or literal array over 100) / body not prompt·command·bash·script (or combined with loop) / max_concurrency out of 0–32 / chain_from on or targeting a foreach node |
+| 117 | node `hooks` or `hooks.pre_tool_use.inject` without `claude.isolation = "loose"`: strict's `--bare` skips them, so a strict run refuses to start |
 
 ## Common Fixes
 
@@ -44,6 +45,7 @@ tags: [skylence, sky, workflow, lint, errors]
 | SKY-WF-104 | Set `foreach.items` to a non-empty string array or a `$node.output`/`{{var}}` string reference |
 | SKY-WF-105 | Give the foreach node exactly one prompt/command/bash/script body; drop any `loop` block |
 | SKY-WF-107 | Remove `chain_from` — foreach items run in separate sessions; aggregate via `$SKY_OUTPUT_<ID>` instead |
+| SKY-WF-117 | Add `claude.isolation = "loose"` to `⊕meta⊕`. Deny lists (`denied_tools`, `pre_tool_use.deny`) work under strict and don't need it |
 
 ## Self-Check Before Done
 
