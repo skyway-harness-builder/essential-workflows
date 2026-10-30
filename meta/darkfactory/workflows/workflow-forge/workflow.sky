@@ -218,7 +218,7 @@ $SKY_OUTPUT_PARSE
 - Four delimiter blocks, each opener/closer alone on its line: `⊕meta⊕`…`⊕⊕` (identity + exactly one trigger), `§<id>§`…`§§` (node config), `∆<id>∆`…`∆∆` (Claude prompt body for that node), `※※`…`※※` (discarded doc/comment).
 - ⊕meta⊕ requires `name` and `description` and exactly one trigger (`trigger.manual = true` | `trigger.github.events = [...]` | `trigger.sky_event.event = "..."` | `trigger.schedule.cron = "..."`).
 - Real node keys only: `model` (sonnet/opus/haiku), `depends_on`, `when`, `bash`, `script`, `http`, `output_format`, `max_turns`, `max_budget_usd`, `isolation = "worktree"`, `chain_from`, `trigger_rule`, `emit`, `cancel`, `loop.until.bash`/`loop.until.eval`/`loop.max`, `invoke.target`/`invoke.vars`, `skills`, `mcp_servers`. There is NO `env.*`, NO `fresh_context`, NO `allowed_tools` key — use node `context = "fresh"` for a clean turn and `skills = [...]` to load skills.
-- `when` is FLAT: `"$node.output == 'value'"` or `"$node.output != 'value'"` or a bare boolean — RHS ALWAYS single-quoted; bareword RHS silently never fires.
+- `when` is FLAT: `"$node.output == 'value'"` or `"$node.output != 'value'"` or a bare boolean — RHS ALWAYS single-quoted; a bareword RHS fails lint (SKY-WF-031) and fails the node at run time.
 - Double-curly-brace template vars expand ONLY in `∆` prompt bodies and `http.body` (add a `|json` filter when inside JSON).
 - A secret reference of the form dollar-brace env-NAME is allowed ONLY in `mcp_servers` and HTTP url/body/headers, and every NAME must be declared in `secrets = [...]` in ⊕meta⊕. It is rejected anywhere else (prompt/bash/eval).
 - `chain_from = "X"` requires "X" in that node's `depends_on`.

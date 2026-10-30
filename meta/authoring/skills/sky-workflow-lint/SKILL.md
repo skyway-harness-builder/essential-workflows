@@ -38,7 +38,8 @@ tags: [skylence, sky, workflow, lint, errors]
 
 | Symptom | Fix |
 |---------|-----|
-| SKY-WF-030/031 | Quote the RHS of `when`: `when = "$x.output == 'value'"` |
+| SKY-WF-030 | Fix the node id in the `when`'s `$id.output` reference (usually a typo), or add the missing node |
+| SKY-WF-031 | Quote the RHS of `when`: `when = "$x.output == 'value'"` |
 | SKY-WF-042 | Add `chain_from` target to `depends_on` |
 | SKY-WF-055 | Add every `${env:NAME}` reference to the `secrets` array |
 | SKY-WF-063 | Add `safety = "requires_permission"` to destructive bash nodes |
