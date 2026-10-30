@@ -257,7 +257,7 @@ Choose whatever a human grasps fastest, and optimize the diagram for that human 
 
 ## `when` Grammar
 
-- `lhs == 'literal'` / `lhs != 'literal'` — RHS **must be single-quoted**; a bareword silently never fires.
+- `lhs == 'literal'` / `lhs != 'literal'` — RHS **must be single-quoted**; a bareword fails lint (SKY-WF-031), and skyway fails the node at run time with `malformed when-condition`.
 - Boolean literal: `true` | `false` | `1` | `0` (empty string = false).
 - Source: `evaluateCondition` in the runner. Parse failure → SKY-WF-031; bad `$node.output` ref → SKY-WF-030.
 
