@@ -7,8 +7,9 @@
 #   - kind values are workflow / skill / command
 #   - scripts paths (if declared) exist on disk
 #   - no drift: workflow.sky and SKILL.md counts match manifest
+#   - no tracked symlinks (the library extractor refuses them; reads the git index)
 #
-# Zero external dependencies (bash, grep, find, awk).
+# Zero external dependencies (bash, grep, find, awk; git only for the symlink check).
 # Exit 0 on success, 1 on any failure.
 
 set -euo pipefail
@@ -83,6 +84,22 @@ if [ "$manifest_workflows" -ne "$disk_workflows" ]; then
 fi
 if [ "$manifest_skills" -ne "$disk_skills" ]; then
   err "skill drift: manifest=$manifest_skills disk=$disk_skills (SKILL.md files)"
+fi
+
+# ── no tracked symlinks ───────────────────────────────────────────────────────
+# The library extractor (skyway internal/library/extract.go:74) fails the WHOLE
+# archive on a symlink or hard link, so none may be tracked. This reads the git
+# index (mode 120000), not the disk: an untracked or ignored local helper symlink
+# never reaches the tarball and must not fail a local run. Skipped silently
+# outside a git work tree (e.g. an unpacked release archive).
+if git -C "$REPO_ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  if ! tracked_symlinks=$(git -C "$REPO_ROOT" ls-files -s | awk -F'\t' 'substr($1,1,6)=="120000"{print $2}'); then
+    err "cannot verify tracked symlinks: git ls-files failed"
+  elif [ -n "$tracked_symlinks" ]; then
+    while IFS= read -r sl; do
+      err "tracked symlink (library extractor refuses symlinks, internal/library/extract.go:74): $sl"
+    done <<< "$tracked_symlinks"
+  fi
 fi
 
 # ── summary ───────────────────────────────────────────────────────────────────

@@ -1,4 +1,6 @@
 .cartographer
 .skybox
-# local-only lint helpers: the library extractor refuses symlinks, so these must never ship in a release
-.claude/
+# Everything under .claude/ stays ignored except .claude/skills/ (the tracked skill files).
+# The library extractor refuses symlinks: never track one (scripts/validate-manifest.sh fails on a tracked symlink). Keep local lint-helper symlinks in ~/.claude/skills, which lint also searches.
+.claude/*
+!.claude/skills/
