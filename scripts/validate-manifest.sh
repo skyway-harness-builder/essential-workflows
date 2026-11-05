@@ -93,10 +93,13 @@ fi
 # never reaches the tarball and must not fail a local run. Skipped silently
 # outside a git work tree (e.g. an unpacked release archive).
 if git -C "$REPO_ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-  while IFS= read -r link; do
-    [ -z "$link" ] && continue
-    err "tracked symlink (library extractor refuses symlinks, internal/library/extract.go:74): $link"
-  done < <(git -C "$REPO_ROOT" ls-files -s | awk -F'\t' 'substr($1,1,6)=="120000"{print $2}')
+  if ! tracked_symlinks=$(git -C "$REPO_ROOT" ls-files -s | awk -F'\t' 'substr($1,1,6)=="120000"{print $2}'); then
+    err "cannot verify tracked symlinks: git ls-files failed"
+  elif [ -n "$tracked_symlinks" ]; then
+    while IFS= read -r sl; do
+      err "tracked symlink (library extractor refuses symlinks, internal/library/extract.go:74): $sl"
+    done <<< "$tracked_symlinks"
+  fi
 fi
 
 # ── summary ───────────────────────────────────────────────────────────────────
