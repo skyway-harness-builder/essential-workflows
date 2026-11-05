@@ -9,10 +9,6 @@ pre-commit:
       glob: "**.sky"
       run: skyway lint {staged_files}
     - name: manifest validate
-      glob: "manifest.yaml"
-      run: bash scripts/validate-manifest.sh
-    - name: symlink guard
-      glob: ".claude/**"
       run: bash scripts/validate-manifest.sh
     - name: yaml lint yml
       glob: "**.yml"
