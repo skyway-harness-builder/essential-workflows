@@ -8,7 +8,10 @@ pre-commit:
     - name: sky lint
       glob: "**.sky"
       run: skyway lint {staged_files}
+    - name: symlink guard
+      run: bash scripts/validate-manifest.sh --symlinks-only
     - name: manifest validate
+      glob: "manifest.yaml"
       run: bash scripts/validate-manifest.sh
     - name: yaml lint yml
       glob: "**.yml"
