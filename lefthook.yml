@@ -11,6 +11,9 @@ pre-commit:
     - name: manifest validate
       glob: "manifest.yaml"
       run: bash scripts/validate-manifest.sh
+    - name: symlink guard
+      glob: ".claude/**"
+      run: bash scripts/validate-manifest.sh
     - name: yaml lint yml
       glob: "**.yml"
       run: yamllint -d relaxed {staged_files}
