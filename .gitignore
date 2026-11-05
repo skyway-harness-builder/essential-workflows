@@ -1,4 +1,6 @@
 .cartographer
 .skybox
-# local-only lint helpers: the library extractor refuses symlinks, so these must never ship in a release
-.claude/
+# local-only lint helpers (symlinks): the library extractor refuses symlinks, so they must never ship in a release.
+# Only .claude/skills/ is tracked (the shipped skills); keep local helper symlinks out of it.
+.claude/*
+!.claude/skills/

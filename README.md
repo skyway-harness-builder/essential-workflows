@@ -16,56 +16,50 @@ This repo is also the live remote source (`skyway-essential-workflows`): the emb
 ```
 essential-workflows/
   manifest.yaml                    ← registry of all entries
-  meta/
-    authoring/
-      workflows/
-        scaffold-sky-workflow/workflow.sky
-        update-sky-workflow/workflow.sky
-        rename-sky-workflow/{workflow.sky, scripts/}
-        clone-sky-workflow/{workflow.sky, scripts/}
-        delete-sky-workflow/{workflow.sky, scripts/}
-        archive-sky-workflow/{workflow.sky, scripts/}
-        codemod-sky-var/{workflow.sky, scripts/}
-        convert-script-to-sky-workflow/{workflow.sky, scripts/}
-        upgrade-sky-format/{workflow.sky, scripts/}
-      skills/
-        sky-workflow-authoring/SKILL.md
-    audit/
-      workflows/
-        audit-sky-library/{workflow.sky, scripts/}
-        lint-sky-library/{workflow.sky, scripts/}
-        dry-run-sky-library/{workflow.sky, scripts/}
-        audit-sky-secrets/{workflow.sky, scripts/}
-        check-sky-trigger-conflicts/{workflow.sky, scripts/}
-        find-orphan-sky-events/{workflow.sky, scripts/}
-        find-unused-sky-workflows/{workflow.sky, scripts/}
-        audit-sky-budget/{workflow.sky, scripts/}
-        sky-library-health-report/{workflow.sky, scripts/}
-        import-sky-library/{workflow.sky, scripts/}
-        triage-failed-sky-run/{workflow.sky, scripts/}
-        check-sky-environment/{workflow.sky, scripts/}
-    docs/
-      workflows/
-        catalog-sky-library/{workflow.sky, scripts/}
-        diagram-sky-workflow/workflow.sky
-        explain-sky-workflow/{workflow.sky, scripts/}
-        changelog-sky-workflow/{workflow.sky, scripts/}
-        annotate-sky-workflow/{workflow.sky, scripts/}
-    darkfactory/
-      workflows/
-        board-prep/{workflow.sky, scripts/}
-        github-settings/{workflow.sky, scripts/}
-        skill-forge/{workflow.sky, scripts/}
-        workflow-forge/{workflow.sky, scripts/}
-      skills/
-        darkfactory-onboarding/SKILL.md
-      data/
-      data/
-        labels.yaml
-  github/
-    release/
-      workflows/
-        draft-release-notes/{workflow.sky, scripts/}
+  workflows/
+    authoring/                     ← 11 workflows
+      scaffold-sky-workflow/workflow.sky
+      update-sky-workflow/workflow.sky
+      rename-sky-workflow/{workflow.sky, scripts/}
+      clone-sky-workflow/{workflow.sky, scripts/}
+      delete-sky-workflow/{workflow.sky, scripts/}
+      archive-sky-workflow/{workflow.sky, scripts/}
+      codemod-sky-var/{workflow.sky, scripts/}
+      convert-script-to-sky-workflow/{workflow.sky, scripts/}
+      upgrade-sky-format/{workflow.sky, scripts/}
+      annotate-sky-library/{workflow.sky, scripts/}
+      create-workflow-collection/{workflow.sky, scripts/}
+    audit/                         ← 12 workflows
+      audit-sky-library/{workflow.sky, scripts/}
+      lint-sky-library/{workflow.sky, scripts/}
+      dry-run-sky-library/{workflow.sky, scripts/}
+      audit-sky-secrets/{workflow.sky, scripts/}
+      check-sky-trigger-conflicts/{workflow.sky, scripts/}
+      find-orphan-sky-events/{workflow.sky, scripts/}
+      find-unused-sky-workflows/{workflow.sky, scripts/}
+      audit-sky-budget/{workflow.sky, scripts/}
+      sky-library-health-report/{workflow.sky, scripts/}
+      import-sky-library/{workflow.sky, scripts/}
+      triage-failed-sky-run/{workflow.sky, scripts/}
+      check-sky-environment/{workflow.sky, scripts/}
+    docs/                          ← 6 workflows
+      catalog-sky-library/{workflow.sky, scripts/}
+      diagram-sky-workflow/workflow.sky
+      explain-sky-workflow/{workflow.sky, scripts/}
+      changelog-sky-workflow/{workflow.sky, scripts/}
+      annotate-sky-workflow/{workflow.sky, scripts/}
+      bulk-annotate-workflows/workflow.sky
+    utilities/                     ← 3 workflows
+      send-email/workflow.sky
+      post-slack/workflow.sky
+      draft-release-notes/{workflow.sky, scripts/}
+  .claude/
+    skills/                        ← 3 skills
+      sky-workflow-authoring/SKILL.md
+      sky-workflow-lint/SKILL.md
+      sky-run-triage/SKILL.md
+  scripts/
+    validate-manifest.sh           ← manifest lint (also runs in CI)
 ```
 
 Each workflow is a self-contained directory: `workflow.sky` plus a `scripts/` subfolder holding any bash files it references. The binary resolves `bash_file = "./scripts/x.sh"` relative to the workflow file's directory at runtime.
@@ -85,6 +79,8 @@ Meta-workflows for managing your own `.sky` library — create, update, rename, 
 | `codemod-sky-var` | Bulk-rename a `--var` key or node id across every `.sky` behind a gate. `--var dir=<dir> --var old=<k> --var new=<k>` |
 | `convert-script-to-sky-workflow` | Read a shell script / Makefile target and author an equivalent `.sky`. `--var dir=<dir> --var name=<file> --var source=<file>` |
 | `upgrade-sky-format` | Lint a `.sky` and apply minimal format fixes when it reports problems. `--var dir=<dir> --var name=<file>` |
+| `annotate-sky-library` | Scan a library directory for unannotated `workflow.sky` files and annotate each in sequence. `--var dir=<dir>` |
+| `create-workflow-collection` | Scaffold a new community workflow collection from the skeleton template, configure it, and push the first commit. `--var vendor=<slug> [--var repo=<name>] [--var org=<org>]` |
 
 ```sh
 skyway library install scaffold-sky-workflow
@@ -125,25 +121,17 @@ Generate and maintain documentation for your `.sky` library.
 | `explain-sky-workflow` | Emit a plain-English walkthrough of a workflow's trigger, DAG, and nodes. `--var dir=<dir> --var name=<file>` |
 | `changelog-sky-workflow` | Diff a `.sky` and append a changelog entry to `CHANGELOG.md`. `--var dir=<dir> --var name=<file>` |
 | `annotate-sky-workflow` | Insert inline ※※ rationale comments before each node, then lint. `--var dir=<dir> --var name=<file>` |
+| `bulk-annotate-workflows` | Annotate all `workflow.sky` files in the given folders with inline rationale comments, then lint each clean. `--var dirs=<dirs>` |
 
-## GitHub release workflows
+## Utilities workflows
 
-Repo automation triggered by GitHub events.
+Deterministic utilities: invoke targets for orchestration, plus GitHub release automation.
 
 | Name | Description |
 |------|-------------|
+| `send-email` | Send one transactional email via the skyway daemon mail endpoint. Invoke from orchestration or run manually. `--var to=<addr> --var subject=<subj> --var content=<body> [--var html=<html>]` |
+| `post-slack` | Post a plain-text Slack message via an incoming webhook URL in a named env var. Invoke from orchestration or run manually. `--var webhook_env_name=SLACK_WEBHOOK_URL --var text=<message>` |
 | `draft-release-notes` | On `release.published` (or manually), collect commits since the previous tag and draft grouped release notes plus the exact apply command — propose-only. `--var tag=<tag>` |
-
-## Dark Factory workflows
-
-Eval-driven forges and onboarding workflows for the Dark Factory dev ladder.
-
-| Name | Description |
-|------|-------------|
-| `skill-forge` | Drive a skill toward a measurable bar via generate→exercise→judge loop. `--var skill_name=<name>` |
-| `workflow-forge` | Author + lint + dry-run + judge a `.sky` workflow from an intent brief. `--var intent="…"` |
-| `board-prep` | Idempotently create the 9 lifecycle labels and link a GitHub Project (rung 0). `--var project=<project-number>` |
-| `github-settings` | Apply best-practice GitHub settings via `gh`. `--var scope=both --var tier=free\|paid` |
 
 ## Skills
 
@@ -151,15 +139,12 @@ A workflow declares `skills = [...]` on a node; `skyway` injects the named `.cla
 
 ```sh
 skyway library install sky-workflow-authoring
-skyway library install darkfactory-onboarding
 ```
 
 | Name | Description |
 |------|-------------|
 | `sky-workflow-authoring` | Self-contained reference for authoring a valid `.sky` workflow: four-delimiter format, trigger routing, node types, variable references, MUST/MUST NOT rules, and lint error-code fixes. |
 | `sky-workflow-lint` | Lint-code table and self-check for fixing SKY-WF-* errors when reading `skyway lint` output. |
-| `darkfactory-onboarding` | Onboard a repo into the Dark Factory — the 9-label lifecycle (`data/labels.yaml`), GitHub Project field schema, label→Status mapping, and what a project template carries vs what you wire by hand. |
-| `sky-judge-gate` | Conduct for AI judge nodes in the judge→sentinel→deterministic-gate pattern: sentinel discipline, fail-closed rules, confidence self-enforcement, holdout freshness, untrusted-input handling. |
 | `sky-run-triage` | Diagnosing a failed skyway run: env-channel data flow, when-condition quoting, chain_from semantics, failure classes in check order, propose-don't-apply. |
 
 ## Adding a custom source
@@ -178,10 +163,10 @@ library:
 
 This is a [GitHub template repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-repository-from-a-template). Fork it to build your own private library; open a PR here to contribute a workflow back to the community.
 
-Assets follow a **store → plugin → component** layout (`meta/` for library meta-tooling, `github/` for GitHub-event automation). Each plugin is a folder holding `workflows/` and `skills/` subfolders. Each workflow is its own directory with a `workflow.sky` and a `scripts/` subfolder for any bash files it references. The `manifest.yaml` is the authoritative registry.
+Assets follow a **group → component** layout: `workflows/<group>/<name>/` holds one workflow per directory (groups: `authoring`, `audit`, `docs`, `utilities`) and `.claude/skills/<name>/SKILL.md` holds the skills. Each workflow is its own directory with a `workflow.sky` and a `scripts/` subfolder for any bash files it references. The `manifest.yaml` is the authoritative registry; each entry's `store:` and `plugin:` name its group.
 
 To add a new workflow:
-1. Create `<store>/<plugin>/workflows/<name>/workflow.sky` (and `scripts/` if needed).
+1. Create `workflows/<group>/<name>/workflow.sky` (and `scripts/` if needed).
 2. Add an entry to `manifest.yaml` with matching `store:`, `plugin:`, and a `scripts:` list.
 3. Bump `version` and `updated_at` in `manifest.yaml`.
 
